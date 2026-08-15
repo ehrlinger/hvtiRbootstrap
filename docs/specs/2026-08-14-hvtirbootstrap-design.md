@@ -37,9 +37,11 @@ model statement, no `SELECT`/`SLE`. These bootstrap **predicted quantities**
 They are not variable selection and must not be forced into its API.
 
 **Most of the file count is duplication.** `bootstrap.hazard.sas` and
-`bootstrap.hazard_jr.sas` differ by **8 lines of 236**; `_tvc` by 75
-(time-varying covariates - a genuine variant). Seven hazard files are perhaps
-two or three real behaviours. 31 files is not 31 ports.
+`bootstrap.hazard_jr.sas` differ by **8 lines of 236** - a changed default and a
+dropped selection option, both already parameters. `_tvc` differs by 75
+(time-varying covariates - a genuine variant). Seven hazard files are one macro
+plus per-analysis parameterisations; see Resolved design questions. **31 files is
+not 31 ports.**
 
 ## Architecture - two cores, thin fitters
 
@@ -121,17 +123,45 @@ roxygen with markdown, pkgdown, and the house CI set (`R-CMD-check`, `lint`,
 **0.1.0**; the full release gate applies before any 1.0.0 regardless of
 destination.
 
+## Resolved design questions
+
+**1. `boot_select()` returns a classed object** (decided 2026-08-14), not a bare
+data frame. It buys a `print`/`summary`/`autoplot` surface, and it lets
+`boot_summary()` refuse the wrong input rather than silently summarising
+something that is not replicate results. The underlying table stays accessible
+for anyone who wants to pipe it.
+
+**2. The `_jr` / `_p` / `101703` / `jr1` hazard variants are per-analysis copies
+and are not ported** (decided 2026-08-14). They carry no job cards and no study
+paths - structurally they are macros - but the entire `bootstrap.hazard.sas` ->
+`bootstrap.hazard_jr.sas` diff is a changed default (`MXS=100` -> `mxs=30`), the
+matching doc line, whitespace, and one dropped selection option (`noq`). That is
+per-study tuning of parameters the macro already exposes.
+
+So they collapse into **arguments**, not functions: `max_steps`, `sle`, `sls`,
+and the selection-option flags are `boot_select()` parameters, and a study that
+wants `mxs=30` passes it. Porting them separately would reproduce in R exactly
+the copy-per-study drift the migration exists to end.
+
+`bootstrap.hazard_tvc.sas` is the exception to watch - a 75-line diff carrying
+time-varying covariates, which is genuine behaviour. It stays in the deferred
+hazard-fitter spec.
+
+**This changes the port, not the allocation.** All 31 files remain assigned to
+this package; the map records destinations, not function counts. The R surface
+is simply much smaller than 31.
+
+**3. Reproduce stepwise selection first; improve only once there are options**
+(decided 2026-08-14). v1 reproduces the method as the macros implement it, so a
+result can be checked against the SAS one. Alternatives - penalised selection,
+stability selection, or anything else - are a **methods decision for the CORR
+group**, taken later and on evidence, not smuggled in as a porting default. The
+fitter seam is what makes that cheap to revisit: an alternative arrives as a
+fitter or a selector, not a rewrite.
+
 ## Open questions
 
-1. **Does `boot_select()` return a data frame or a classed object?** A class
-   buys a `print`/`summary`/`autoplot` surface and lets `boot_summary()` refuse
-   the wrong input; a bare data frame is simpler and composes with dplyr. Decide
-   at planning time, when the fitter contract is concrete.
-2. **Do the `_jr`/`_p`/`101703` hazard variants encode real behaviour, or are
-   they abandoned copies?** 8-line diffs suggest copies, but that must be read
-   rather than assumed - the corpus has already produced one file whose name
-   misled about its contents.
-3. **Is stepwise selection per replicate the method to carry forward, or the
-   method to reproduce and then improve on?** The port should reproduce it; the
-   question is whether the package should also offer a modern alternative, and
-   that is a methods decision for the CORR group, not a design one.
+None blocking. The deferred items in Scope each carry their own questions, to be
+answered when their spec is written - most sharply, whether
+`bootstrap.hazard_tvc.sas`'s time-varying-covariate structure is one variant or
+several.
