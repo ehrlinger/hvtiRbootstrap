@@ -8,6 +8,21 @@
 \description{
 Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR group's SAS macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and 'cluster' macros.
 }
+\details{
+Three functions do the work:
+\itemize{
+\item \code{\link[=boot_select]{boot_select()}} - resample, fit, and record which terms each model kept
+(\verb{\%bootreg}).
+\item \code{\link[=boot_summary]{boot_summary()}} - per-variable selection frequency and coefficient
+distribution (\verb{\%SUMBOOT}).
+\item \code{\link[=boot_clusters]{boot_clusters()}} - how often at least one member of a correlated group was
+selected (\verb{\%cluster}).
+}
+
+Fitters are pluggable: \code{\link[=fit_logistic]{fit_logistic()}}, \code{\link[=fit_linear]{fit_linear()}} and \code{\link[=fit_cox]{fit_cox()}} ship
+with the package, and a new model family is a new fitter rather than a new
+pipeline.
+}
 \author{
 \strong{Maintainer}: John Ehrlinger \email{ehrlinj@ccf.org}
 

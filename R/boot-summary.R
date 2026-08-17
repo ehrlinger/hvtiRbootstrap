@@ -35,7 +35,8 @@ boot_summary <- function(x) {
     n    = as.integer(colSums(!is.na(m))),
     pct  = 100 * colSums(!is.na(m)) / n_rep,
     mean = vapply(seq_len(ncol(m)), function(j) stat(mean, m[, j]), numeric(1)),
-    sd   = vapply(seq_len(ncol(m)), function(j) stat(stats::sd, m[, j]), numeric(1)),
+    sd   = vapply(seq_len(ncol(m)), function(j) stat(stats::sd, m[, j]),
+                  numeric(1)),
     min  = vapply(seq_len(ncol(m)), function(j) stat(min, m[, j]), numeric(1)),
     max  = vapply(seq_len(ncol(m)), function(j) stat(max, m[, j]), numeric(1)),
     stringsAsFactors = FALSE

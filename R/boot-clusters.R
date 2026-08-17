@@ -26,7 +26,8 @@ boot_clusters <- function(x, clusters) {
   if (!is.matrix(m) || !is.numeric(m))
     stop("`x` must be a boot_selection object or a numeric matrix.",
          call. = FALSE)
-  if (!is.list(clusters) || is.null(names(clusters)) || any(names(clusters) == ""))
+  if (!is.list(clusters) || is.null(names(clusters)) ||
+        any(names(clusters) == ""))
     stop("`clusters` must be a named list.", call. = FALSE)
 
   for (nm in names(clusters)) {

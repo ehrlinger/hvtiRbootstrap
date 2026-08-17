@@ -21,7 +21,7 @@ test_that("members are reported so a reader can see what the cluster held", {
   expect_equal(out$members, "a1, a2")
 })
 
-test_that("a cluster naming an unknown term errors rather than silently ignoring it", {
+test_that("an unknown term in a cluster errors rather than being ignored", {
   expect_error(
     boot_clusters(fx_cluster_replicates(), list(A = c("a1", "nope"))),
     "cluster `A` names terms not present in the replicates: nope",

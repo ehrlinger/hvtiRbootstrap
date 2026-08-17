@@ -12,7 +12,7 @@ test_that("boot_select returns one row per requested replicate", {
   expect_equal(out$n_rep, 25L)
 })
 
-test_that("unselected terms are NA, not zero -- this is what makes n a frequency", {
+test_that("unselected terms are NA, not zero -- what makes n a frequency", {
   out <- boot_select(sim_df(), yc ~ x1 + x2 + noise, fit_linear,
                      n_rep = 25, select = "stepwise", seed = 42)
   expect_true(anyNA(out$coefficients))
@@ -25,7 +25,7 @@ test_that("every candidate term gets a column even if never selected", {
   expect_true(all(c("x1", "x2", "noise") %in% colnames(out$coefficients)))
 })
 
-test_that("a failing replicate is retried, not counted -- %bootreg's regrc check", {
+test_that("a failing replicate is retried, not counted -- the regrc check", {
   # A fitter that fails the first 5 calls then succeeds. n_rep valid models must
   # still be produced, and n_attempts must exceed n_rep.
   calls <- 0
@@ -82,7 +82,7 @@ test_that("boot_select rejects a fraction outside (0, 1]", {
   )
 })
 
-test_that("a fitter that always fails errors instead of looping forever -- D3", {
+test_that("a fitter that always fails errors, not loops forever -- D3", {
   # %bootreg would spin here indefinitely: &sample never advances and there is
   # no cap. Under R CMD check that is an unbounded hang with no diagnostic, so
   # boot_select() budgets attempts and reports what it managed.

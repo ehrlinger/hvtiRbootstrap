@@ -1,6 +1,8 @@
 make_df <- function(n = 200, seed = 1) {
   set.seed(seed)
-  x1 <- rnorm(n); x2 <- rnorm(n); noise <- rnorm(n)
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  noise <- rnorm(n)
   data.frame(
     y  = as.integer(x1 + rnorm(n) > 0),
     yc = x1 * 2 + rnorm(n),
@@ -9,16 +11,20 @@ make_df <- function(n = 200, seed = 1) {
 }
 
 test_that("fit_linear returns a named numeric vector of kept coefficients", {
-  out <- fit_linear(make_df(), yc ~ x1 + x2 + noise,
-                    list(method = "none", sle = 0.10, sls = 0.05, max_steps = 0))
+  out <- fit_linear(
+    make_df(), yc ~ x1 + x2 + noise,
+    list(method = "none", sle = 0.10, sls = 0.05, max_steps = 0)
+  )
   expect_type(out, "double")
   expect_true(!is.null(names(out)))
   expect_true("x1" %in% names(out))
 })
 
 test_that("fit_logistic keeps only selected variables under stepwise", {
-  out <- fit_logistic(make_df(), y ~ x1 + x2 + noise,
-                      list(method = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0))
+  out <- fit_logistic(
+    make_df(), y ~ x1 + x2 + noise,
+    list(method = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0)
+  )
   expect_type(out, "double")
   # x1 drives y by construction; pure noise should usually drop out. The
   # assertion is on the CONTRACT (a subset of the offered terms), not on which
@@ -43,8 +49,10 @@ test_that("stepwise actually drops terms rather than failing silently", {
 test_that("a fitter returns NULL rather than erroring on an impossible fit", {
   df <- make_df()
   df$y <- 0L                      # no variation in the response
-  out <- fit_logistic(df, y ~ x1,
-                      list(method = "none", sle = 0.10, sls = 0.05, max_steps = 0))
+  out <- fit_logistic(
+    df, y ~ x1,
+    list(method = "none", sle = 0.10, sls = 0.05, max_steps = 0)
+  )
   expect_null(out)
 })
 
