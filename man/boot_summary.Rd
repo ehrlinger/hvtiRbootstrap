@@ -15,9 +15,9 @@ A data frame with columns \code{variable}, \code{n}, \code{pct}, \code{mean}, \c
 \code{min}, \code{max}, sorted by descending \code{n}.
 }
 \description{
-For each candidate term, how often it was selected across replicates and the
-distribution of its coefficient when it was. The R port of \verb{\%SUMBOOT}
-(\verb{~/Documents/macro.library/bootstrap.summary.sas}).
+The R port of \verb{\%SUMBOOT} (\code{bootstrap.summary.sas} in the CORR macro
+library). For each candidate term: how often it was selected across
+replicates, and the distribution of its coefficient when it was.
 }
 \details{
 \code{n} counts replicates in which the term was selected, because \code{\link[=boot_select]{boot_select()}}
@@ -28,4 +28,25 @@ This function is held to \strong{exact parity} with \verb{\%SUMBOOT}: given the 
 replicate table it must produce the same \code{n}, \code{pct}, \code{mean}, \code{sd}, \code{min} and
 \code{max}. Resampling and model fitting are not parity-tested; see the package's
 design spec.
+}
+\examples{
+set.seed(1)
+n  <- 300
+x1 <- rnorm(n)
+df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
+                 x2 = rnorm(n), noise = rnorm(n))
+
+fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
+                   n_rep = 50, seed = 42)
+boot_summary(fit)
+
+# It also takes a bare replicate matrix, which is how the parity fixtures
+# are checked against \%SUMBOOT without needing any cohort data.
+m <- matrix(c(1, 2, 3, 4, 2, NA, 4, NA), nrow = 4,
+            dimnames = list(NULL, c("x1", "x2")))
+boot_summary(m)
+}
+\seealso{
+\code{\link[=boot_select]{boot_select()}}, which produces the replicates; \code{\link[=boot_clusters]{boot_clusters()}}
+for the at-least-one count across a group of correlated terms.
 }

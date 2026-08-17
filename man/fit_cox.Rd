@@ -23,3 +23,17 @@ which means a replicate where selection kept nothing returns a
 \description{
 Fit a Cox proportional-hazards model for one bootstrap replicate
 }
+\examples{
+if (requireNamespace("survival", quietly = TRUE)) {
+  set.seed(2)
+  n  <- 200
+  df <- data.frame(time = rexp(n), status = rbinom(n, 1, 0.7),
+                   x1 = rnorm(n), noise = rnorm(n))
+
+  fit_cox(df, survival::Surv(time, status) ~ x1 + noise,
+          list(method = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0))
+}
+}
+\seealso{
+\code{\link[=fit_linear]{fit_linear()}} and \code{\link[=fit_logistic]{fit_logistic()}}; \code{\link[=boot_select]{boot_select()}}.
+}

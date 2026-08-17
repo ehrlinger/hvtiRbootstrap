@@ -9,7 +9,7 @@
 Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR group's SAS macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and 'cluster' macros.
 }
 \details{
-Three functions do the work:
+Three macros, three functions:
 \itemize{
 \item \code{\link[=boot_select]{boot_select()}} - resample, fit, and record which terms each model kept
 (\verb{\%bootreg}).
@@ -19,9 +19,19 @@ distribution (\verb{\%SUMBOOT}).
 selected (\verb{\%cluster}).
 }
 
-Fitters are pluggable: \code{\link[=fit_logistic]{fit_logistic()}}, \code{\link[=fit_linear]{fit_linear()}} and \code{\link[=fit_cox]{fit_cox()}} ship
-with the package, and a new model family is a new fitter rather than a new
-pipeline.
+Fitters are pluggable, standing in for \verb{\%bootreg}'s \verb{PROC=}:
+\code{\link[=fit_logistic]{fit_logistic()}}, \code{\link[=fit_linear]{fit_linear()}} and \code{\link[=fit_cox]{fit_cox()}} ship with the package, and a
+new model family arrives as a new fitter rather than a new pipeline.
+
+The hinge of the whole design is that a term the model did not select is
+\code{NA} in that replicate's row, so counting non-missing values down a column
+gives the selection frequency directly. That is how the macros work, and the
+port keeps it.
+
+\code{boot_summary()} and \code{boot_clusters()} are held to \strong{exact parity} with the
+macros. Resampling is stochastic and model fitting belongs to \code{glm}, \code{lm} and
+\code{coxph}, so neither is parity-tested; where R and SAS diverge on purpose, the
+README's divergence section and the function's own help say so.
 }
 \author{
 \strong{Maintainer}: John Ehrlinger \email{ehrlinj@ccf.org}

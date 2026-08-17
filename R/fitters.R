@@ -96,6 +96,22 @@
 #'   a return code that warnings do not set. A zero-length result is likewise
 #'   not a failure: it means selection kept no terms, which is a valid
 #'   replicate.
+#' @seealso [fit_logistic()] and [fit_cox()], the other two `PROC=` values
+#'   `%bootreg` supports; [boot_select()], which calls a fitter once per
+#'   replicate.
+#' @examples
+#' set.seed(1)
+#' n  <- 200
+#' x1 <- rnorm(n)
+#' df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, noise = rnorm(n))
+#'
+#' # `method = "stepwise"` is the macro's default; `"none"` is FIXED=1, which
+#' # fits the model as written and bootstraps its coefficients instead.
+#' fit_linear(df, y ~ x1 + noise,
+#'            list(method = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0))
+#'
+#' fit_linear(df, y ~ x1 + noise,
+#'            list(method = "none", sle = 0.10, sls = 0.05, max_steps = 0))
 #' @export
 fit_linear <- function(data, formula, select) {
   tryCatch(
@@ -114,6 +130,17 @@ fit_linear <- function(data, formula, select) {
 #'   errored or did not converge. Warnings - notably "fitted probabilities
 #'   numerically 0 or 1" on a quasi-separated replicate - do not discard a
 #'   converged fit.
+#' @seealso [fit_linear()] and [fit_cox()]; [boot_select()].
+#' @examples
+#' set.seed(1)
+#' n  <- 200
+#' x1 <- rnorm(n)
+#' df <- data.frame(y = as.integer(x1 + rnorm(n) > 0), x1 = x1,
+#'                  noise = rnorm(n))
+#'
+#' fit_logistic(df, y ~ x1 + noise,
+#'              list(method = "stepwise", sle = 0.10, sls = 0.05,
+#'                   max_steps = 0))
 #' @export
 fit_logistic <- function(data, formula, select) {
   tryCatch(
@@ -136,6 +163,17 @@ fit_logistic <- function(data, formula, select) {
 #'   errored. Cox models carry no intercept, so none appears in the result -
 #'   which means a replicate where selection kept nothing returns a
 #'   **zero-length** vector, not `NULL`, and counts as a valid replicate.
+#' @seealso [fit_linear()] and [fit_logistic()]; [boot_select()].
+#' @examples
+#' if (requireNamespace("survival", quietly = TRUE)) {
+#'   set.seed(2)
+#'   n  <- 200
+#'   df <- data.frame(time = rexp(n), status = rbinom(n, 1, 0.7),
+#'                    x1 = rnorm(n), noise = rnorm(n))
+#'
+#'   fit_cox(df, survival::Surv(time, status) ~ x1 + noise,
+#'           list(method = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0))
+#' }
 #' @export
 fit_cox <- function(data, formula, select) {
   if (!requireNamespace("survival", quietly = TRUE))

@@ -21,7 +21,7 @@ When several candidate terms measure the same thing - weight and body surface
 area, say - each one's individual selection frequency understates the
 cluster's importance, because replicates split between them. This reports how
 often \strong{at least one} member of a cluster was selected. The R port of
-\verb{\%cluster} (\verb{~/Documents/macro.library/bootstrap.clusters.sas}).
+\verb{\%cluster} (\code{bootstrap.clusters.sas} in the CORR macro library).
 }
 \details{
 \code{n_any} is not the sum of the members' individual counts: a replicate that
@@ -32,6 +32,22 @@ The macro also tabulates its \code{ncluster} counter - the full distribution of
 reproduced: the per-variable frequencies are already \code{\link[=boot_summary]{boot_summary()}}'s job,
 and "at least one" is the number neither function can derive from the other.
 }
+\examples{
+set.seed(1)
+n  <- 300
+x1 <- rnorm(n)
+df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
+                 x2 = rnorm(n), noise = rnorm(n))
+
+fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
+                   n_rep = 50, seed = 42)
+
+# x1 and x2 stand in for a correlated pair -- weight and body surface area,
+# say. n_any is not the sum of their individual counts: a replicate that
+# selected both counts once.
+boot_clusters(fit, list(size = c("x1", "x2"), noise = "noise"))
+}
 \seealso{
-\code{\link[=boot_summary]{boot_summary()}} for the per-variable frequencies.
+\code{\link[=boot_summary]{boot_summary()}} for the per-variable frequencies, and
+\code{\link[=boot_select]{boot_select()}}, which produces the replicates.
 }

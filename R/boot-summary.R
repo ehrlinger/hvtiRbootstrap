@@ -1,8 +1,8 @@
 #' Summarise bootstrap replicates into selection frequencies
 #'
-#' For each candidate term, how often it was selected across replicates and the
-#' distribution of its coefficient when it was. The R port of `%SUMBOOT`
-#' (`~/Documents/macro.library/bootstrap.summary.sas`).
+#' The R port of `%SUMBOOT` (`bootstrap.summary.sas` in the CORR macro
+#' library). For each candidate term: how often it was selected across
+#' replicates, and the distribution of its coefficient when it was.
 #'
 #' `n` counts replicates in which the term was selected, because [boot_select()]
 #' leaves an unselected term `NA`. `pct` is `100 * n / n_rep` - the denominator
@@ -17,6 +17,24 @@
 #'   one row per replicate and one column per term.
 #' @return A data frame with columns `variable`, `n`, `pct`, `mean`, `sd`,
 #'   `min`, `max`, sorted by descending `n`.
+#' @seealso [boot_select()], which produces the replicates; [boot_clusters()]
+#'   for the at-least-one count across a group of correlated terms.
+#' @examples
+#' set.seed(1)
+#' n  <- 300
+#' x1 <- rnorm(n)
+#' df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
+#'                  x2 = rnorm(n), noise = rnorm(n))
+#'
+#' fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
+#'                    n_rep = 50, seed = 42)
+#' boot_summary(fit)
+#'
+#' # It also takes a bare replicate matrix, which is how the parity fixtures
+#' # are checked against %SUMBOOT without needing any cohort data.
+#' m <- matrix(c(1, 2, 3, 4, 2, NA, 4, NA), nrow = 4,
+#'             dimnames = list(NULL, c("x1", "x2")))
+#' boot_summary(m)
 #' @export
 boot_summary <- function(x) {
   m <- if (inherits(x, "boot_selection")) x$coefficients else x

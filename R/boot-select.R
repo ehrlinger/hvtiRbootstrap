@@ -1,10 +1,16 @@
 #' Build a model by bootstrap resampling
 #'
+#' The R port of `%bootreg` (`bootstrap.models.sas` in the CORR macro library).
 #' Fits `fitter` on each of `n_rep` bootstrap replicates and records the
-#' coefficients each model kept. A term the model did not select is `NA` in that
-#' replicate's row, so [boot_summary()] can count non-missing values to get a
-#' selection frequency. The R port of `%bootreg`
-#' (`~/Documents/macro.library/bootstrap.models.sas`).
+#' coefficients each model kept.
+#'
+#' A term the model did not select is `NA` in that replicate's row. That
+#' missingness is the whole design: [boot_summary()] counts non-missing values
+#' down a column, so `n` *is* the number of replicates that chose the term. Do
+#' not fill those gaps with zero.
+#'
+#' `fitter` is what `PROC=` was. Adding a model family means writing a fitter,
+#' not another pipeline.
 #'
 #' @param data A data frame.
 #' @param formula Model formula offering the candidate terms.
@@ -36,6 +42,27 @@
 #' @return An object of class `boot_selection`. `$coefficients` is a matrix with
 #'   one row per valid replicate and one column per candidate term, `NA` where
 #'   the term was not selected.
+#' @seealso [boot_summary()] for the per-variable selection frequencies, and
+#'   [boot_clusters()] for the same question asked of a correlated group.
+#'   [fit_linear()], [fit_logistic()] and [fit_cox()] are the supplied fitters.
+#' @examples
+#' set.seed(1)
+#' n  <- 300
+#' x1 <- rnorm(n)
+#' df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
+#'                  x2 = rnorm(n), noise = rnorm(n))
+#'
+#' # n_rep is RESAMPL=. It counts VALID models, so a replicate whose fit fails
+#' # is redrawn and does not consume one -- the macro's &regrc check.
+#' fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
+#'                    n_rep = 50, seed = 42)
+#' fit
+#'
+#' # The replicate table itself, one row per model, NA where a term was not
+#' # selected. This is what %bootreg writes to OUTEST=.
+#' head(fit$coefficients, 3)
+#'
+#' boot_summary(fit)
 #' @export
 boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
                         select = c("stepwise", "none"), sle = 0.10, sls = 0.05,

@@ -26,3 +26,22 @@ replicate.
 \description{
 Fit a linear model for one bootstrap replicate
 }
+\examples{
+set.seed(1)
+n  <- 200
+x1 <- rnorm(n)
+df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, noise = rnorm(n))
+
+# `method = "stepwise"` is the macro's default; `"none"` is FIXED=1, which
+# fits the model as written and bootstraps its coefficients instead.
+fit_linear(df, y ~ x1 + noise,
+           list(method = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0))
+
+fit_linear(df, y ~ x1 + noise,
+           list(method = "none", sle = 0.10, sls = 0.05, max_steps = 0))
+}
+\seealso{
+\code{\link[=fit_logistic]{fit_logistic()}} and \code{\link[=fit_cox]{fit_cox()}}, the other two \verb{PROC=} values
+\verb{\%bootreg} supports; \code{\link[=boot_select]{boot_select()}}, which calls a fitter once per
+replicate.
+}

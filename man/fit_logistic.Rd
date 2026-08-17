@@ -23,3 +23,17 @@ converged fit.
 \description{
 Fit a logistic model for one bootstrap replicate
 }
+\examples{
+set.seed(1)
+n  <- 200
+x1 <- rnorm(n)
+df <- data.frame(y = as.integer(x1 + rnorm(n) > 0), x1 = x1,
+                 noise = rnorm(n))
+
+fit_logistic(df, y ~ x1 + noise,
+             list(method = "stepwise", sle = 0.10, sls = 0.05,
+                  max_steps = 0))
+}
+\seealso{
+\code{\link[=fit_linear]{fit_linear()}} and \code{\link[=fit_cox]{fit_cox()}}; \code{\link[=boot_select]{boot_select()}}.
+}

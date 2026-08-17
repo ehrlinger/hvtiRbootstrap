@@ -62,9 +62,40 @@ one row per valid replicate and one column per candidate term, \code{NA} where
 the term was not selected.
 }
 \description{
+The R port of \verb{\%bootreg} (\code{bootstrap.models.sas} in the CORR macro library).
 Fits \code{fitter} on each of \code{n_rep} bootstrap replicates and records the
-coefficients each model kept. A term the model did not select is \code{NA} in that
-replicate's row, so \code{\link[=boot_summary]{boot_summary()}} can count non-missing values to get a
-selection frequency. The R port of \verb{\%bootreg}
-(\verb{~/Documents/macro.library/bootstrap.models.sas}).
+coefficients each model kept.
+}
+\details{
+A term the model did not select is \code{NA} in that replicate's row. That
+missingness is the whole design: \code{\link[=boot_summary]{boot_summary()}} counts non-missing values
+down a column, so \code{n} \emph{is} the number of replicates that chose the term. Do
+not fill those gaps with zero.
+
+\code{fitter} is what \verb{PROC=} was. Adding a model family means writing a fitter,
+not another pipeline.
+}
+\examples{
+set.seed(1)
+n  <- 300
+x1 <- rnorm(n)
+df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
+                 x2 = rnorm(n), noise = rnorm(n))
+
+# n_rep is RESAMPL=. It counts VALID models, so a replicate whose fit fails
+# is redrawn and does not consume one -- the macro's &regrc check.
+fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
+                   n_rep = 50, seed = 42)
+fit
+
+# The replicate table itself, one row per model, NA where a term was not
+# selected. This is what \%bootreg writes to OUTEST=.
+head(fit$coefficients, 3)
+
+boot_summary(fit)
+}
+\seealso{
+\code{\link[=boot_summary]{boot_summary()}} for the per-variable selection frequencies, and
+\code{\link[=boot_clusters]{boot_clusters()}} for the same question asked of a correlated group.
+\code{\link[=fit_linear]{fit_linear()}}, \code{\link[=fit_logistic]{fit_logistic()}} and \code{\link[=fit_cox]{fit_cox()}} are the supplied fitters.
 }
