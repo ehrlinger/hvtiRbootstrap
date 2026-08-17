@@ -16,7 +16,7 @@
 - **No cohort data in the package.** All fixtures are synthetic. This corpus has a PHI history; nothing derived from a study tree enters this repo.
 - ASCII only in R source string literals. Use `\uXXXX` escapes if a symbol is needed.
 - Version stays `0.1.0` for the whole plan. Do not bump; the maintainer cuts releases.
-- Branch per task; never commit to `main`. Open one PR at the end.
+- All work lands on one branch, `feat/selection-core`; `main` stays clean. **Updated 2026-08-17:** the remote now exists (`github.com/ehrlinger/hvtiRbootstrap`, public, matching the sibling packages), so Task 6 ends in a real push and PR rather than a local-only branch.
 - `Config/testthat/edition: 3`, roxygen with markdown, GPL-3.
 
 ---
@@ -60,6 +60,30 @@ not reproducing SAS's thresholds. This is *why* model fitting sits outside the
 parity claim - see the spec's parity table. Closing it would mean writing a
 p-value stepwise selector, which is a separate decision, not a task in this plan.
 
+### D3 - the retry loop is capped (Task 3) - CONFIRMED 2026-08-17
+
+`%bootreg`'s resampling loop is `%do %while(&sample<&resampl)`, and `&sample`
+advances only when `&regrc=0`. A model specification that fails on *every*
+replicate therefore never terminates: `&tsamples` climbs forever and `&sample`
+never moves. The macro has no cap.
+
+In SAS that is survivable - a batch job has a wall clock and an operator
+watching the log. In R it is not: `boot_select()` runs inside `test_dir()` and
+`R CMD check`, where an unbounded loop hangs CI with no output and no
+diagnostic. The failure mode is easy to reach, because the fitters swallow
+**warnings** as well as errors (Task 2), so a separable logistic fit or a
+misspecified formula returns `NULL` on every draw.
+
+`boot_select()` therefore takes `max_attempts = 10 * n_rep` and errors when the
+budget is exhausted, reporting how many valid models it managed. The error is
+the diagnostic the macro never gives you: it means the model could not be fitted
+on the data, not that the resampler is slow.
+
+⚠️ **Consequence to state plainly:** a run that SAS would have ground through -
+one where valid fits are rarer than 1 in 10 - now errors instead of eventually
+finishing. Raise `max_attempts` to restore the macro's behaviour; `Inf` removes
+the cap entirely and reproduces `%bootreg` exactly.
+
 ## File Structure
 
 | Path | Responsibility |
@@ -86,7 +110,7 @@ p-value stepwise selector, which is a separate decision, not a task in this plan
 - Consumes: nothing.
 - Produces: an installable package named `hvtiRbootstrap` at version `0.1.0`, with `testthat` edition 3 wired up. Later tasks add functions to `R/`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/test-package.R`:
 
@@ -96,12 +120,12 @@ test_that("the package is loadable and correctly identified", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-package.R")'`
 Expected: FAIL  -  there is no package yet.
 
-- [ ] **Step 3: Write DESCRIPTION**
+- [x] **Step 3: Write DESCRIPTION**
 
 ```
 Package: hvtiRbootstrap
@@ -125,10 +149,15 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 ```
 
-- [ ] **Step 4: Write the remaining skeleton files**
+**Do not add `RoxygenNote:` by hand.** `devtools::document()` writes
+`Config/roxygen2/version:` itself, matching the roxygen2 actually installed -
+8.1.0, the same field `hvtiRtables` and `hvtiRtemplates` carry. Let the tool
+write it and commit what it produces; hand-restoring a version string fights
+the generator and will drift.
+
+- [x] **Step 4: Write the remaining skeleton files**
 
 `R/hvtiRbootstrap-package.R`:
 
@@ -152,10 +181,14 @@ test_check("hvtiRbootstrap")
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^\.superpowers$
 ^docs$
 ^README\.md$
 ^LICENSE\.md$
 ```
+
+`^\.superpowers$` keeps this plan's own scratch directory out of the build;
+without it `R CMD check` reports a "hidden files and directories" NOTE.
 
 `.gitignore`:
 
@@ -204,7 +237,7 @@ selection are each deferred to their own spec.
 
 `.github/workflows/R-CMD-check.yaml`: copy from `~/Documents/GitHub/hvtiRtables/.github/workflows/R-CMD-check.yaml` unchanged  -  it is repo-agnostic.
 
-- [ ] **Step 5: Run the test and the check**
+- [x] **Step 5: Run the test and the check**
 
 Run: `Rscript -e 'devtools::document(); devtools::install(quick = TRUE, upgrade = FALSE); testthat::test_dir("tests/testthat")'`
 Expected: PASS, 1 test.
@@ -212,7 +245,7 @@ Expected: PASS, 1 test.
 Run: `Rscript -e 'devtools::check(document = FALSE)'`
 Expected: 0 errors, 0 warnings. One NOTE for "New submission" is acceptable; anything else must be fixed now, not later.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -234,7 +267,7 @@ git commit -m "feat: package skeleton at 0.1.0"
 
 **Why a named vector:** `%bootreg` writes `outest=est`, one row per replicate, with a **missing coefficient for any variable not selected**. That missingness is what `%SUMBOOT` counts. Task 3 assembles these vectors into a matrix with `NA` in the gaps, reproducing `outest`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/test-fitters.R`:
 
@@ -287,12 +320,12 @@ test_that("fit_cox returns named coefficients without an intercept", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-fitters.R")'`
 Expected: FAIL  -  `could not find function "fit_linear"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `R/fitters.R`:
 
@@ -312,9 +345,30 @@ Create `R/fitters.R`:
 # not selected. That missingness is exactly what %SUMBOOT counts, so the vector
 # must carry only the kept terms and let the assembler supply NA elsewhere.
 
-.select_scope <- function(formula, data) {
-  list(lower = stats::reformulate("1", response = all.vars(formula)[1]),
-       upper = formula)
+# CORRECTED 2026-08-17. Two fixes, both discovered by the tests failing.
+#
+# (a) `.select_scope()` as originally drafted was never called, and wiring it in
+#     is unnecessary: with `scope` missing, step() fixes the addable set to the
+#     STARTING model's terms, so a dropped term can be re-admitted and
+#     direction = "both" is already genuine stepwise from a full model. It would
+#     also have been wrong for Cox -- all.vars(formula)[1] on
+#     `Surv(time, status) ~ x1` returns "time", not the Surv() response. Dropped.
+#
+# (b) stepwise fitting needs TWO scope fixes, not one. step() resolves `data`
+#     down two independent paths: add1()/drop1() build a model frame in
+#     environment(formula(object)), and the refit runs
+#     eval.parent(update(object, ..., evaluate = FALSE)), which looks in the
+#     frame of step()'s CALLER. `.fit_in_env()` covers the first; `.maybe_step()`
+#     taking a `data` argument it never references covers the second. With
+#     either one missing, every stepwise replicate returns NULL -- and since
+#     stepwise is boot_select()'s default, the whole package returns nothing.
+
+.fit_in_env <- function(cl, formula, data) {
+  env <- new.env(parent = environment(formula))
+  environment(formula) <- env
+  env$data <- data
+  env$formula <- formula
+  eval(cl, env)
 }
 
 # Stepwise both-directions, the closest R analogue to SAS SELECTION=STEPWISE.
@@ -347,7 +401,7 @@ Create `R/fitters.R`:
 #' @export
 fit_linear <- function(data, formula, select) {
   tryCatch({
-    fit <- stats::lm(formula, data = data)
+    fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
     .coefs(.maybe_step(fit, select, data))
   }, error = function(e) NULL, warning = function(w) NULL)
 }
@@ -359,7 +413,7 @@ fit_linear <- function(data, formula, select) {
 #' @export
 fit_logistic <- function(data, formula, select) {
   tryCatch({
-    fit <- stats::glm(formula, data = data, family = stats::binomial())
+    fit <- .fit_in_env(quote(stats::glm(formula, data = data, family = stats::binomial())), formula, data)
     if (!fit$converged) return(NULL)
     .coefs(.maybe_step(fit, select, data))
   }, error = function(e) NULL, warning = function(w) NULL)
@@ -375,18 +429,18 @@ fit_cox <- function(data, formula, select) {
   if (!requireNamespace("survival", quietly = TRUE))
     stop("`fit_cox()` needs the survival package.", call. = FALSE)
   tryCatch({
-    fit <- survival::coxph(formula, data = data)
+    fit <- .fit_in_env(quote(survival::coxph(formula, data = data)), formula, data)
     .coefs(.maybe_step(fit, select, data))
   }, error = function(e) NULL, warning = function(w) NULL)
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-fitters.R")'`
-Expected: PASS, 4 tests.
+Expected: PASS, 5 test_that blocks (11 expectations).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/fitters.R man/ NAMESPACE tests/testthat/test-fitters.R
@@ -402,11 +456,11 @@ git commit -m "feat: fitter contract with logistic, linear and Cox fitters"
 
 **Interfaces:**
 - Consumes: `fit_logistic()`, `fit_linear()`, `fit_cox()` from Task 2 - each `(data, formula, select) -> named numeric vector or NULL`.
-- Produces: `boot_select(data, formula, fitter, n_rep = 1000, fraction = 1, select = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0, seed = NULL)` returning an object of class `boot_selection`: a list with `$coefficients` (a numeric matrix, one row per valid replicate, one column per candidate term, `NA` where the term was not selected), `$n_rep`, `$n_attempts`, `$call`. Task 4's `boot_summary()` consumes `$coefficients`.
+- Produces: `boot_select(data, formula, fitter, n_rep = 1000, fraction = 1, select = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0, max_attempts = 10 * n_rep, seed = NULL)` returning an object of class `boot_selection`: a list with `$coefficients` (a numeric matrix, one row per valid replicate, one column per candidate term, `NA` where the term was not selected), `$n_rep`, `$n_attempts`, `$call`. Task 4's `boot_summary()` consumes `$coefficients`.
 
 **The hinge:** a term not selected in a replicate is `NA` in that row. `boot_summary()` counts non-missing values per column, so `n` *is* the selection frequency. Do not fill `NA` with zero.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/test-boot-select.R`:
 
@@ -477,20 +531,54 @@ test_that("fraction subsamples -- a DELIBERATE divergence from %bootreg", {
   expect_true(all(n_seen == 50))
 })
 
+test_that("a Cox run gets no phantom (Intercept) column", {
+  skip_if_not_installed("survival")
+  set.seed(11)
+  df <- data.frame(time = rexp(120), status = rbinom(120, 1, 0.7),
+                   x1 = rnorm(120), x2 = rnorm(120))
+  out <- boot_select(df, survival::Surv(time, status) ~ x1 + x2, fit_cox,
+                     n_rep = 5, select = "none", seed = 4)
+  # Cox has no intercept. Hardcoding one would give an all-NA column that
+  # boot_summary() reports as a variable with n = 0 -- a phantom term.
+  expect_false("(Intercept)" %in% colnames(out$coefficients))
+})
+
 test_that("boot_select rejects a fraction outside (0, 1]", {
   expect_error(
     boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 2, fraction = 0),
     "`fraction` must be greater than 0 and at most 1", fixed = TRUE
   )
 })
+
+test_that("a fitter that always fails errors instead of looping forever -- D3", {
+  # %bootreg would spin here indefinitely: &sample never advances and there is
+  # no cap. Under R CMD check that is an unbounded hang with no diagnostic, so
+  # boot_select() budgets attempts and reports what it managed.
+  never <- function(data, formula, select) NULL
+  expect_error(
+    boot_select(sim_df(), yc ~ x1, never, n_rep = 10, select = "none",
+                max_attempts = 25, seed = 1),
+    "gave up after 25 attempts with 0 valid models of 10 requested",
+    fixed = TRUE
+  )
+})
+
+test_that("max_attempts = Inf restores %bootreg's uncapped loop", {
+  # Not a hang: this fitter succeeds, so the loop terminates normally. The
+  # assertion is that Inf is ACCEPTED, which is the documented escape hatch
+  # back to exact macro behaviour.
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 5,
+                     select = "none", max_attempts = Inf, seed = 8)
+  expect_equal(nrow(out$coefficients), 5L)
+})
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-select.R")'`
 Expected: FAIL  -  `could not find function "boot_select"`.
 
-- [ ] **Step 3: Write the class**
+- [x] **Step 3: Write the class**
 
 Create `R/boot-class.R`:
 
@@ -517,7 +605,7 @@ print.boot_selection <- function(x, ...) {
 summary.boot_selection <- function(object, ...) boot_summary(object)
 ```
 
-- [ ] **Step 4: Write `boot_select()`**
+- [x] **Step 4: Write `boot_select()`**
 
 Create `R/boot-select.R`:
 
@@ -549,6 +637,13 @@ Create `R/boot-select.R`:
 #'   fitting is not parity-tested - see the package's design spec.
 #' @param max_steps Maximum selection steps, `0` for no limit (`%bootreg`
 #'   `MAXSTEP=`).
+#' @param max_attempts Budget of resampling attempts before giving up.
+#'   **Divergence:** `%bootreg` has no such cap - its loop advances only on a
+#'   successful fit, so a model that fails on every replicate never terminates.
+#'   That is survivable in a batch job with an operator watching; under
+#'   `R CMD check` it is an unbounded hang. Exhausting the budget raises an
+#'   error reporting how many valid models were obtained. Pass `Inf` to restore
+#'   the macro's uncapped behaviour.
 #' @param seed Optional integer for reproducibility.
 #' @return An object of class `boot_selection`. `$coefficients` is a matrix with
 #'   one row per valid replicate and one column per candidate term, `NA` where
@@ -556,7 +651,7 @@ Create `R/boot-select.R`:
 #' @export
 boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
                         select = c("stepwise", "none"), sle = 0.10, sls = 0.05,
-                        max_steps = 0, seed = NULL) {
+                        max_steps = 0, max_attempts = 10 * n_rep, seed = NULL) {
   select <- match.arg(select)
   if (!is.data.frame(data) || nrow(data) == 0L)
     stop("`data` must be a data frame with at least one row.", call. = FALSE)
@@ -565,6 +660,10 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     stop("`fraction` must be greater than 0 and at most 1.", call. = FALSE)
   if (!is.numeric(n_rep) || length(n_rep) != 1L || n_rep < 1)
     stop("`n_rep` must be a positive number of replicates.", call. = FALSE)
+  if (!is.numeric(max_attempts) || length(max_attempts) != 1L ||
+        is.na(max_attempts) || max_attempts < n_rep)
+    stop("`max_attempts` must be a single number at least as large as `n_rep`.",
+         call. = FALSE)
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
@@ -578,7 +677,16 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # %bootreg's loop: keep resampling until n_rep VALID models exist. A failed
   # fit is redrawn in place and does not count toward n_rep, only toward
   # attempts -- the macro reports both.
+  # D3: the budget is ours, not the macro's. %bootreg would spin here forever
+  # when no replicate ever fits; that is a hang with no diagnostic under
+  # R CMD check, so we stop and say what we managed. max_attempts = Inf is the
+  # documented way back to the macro's behaviour.
   while (kept < n_rep) {
+    if (attempts >= max_attempts)
+      stop("`boot_select()` gave up after ", attempts, " attempts with ",
+           kept, " valid models of ", n_rep, " requested. The model could not ",
+           "be fitted on most replicates; check the formula and the data, or ",
+           "raise `max_attempts`.", call. = FALSE)
     attempts <- attempts + 1L
     idx <- sample.int(n, size = draw, replace = TRUE)
     cf <- fitter(data[idx, , drop = FALSE], formula, ctrl)
@@ -587,10 +695,12 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     fits[[kept]] <- cf
   }
 
-  cols <- unique(c("(Intercept)", terms_all,
-                   unlist(lapply(fits, names), use.names = FALSE)))
-  cols <- cols[cols %in% unique(c("(Intercept)", terms_all,
-                                  unlist(lapply(fits, names))))]
+  # Columns are the offered terms plus whatever the fitters actually returned.
+  # "(Intercept)" is NOT hardcoded: Cox models have none, and manufacturing one
+  # would put an all-NA column in every Cox result that boot_summary() would
+  # then report as a variable with n = 0.
+  seen <- unique(unlist(lapply(fits, names), use.names = FALSE))
+  cols <- unique(c(intersect("(Intercept)", seen), terms_all, seen))
   m <- matrix(NA_real_, nrow = n_rep, ncol = length(cols),
               dimnames = list(NULL, cols))
   for (i in seq_len(n_rep)) m[i, names(fits[[i]])] <- fits[[i]]
@@ -600,12 +710,12 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
 }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-select.R")'`
-Expected: PASS, 7 tests.
+Expected: PASS, 10 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add R/boot-select.R R/boot-class.R man/ NAMESPACE tests/testthat/test-boot-select.R
@@ -625,7 +735,7 @@ git commit -m "feat: boot_select() resampler with valid-model retry"
 
 **This is the one exactly parity-tested function.** `%SUMBOOT` runs `proc means n mean std min max`, transposes, computes `PCT = 100*N/&DS_SIZE` where `DS_SIZE` is the number of rows in its input (the replicate table), and sorts by descending `n`. All five statistics ignore missing values, which R matches with `na.rm = TRUE`. SAS `std` is the sample standard deviation, the same as R's `sd()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/helper-fixtures.R`:
 
@@ -711,12 +821,12 @@ test_that("boot_summary refuses input that is not replicate results", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-summary.R")'`
 Expected: FAIL  -  `could not find function "boot_summary"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `R/boot-summary.R`:
 
@@ -769,12 +879,12 @@ boot_summary <- function(x) {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-summary.R")'`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-summary.R man/ NAMESPACE tests/testthat/helper-fixtures.R tests/testthat/test-boot-summary.R
@@ -795,7 +905,7 @@ git commit -m "feat: boot_summary(), the parity-tested %SUMBOOT port"
 
 **Read `~/Documents/macro.library/bootstrap.clusters.sas` before implementing.** Its purpose comment: *"look for variables in a list of highly correlated variables (a cluster) and determine 1) how often each variable appeared, and 2) how often at least one variable in the cluster appears."* Per-variable frequency is already `boot_summary()`; this function adds the **at least one** count, which is not derivable from the per-variable numbers - two members selected in the same replicate count once.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/testthat/helper-fixtures.R`:
 
@@ -864,12 +974,12 @@ test_that("clusters must be a named list", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-clusters.R")'`
 Expected: FAIL  -  `could not find function "boot_clusters"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `R/boot-clusters.R`:
 
@@ -926,12 +1036,12 @@ boot_clusters <- function(x, clusters) {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-clusters.R")'`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-clusters.R man/ NAMESPACE tests/testthat/helper-fixtures.R tests/testthat/test-boot-clusters.R
@@ -950,7 +1060,7 @@ git commit -m "feat: boot_clusters(), the %cluster port"
 - Consumes: every exported function from Tasks 2-5.
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Add a worked example to the README**
+- [x] **Step 1: Add a worked example to the README**
 
 Replace the README's `## Status` section with this, keeping everything above it:
 
@@ -1002,10 +1112,16 @@ subsampled**, so R will disagree with it.
 carried for interface fidelity and do not reproduce SAS's selection term for
 term. This is why model fitting sits outside the parity claim.
 
+**D3 - the retry loop is capped.** `%bootreg` resamples until it has `RESAMPL`
+valid models and never gives up, so a model that fails on every replicate spins
+forever. `boot_select()` budgets `max_attempts = 10 * n_rep` and errors with a
+diagnostic when it runs out. Pass `max_attempts = Inf` for the macro's
+behaviour.
+
 `boot_summary()` and `boot_clusters()` **are** held to exact parity.
 ````
 
-- [ ] **Step 2: Add the package-level doc**
+- [x] **Step 2: Add the package-level doc**
 
 Replace `R/hvtiRbootstrap-package.R`:
 
@@ -1028,16 +1144,16 @@ Replace `R/hvtiRbootstrap-package.R`:
 "_PACKAGE"
 ```
 
-- [ ] **Step 3: Add the remaining CI workflows**
+- [x] **Step 3: Add the remaining CI workflows**
 
 Copy `~/Documents/GitHub/hvtiRtables/.github/workflows/lint.yaml` and
 `test-coverage.yaml` unchanged - both are repo-agnostic.
 
-- [ ] **Step 4: Run the full gate**
+- [x] **Step 4: Run the full gate**
 
 Run: `Rscript -e 'devtools::document(); devtools::install(quick = TRUE, upgrade = FALSE)'`
 Run: `Rscript -e 'testthat::test_dir("tests/testthat")'`
-Expected: PASS, 23 tests (1 + 4 + 7 + 6 + 5).
+Expected: PASS, 26 tests (1 + 4 + 10 + 6 + 5).
 
 Run: `Rscript -e 'lintr::lint_package()'`
 Expected: no lints. A "no visible global function" lint means the installed copy is stale - reinstall, do not add `# nolint`.
@@ -1045,7 +1161,7 @@ Expected: no lints. A "no visible global function" lint means the installed copy
 Run: `Rscript -e 'devtools::check(document = FALSE)'`
 Expected: 0 errors, 0 warnings, at most the "New submission" NOTE.
 
-- [ ] **Step 5: Commit and open the PR**
+- [x] **Step 5: Commit and open the PR**
 
 ```bash
 git add -A
