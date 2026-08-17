@@ -345,9 +345,30 @@ Create `R/fitters.R`:
 # not selected. That missingness is exactly what %SUMBOOT counts, so the vector
 # must carry only the kept terms and let the assembler supply NA elsewhere.
 
-.select_scope <- function(formula, data) {
-  list(lower = stats::reformulate("1", response = all.vars(formula)[1]),
-       upper = formula)
+# CORRECTED 2026-08-17. Two fixes, both discovered by the tests failing.
+#
+# (a) `.select_scope()` as originally drafted was never called, and wiring it in
+#     is unnecessary: with `scope` missing, step() fixes the addable set to the
+#     STARTING model's terms, so a dropped term can be re-admitted and
+#     direction = "both" is already genuine stepwise from a full model. It would
+#     also have been wrong for Cox -- all.vars(formula)[1] on
+#     `Surv(time, status) ~ x1` returns "time", not the Surv() response. Dropped.
+#
+# (b) stepwise fitting needs TWO scope fixes, not one. step() resolves `data`
+#     down two independent paths: add1()/drop1() build a model frame in
+#     environment(formula(object)), and the refit runs
+#     eval.parent(update(object, ..., evaluate = FALSE)), which looks in the
+#     frame of step()'s CALLER. `.fit_in_env()` covers the first; `.maybe_step()`
+#     taking a `data` argument it never references covers the second. With
+#     either one missing, every stepwise replicate returns NULL -- and since
+#     stepwise is boot_select()'s default, the whole package returns nothing.
+
+.fit_in_env <- function(cl, formula, data) {
+  env <- new.env(parent = environment(formula))
+  environment(formula) <- env
+  env$data <- data
+  env$formula <- formula
+  eval(cl, env)
 }
 
 # Stepwise both-directions, the closest R analogue to SAS SELECTION=STEPWISE.
@@ -380,7 +401,7 @@ Create `R/fitters.R`:
 #' @export
 fit_linear <- function(data, formula, select) {
   tryCatch({
-    fit <- stats::lm(formula, data = data)
+    fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
     .coefs(.maybe_step(fit, select, data))
   }, error = function(e) NULL, warning = function(w) NULL)
 }
@@ -392,7 +413,7 @@ fit_linear <- function(data, formula, select) {
 #' @export
 fit_logistic <- function(data, formula, select) {
   tryCatch({
-    fit <- stats::glm(formula, data = data, family = stats::binomial())
+    fit <- .fit_in_env(quote(stats::glm(formula, data = data, family = stats::binomial())), formula, data)
     if (!fit$converged) return(NULL)
     .coefs(.maybe_step(fit, select, data))
   }, error = function(e) NULL, warning = function(w) NULL)
@@ -408,7 +429,7 @@ fit_cox <- function(data, formula, select) {
   if (!requireNamespace("survival", quietly = TRUE))
     stop("`fit_cox()` needs the survival package.", call. = FALSE)
   tryCatch({
-    fit <- survival::coxph(formula, data = data)
+    fit <- .fit_in_env(quote(survival::coxph(formula, data = data)), formula, data)
     .coefs(.maybe_step(fit, select, data))
   }, error = function(e) NULL, warning = function(w) NULL)
 }
@@ -417,7 +438,7 @@ fit_cox <- function(data, formula, select) {
 - [ ] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-fitters.R")'`
-Expected: PASS, 4 tests.
+Expected: PASS, 5 test_that blocks (11 expectations).
 
 - [ ] **Step 5: Commit**
 
