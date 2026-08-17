@@ -21,15 +21,44 @@
 
 ---
 
-## A decision this plan encodes, which the maintainer should confirm
+## Deviations from SAS - the register
 
-**`FRACTION` does nothing in `%bootreg`.** Line 71 computes `%let size=&ds_size*&fraction`, line 72 prints it, and it is never referenced again; the resample loop at line 82 reads `do _counter=1 to &ds_size`. The macro always draws *n* rows with replacement regardless of `FRACTION`.
+**Standing rule for this plan: the port is CORRECT first, faithful second.** Where
+the macro's behaviour and its documented intent disagree, implement the intent
+and record the deviation. Every deviation must land in three places, or it is not
+done:
 
-This plan implements `fraction` **as documented** (draw `round(n * fraction)` rows), because a parameter that silently does nothing is a defect rather than a method. It is the plan's **one deliberate divergence from SAS behaviour**, and Task 3 documents it in the roxygen and asserts it in a test so it can never become accidental.
+1. **The roxygen** of the function that deviates, so `?fn` says so.
+2. **A test** asserting the deviating behaviour, so it cannot silently revert.
+3. **This register**, and the README's "Divergence from the SAS macros" section.
 
-**If any filed CORR result was produced with `FRACTION` other than 1.0, that result was not subsampled and this divergence makes the R output differ from it.** Reverting is a one-line change plus a test flip. Flag to the maintainer before merge.
+When a task hits a deviation not listed below, **stop and surface it** rather
+than deciding quietly. Add it here with the same three artefacts.
 
----
+### D1 - `fraction` is applied (Task 3) - CONFIRMED 2026-08-14
+
+`%bootreg` documents `FRACTION=` but never applies it: line 71 computes
+`%let size=&ds_size*&fraction`, line 72 prints it, and it is never referenced
+again; the resample loop at line 82 reads `do _counter=1 to &ds_size`. The macro
+always draws *n* rows regardless.
+
+`boot_select()` draws `round(n * fraction)` rows. A parameter that silently does
+nothing is a defect, not a method.
+
+⚠️ **Consequence to state plainly:** any filed CORR result produced with
+`FRACTION` other than 1.0 was **not** subsampled, so R will disagree with it.
+`fraction = 1` (the default) matches SAS exactly.
+
+### D2 - stepwise selects on AIC, not p-values (Task 2) - inherent
+
+`%bootreg` passes `SLE=`/`SLS=` to SAS `SELECTION=STEPWISE`, which are p-value
+thresholds for entry and retention. R's [stats::step()] selects on AIC. The two
+cannot agree term for term.
+
+`sle` and `sls` are carried on the interface for fidelity and are documented as
+not reproducing SAS's thresholds. This is *why* model fitting sits outside the
+parity claim - see the spec's parity table. Closing it would mean writing a
+p-value stepwise selector, which is a separate decision, not a task in this plan.
 
 ## File Structure
 
@@ -959,15 +988,21 @@ selection are each deferred to their own spec.
 
 ## Divergence from the SAS macros
 
-`boot_select(fraction = )` **applies** the subsampling fraction. `%bootreg`
-documents `FRACTION=` but never uses it - it computes `ds_size * fraction`,
-prints it, and always draws `ds_size` rows. Pass `fraction = 1` (the default) to
-match SAS exactly.
+This port is **correct first, faithful second**: where the macro's behaviour and
+its documented intent disagree, it implements the intent and says so here.
 
-Model fitting is not parity-tested. R's `step()` selects on AIC where SAS uses
-p-value thresholds, so `sle`/`sls` are carried for interface fidelity but do not
-reproduce SAS's selection term for term. `boot_summary()` and `boot_clusters()`
-**are** held to exact parity.
+**D1 - `fraction` is applied.** `%bootreg` documents `FRACTION=` but never uses
+it: it computes `ds_size * fraction`, prints it, and always draws `ds_size` rows.
+`boot_select()` draws `round(n * fraction)`. Pass `fraction = 1` (the default) to
+match SAS exactly. **A filed result run with `FRACTION` other than 1.0 was not
+subsampled**, so R will disagree with it.
+
+**D2 - stepwise selects on AIC, not p-values.** SAS `SELECTION=STEPWISE` uses
+`SLE=`/`SLS=` as p-value thresholds; R's `step()` uses AIC. `sle` and `sls` are
+carried for interface fidelity and do not reproduce SAS's selection term for
+term. This is why model fitting sits outside the parity claim.
+
+`boot_summary()` and `boot_clusters()` **are** held to exact parity.
 ````
 
 - [ ] **Step 2: Add the package-level doc**
