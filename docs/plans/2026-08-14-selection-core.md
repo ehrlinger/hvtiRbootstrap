@@ -16,7 +16,7 @@
 - **No cohort data in the package.** All fixtures are synthetic. This corpus has a PHI history; nothing derived from a study tree enters this repo.
 - ASCII only in R source string literals. Use `\uXXXX` escapes if a symbol is needed.
 - Version stays `0.1.0` for the whole plan. Do not bump; the maintainer cuts releases.
-- All work lands on one local branch, `feat/selection-core`; `main` stays clean. The repo has **no remote**, so there is no push and no PR - the maintainer decides later whether it gets one.
+- All work lands on one branch, `feat/selection-core`; `main` stays clean. **Updated 2026-08-17:** the remote now exists (`github.com/ehrlinger/hvtiRbootstrap`, public, matching the sibling packages), so Task 6 ends in a real push and PR rather than a local-only branch.
 - `Config/testthat/edition: 3`, roxygen with markdown, GPL-3.
 
 ---
@@ -59,6 +59,30 @@ cannot agree term for term.
 not reproducing SAS's thresholds. This is *why* model fitting sits outside the
 parity claim - see the spec's parity table. Closing it would mean writing a
 p-value stepwise selector, which is a separate decision, not a task in this plan.
+
+### D3 - the retry loop is capped (Task 3) - CONFIRMED 2026-08-17
+
+`%bootreg`'s resampling loop is `%do %while(&sample<&resampl)`, and `&sample`
+advances only when `&regrc=0`. A model specification that fails on *every*
+replicate therefore never terminates: `&tsamples` climbs forever and `&sample`
+never moves. The macro has no cap.
+
+In SAS that is survivable - a batch job has a wall clock and an operator
+watching the log. In R it is not: `boot_select()` runs inside `test_dir()` and
+`R CMD check`, where an unbounded loop hangs CI with no output and no
+diagnostic. The failure mode is easy to reach, because the fitters swallow
+**warnings** as well as errors (Task 2), so a separable logistic fit or a
+misspecified formula returns `NULL` on every draw.
+
+`boot_select()` therefore takes `max_attempts = 10 * n_rep` and errors when the
+budget is exhausted, reporting how many valid models it managed. The error is
+the diagnostic the macro never gives you: it means the model could not be fitted
+on the data, not that the resampler is slow.
+
+⚠️ **Consequence to state plainly:** a run that SAS would have ground through -
+one where valid fits are rarer than 1 in 10 - now errors instead of eventually
+finishing. Raise `max_attempts` to restore the macro's behaviour; `Inf` removes
+the cap entirely and reproduces `%bootreg` exactly.
 
 ## File Structure
 
@@ -125,8 +149,13 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 ```
+
+**Do not add `RoxygenNote:` by hand.** `devtools::document()` writes
+`Config/roxygen2/version:` itself, matching the roxygen2 actually installed -
+8.1.0, the same field `hvtiRtables` and `hvtiRtemplates` carry. Let the tool
+write it and commit what it produces; hand-restoring a version string fights
+the generator and will drift.
 
 - [ ] **Step 4: Write the remaining skeleton files**
 
@@ -152,10 +181,14 @@ test_check("hvtiRbootstrap")
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^\.superpowers$
 ^docs$
 ^README\.md$
 ^LICENSE\.md$
 ```
+
+`^\.superpowers$` keeps this plan's own scratch directory out of the build;
+without it `R CMD check` reports a "hidden files and directories" NOTE.
 
 `.gitignore`:
 
@@ -402,7 +435,7 @@ git commit -m "feat: fitter contract with logistic, linear and Cox fitters"
 
 **Interfaces:**
 - Consumes: `fit_logistic()`, `fit_linear()`, `fit_cox()` from Task 2 - each `(data, formula, select) -> named numeric vector or NULL`.
-- Produces: `boot_select(data, formula, fitter, n_rep = 1000, fraction = 1, select = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0, seed = NULL)` returning an object of class `boot_selection`: a list with `$coefficients` (a numeric matrix, one row per valid replicate, one column per candidate term, `NA` where the term was not selected), `$n_rep`, `$n_attempts`, `$call`. Task 4's `boot_summary()` consumes `$coefficients`.
+- Produces: `boot_select(data, formula, fitter, n_rep = 1000, fraction = 1, select = "stepwise", sle = 0.10, sls = 0.05, max_steps = 0, max_attempts = 10 * n_rep, seed = NULL)` returning an object of class `boot_selection`: a list with `$coefficients` (a numeric matrix, one row per valid replicate, one column per candidate term, `NA` where the term was not selected), `$n_rep`, `$n_attempts`, `$call`. Task 4's `boot_summary()` consumes `$coefficients`.
 
 **The hinge:** a term not selected in a replicate is `NA` in that row. `boot_summary()` counts non-missing values per column, so `n` *is* the selection frequency. Do not fill `NA` with zero.
 
@@ -495,6 +528,28 @@ test_that("boot_select rejects a fraction outside (0, 1]", {
     "`fraction` must be greater than 0 and at most 1", fixed = TRUE
   )
 })
+
+test_that("a fitter that always fails errors instead of looping forever -- D3", {
+  # %bootreg would spin here indefinitely: &sample never advances and there is
+  # no cap. Under R CMD check that is an unbounded hang with no diagnostic, so
+  # boot_select() budgets attempts and reports what it managed.
+  never <- function(data, formula, select) NULL
+  expect_error(
+    boot_select(sim_df(), yc ~ x1, never, n_rep = 10, select = "none",
+                max_attempts = 25, seed = 1),
+    "gave up after 25 attempts with 0 valid models of 10 requested",
+    fixed = TRUE
+  )
+})
+
+test_that("max_attempts = Inf restores %bootreg's uncapped loop", {
+  # Not a hang: this fitter succeeds, so the loop terminates normally. The
+  # assertion is that Inf is ACCEPTED, which is the documented escape hatch
+  # back to exact macro behaviour.
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 5,
+                     select = "none", max_attempts = Inf, seed = 8)
+  expect_equal(nrow(out$coefficients), 5L)
+})
 ```
 
 - [ ] **Step 2: Run it and watch it fail**
@@ -561,6 +616,13 @@ Create `R/boot-select.R`:
 #'   fitting is not parity-tested - see the package's design spec.
 #' @param max_steps Maximum selection steps, `0` for no limit (`%bootreg`
 #'   `MAXSTEP=`).
+#' @param max_attempts Budget of resampling attempts before giving up.
+#'   **Divergence:** `%bootreg` has no such cap - its loop advances only on a
+#'   successful fit, so a model that fails on every replicate never terminates.
+#'   That is survivable in a batch job with an operator watching; under
+#'   `R CMD check` it is an unbounded hang. Exhausting the budget raises an
+#'   error reporting how many valid models were obtained. Pass `Inf` to restore
+#'   the macro's uncapped behaviour.
 #' @param seed Optional integer for reproducibility.
 #' @return An object of class `boot_selection`. `$coefficients` is a matrix with
 #'   one row per valid replicate and one column per candidate term, `NA` where
@@ -568,7 +630,7 @@ Create `R/boot-select.R`:
 #' @export
 boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
                         select = c("stepwise", "none"), sle = 0.10, sls = 0.05,
-                        max_steps = 0, seed = NULL) {
+                        max_steps = 0, max_attempts = 10 * n_rep, seed = NULL) {
   select <- match.arg(select)
   if (!is.data.frame(data) || nrow(data) == 0L)
     stop("`data` must be a data frame with at least one row.", call. = FALSE)
@@ -577,6 +639,10 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     stop("`fraction` must be greater than 0 and at most 1.", call. = FALSE)
   if (!is.numeric(n_rep) || length(n_rep) != 1L || n_rep < 1)
     stop("`n_rep` must be a positive number of replicates.", call. = FALSE)
+  if (!is.numeric(max_attempts) || length(max_attempts) != 1L ||
+        is.na(max_attempts) || max_attempts < n_rep)
+    stop("`max_attempts` must be a single number at least as large as `n_rep`.",
+         call. = FALSE)
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
@@ -590,7 +656,16 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # %bootreg's loop: keep resampling until n_rep VALID models exist. A failed
   # fit is redrawn in place and does not count toward n_rep, only toward
   # attempts -- the macro reports both.
+  # D3: the budget is ours, not the macro's. %bootreg would spin here forever
+  # when no replicate ever fits; that is a hang with no diagnostic under
+  # R CMD check, so we stop and say what we managed. max_attempts = Inf is the
+  # documented way back to the macro's behaviour.
   while (kept < n_rep) {
+    if (attempts >= max_attempts)
+      stop("`boot_select()` gave up after ", attempts, " attempts with ",
+           kept, " valid models of ", n_rep, " requested. The model could not ",
+           "be fitted on most replicates; check the formula and the data, or ",
+           "raise `max_attempts`.", call. = FALSE)
     attempts <- attempts + 1L
     idx <- sample.int(n, size = draw, replace = TRUE)
     cf <- fitter(data[idx, , drop = FALSE], formula, ctrl)
@@ -617,7 +692,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
 - [ ] **Step 5: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-select.R")'`
-Expected: PASS, 8 tests.
+Expected: PASS, 10 tests.
 
 - [ ] **Step 6: Commit**
 
@@ -1016,6 +1091,12 @@ subsampled**, so R will disagree with it.
 carried for interface fidelity and do not reproduce SAS's selection term for
 term. This is why model fitting sits outside the parity claim.
 
+**D3 - the retry loop is capped.** `%bootreg` resamples until it has `RESAMPL`
+valid models and never gives up, so a model that fails on every replicate spins
+forever. `boot_select()` budgets `max_attempts = 10 * n_rep` and errors with a
+diagnostic when it runs out. Pass `max_attempts = Inf` for the macro's
+behaviour.
+
 `boot_summary()` and `boot_clusters()` **are** held to exact parity.
 ````
 
@@ -1051,7 +1132,7 @@ Copy `~/Documents/GitHub/hvtiRtables/.github/workflows/lint.yaml` and
 
 Run: `Rscript -e 'devtools::document(); devtools::install(quick = TRUE, upgrade = FALSE)'`
 Run: `Rscript -e 'testthat::test_dir("tests/testthat")'`
-Expected: PASS, 24 tests (1 + 4 + 8 + 6 + 5).
+Expected: PASS, 26 tests (1 + 4 + 10 + 6 + 5).
 
 Run: `Rscript -e 'lintr::lint_package()'`
 Expected: no lints. A "no visible global function" lint means the installed copy is stale - reinstall, do not add `# nolint`.
