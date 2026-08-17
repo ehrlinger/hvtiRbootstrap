@@ -16,7 +16,7 @@
 - **No cohort data in the package.** All fixtures are synthetic. This corpus has a PHI history; nothing derived from a study tree enters this repo.
 - ASCII only in R source string literals. Use `\uXXXX` escapes if a symbol is needed.
 - Version stays `0.1.0` for the whole plan. Do not bump; the maintainer cuts releases.
-- Branch per task; never commit to `main`. Open one PR at the end.
+- All work lands on one local branch, `feat/selection-core`; `main` stays clean. The repo has **no remote**, so there is no push and no PR - the maintainer decides later whether it gets one.
 - `Config/testthat/edition: 3`, roxygen with markdown, GPL-3.
 
 ---
@@ -477,6 +477,18 @@ test_that("fraction subsamples -- a DELIBERATE divergence from %bootreg", {
   expect_true(all(n_seen == 50))
 })
 
+test_that("a Cox run gets no phantom (Intercept) column", {
+  skip_if_not_installed("survival")
+  set.seed(11)
+  df <- data.frame(time = rexp(120), status = rbinom(120, 1, 0.7),
+                   x1 = rnorm(120), x2 = rnorm(120))
+  out <- boot_select(df, survival::Surv(time, status) ~ x1 + x2, fit_cox,
+                     n_rep = 5, select = "none", seed = 4)
+  # Cox has no intercept. Hardcoding one would give an all-NA column that
+  # boot_summary() reports as a variable with n = 0 -- a phantom term.
+  expect_false("(Intercept)" %in% colnames(out$coefficients))
+})
+
 test_that("boot_select rejects a fraction outside (0, 1]", {
   expect_error(
     boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 2, fraction = 0),
@@ -587,10 +599,12 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     fits[[kept]] <- cf
   }
 
-  cols <- unique(c("(Intercept)", terms_all,
-                   unlist(lapply(fits, names), use.names = FALSE)))
-  cols <- cols[cols %in% unique(c("(Intercept)", terms_all,
-                                  unlist(lapply(fits, names))))]
+  # Columns are the offered terms plus whatever the fitters actually returned.
+  # "(Intercept)" is NOT hardcoded: Cox models have none, and manufacturing one
+  # would put an all-NA column in every Cox result that boot_summary() would
+  # then report as a variable with n = 0.
+  seen <- unique(unlist(lapply(fits, names), use.names = FALSE))
+  cols <- unique(c(intersect("(Intercept)", seen), terms_all, seen))
   m <- matrix(NA_real_, nrow = n_rep, ncol = length(cols),
               dimnames = list(NULL, cols))
   for (i in seq_len(n_rep)) m[i, names(fits[[i]])] <- fits[[i]]
@@ -603,7 +617,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
 - [ ] **Step 5: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-select.R")'`
-Expected: PASS, 7 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 6: Commit**
 
@@ -1037,7 +1051,7 @@ Copy `~/Documents/GitHub/hvtiRtables/.github/workflows/lint.yaml` and
 
 Run: `Rscript -e 'devtools::document(); devtools::install(quick = TRUE, upgrade = FALSE)'`
 Run: `Rscript -e 'testthat::test_dir("tests/testthat")'`
-Expected: PASS, 23 tests (1 + 4 + 7 + 6 + 5).
+Expected: PASS, 24 tests (1 + 4 + 8 + 6 + 5).
 
 Run: `Rscript -e 'lintr::lint_package()'`
 Expected: no lints. A "no visible global function" lint means the installed copy is stale - reinstall, do not add `# nolint`.
