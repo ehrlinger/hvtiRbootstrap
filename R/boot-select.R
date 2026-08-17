@@ -29,8 +29,11 @@
 #'   Carried for interface fidelity; R's [stats::step()] selects on AIC, so
 #'   these do not reproduce SAS's p-value thresholds term for term. Model
 #'   fitting is not parity-tested - see the package's design spec.
-#' @param max_steps Maximum selection steps, `0` for no limit (`%bootreg`
-#'   `MAXSTEP=`).
+#' @param max_steps Maximum selection steps (`%bootreg` `MAXSTEP=`). `0` means
+#'   no restriction, implemented as a budget scaled to the model - ten passes
+#'   over the candidate terms, floored at 1000 - which no realistic model
+#'   reaches. It is a budget rather than a truly unbounded count because
+#'   [stats::step()] pre-allocates a list of that length.
 #' @param max_attempts Budget of resampling attempts before giving up.
 #'   **Divergence:** `%bootreg` has no such cap - its loop advances only on a
 #'   successful fit, so a model that fails on every replicate never terminates.
@@ -85,12 +88,19 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   if (!is.numeric(fraction) || length(fraction) != 1L ||
         is.na(fraction) || fraction <= 0 || fraction > 1)
     stop("`fraction` must be greater than 0 and at most 1.", call. = FALSE)
-  if (!is.numeric(n_rep) || length(n_rep) != 1L || n_rep < 1)
-    stop("`n_rep` must be a positive number of replicates.", call. = FALSE)
-  if (!is.numeric(max_attempts) || length(max_attempts) != 1L ||
-        is.na(max_attempts) || max_attempts < n_rep)
-    stop("`max_attempts` must be a single number at least as large as `n_rep`.",
+  # Whole numbers, checked rather than truncated: vector("list", 2.5) quietly
+  # gives 2, so a fractional n_rep would silently deliver fewer replicates than
+  # asked for. max_attempts is a count too, with Inf as D3's documented escape
+  # hatch and therefore the one non-integer value allowed.
+  if (!is.numeric(n_rep) || length(n_rep) != 1L || is.na(n_rep) ||
+        n_rep < 1 || n_rep != trunc(n_rep) || is.infinite(n_rep))
+    stop("`n_rep` must be a positive whole number of replicates.",
          call. = FALSE)
+  if (!is.numeric(max_attempts) || length(max_attempts) != 1L ||
+        is.na(max_attempts) || max_attempts < n_rep ||
+        (is.finite(max_attempts) && max_attempts != trunc(max_attempts)))
+    stop("`max_attempts` must be a whole number at least as large as `n_rep`, ",
+         "or `Inf`.", call. = FALSE)
 
   if (!is.null(seed)) set.seed(seed)
 

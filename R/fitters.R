@@ -60,10 +60,23 @@
 # `data` in the frame of step()'s caller -- this function. .fit_in_env() fixes
 # the add1()/drop1() model-frame path; this argument fixes the refit path.
 # Both are required. Remove either and every stepwise replicate returns NULL.
+# `%bootreg` documents MAXSTEP=0 as "no restriction", so 0 has to mean a budget
+# no real model reaches. It cannot mean an enormous number: step() opens with
+# `models <- vector("list", steps)`, allocated up front and unconditionally, so
+# .Machine$integer.max asks for a 2.1-billion-element list and wedges the
+# session on every fit. Scale to the model instead -- each step adds or drops
+# one term, so ten passes over the candidate set is unreachable in practice
+# while staying a trivial allocation.
+.step_budget <- function(max_steps, n_terms) {
+  if (isTRUE(max_steps > 0)) return(max_steps)
+  max(1000L, 10L * n_terms)
+}
+
 .maybe_step <- function(fit, select, data) {
   if (!identical(select$method, "stepwise")) return(fit)
-  steps <- if (isTRUE(select$max_steps > 0)) select$max_steps else 1000L
-  stats::step(fit, direction = "both", trace = 0, steps = steps)
+  n_terms <- length(attr(stats::terms(fit), "term.labels"))
+  stats::step(fit, direction = "both", trace = 0,
+              steps = .step_budget(select$max_steps, n_terms))
 }
 
 # A zero-length result is NOT a failure. Cox carries no intercept, so a

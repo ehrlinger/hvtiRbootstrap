@@ -43,8 +43,11 @@ Carried for interface fidelity; R's \code{\link[stats:step]{stats::step()}} sele
 these do not reproduce SAS's p-value thresholds term for term. Model
 fitting is not parity-tested - see the package's design spec.}
 
-\item{max_steps}{Maximum selection steps, \code{0} for no limit (\verb{\%bootreg}
-\verb{MAXSTEP=}).}
+\item{max_steps}{Maximum selection steps (\verb{\%bootreg} \verb{MAXSTEP=}). \code{0} means
+no restriction, implemented as a budget scaled to the model - ten passes
+over the candidate terms, floored at 1000 - which no realistic model
+reaches. It is a budget rather than a truly unbounded count because
+\code{\link[stats:step]{stats::step()}} pre-allocates a list of that length.}
 
 \item{max_attempts}{Budget of resampling attempts before giving up.
 \strong{Divergence:} \verb{\%bootreg} has no such cap - its loop advances only on a

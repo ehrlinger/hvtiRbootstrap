@@ -161,3 +161,24 @@ test_that("boot_select restores the caller's RNG stream", {
                         select = "none", seed = 42))
   expect_equal(rnorm(1), expected)
 })
+
+test_that("n_rep must be a whole number, not silently truncated", {
+  # n_rep = 2.5 used to reach vector("list", n_rep), which truncates: the
+  # caller asked for 2.5 replicates and silently got 2.
+  expect_error(
+    boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 2.5, select = "none"),
+    "`n_rep` must be a positive whole number of replicates", fixed = TRUE
+  )
+})
+
+test_that("a finite max_attempts must be a whole number, but Inf is allowed", {
+  expect_error(
+    boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3, max_attempts = 12.5,
+                select = "none"),
+    "`max_attempts` must be a whole number at least as large as `n_rep`",
+    fixed = TRUE
+  )
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
+                     max_attempts = Inf, select = "none", seed = 1)
+  expect_equal(nrow(out$coefficients), 3L)
+})

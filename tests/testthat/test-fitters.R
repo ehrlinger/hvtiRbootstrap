@@ -120,3 +120,15 @@ test_that("a fit that selected nothing is not confused with a failed fit", {
   expect_false(is.null(out))
   expect_length(out, 0L)
 })
+
+test_that("max_steps = 0 gives a budget no real model reaches", {
+  # %bootreg documents MAXSTEP=0 as "no restriction". The budget must scale
+  # with the model rather than be a fixed 1000, but it must NOT be enormous:
+  # step() begins with `models <- vector("list", steps)`, allocated up front,
+  # so .Machine$integer.max would request a 2.1-billion-element list on every
+  # stepwise fit. These bounds are the guard against that regression.
+  expect_equal(.step_budget(30, 3), 30)      # explicit MAXSTEP= wins
+  expect_equal(.step_budget(0, 3), 1000)     # floor for small models
+  expect_equal(.step_budget(0, 500), 5000)   # scales with candidate count
+  expect_lt(.step_budget(0, 10000), 1e6)     # never an allocation bomb
+})
