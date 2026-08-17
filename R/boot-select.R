@@ -47,19 +47,12 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # the one in place when boot_select() was called, not after those side
   # effects. Without a restore, a script that seeds once at the top silently
   # loses reproducibility from the first boot_select(seed = ) call onward.
-  if (!is.null(seed)) {
-    # Held in a variable rather than written as a literal: `.Random.seed` is
-    # R's own reserved name for the RNG state, and a bare string here reads to
-    # the linter as this package naming an object in non-snake_case.
-    rng_state <- ".Random.seed"
-    if (exists(rng_state, envir = globalenv(), inherits = FALSE)) {
-      old_seed <- get(rng_state, envir = globalenv(), inherits = FALSE)
-      on.exit(assign(rng_state, old_seed, envir = globalenv()), add = TRUE)
-    } else {
-      on.exit(suppressWarnings(rm(list = rng_state, envir = globalenv())),
-              add = TRUE)
-    }
-  }
+  #
+  # withr rather than a hand-rolled save/restore: assigning .Random.seed back
+  # into globalenv() ourselves earns the "assignments to the global
+  # environment" NOTE from R CMD check --as-cran, which the house release gate
+  # does not accept. withr depends only on base packages.
+  if (!is.null(seed)) withr::local_preserve_seed()
   if (!is.data.frame(data) || nrow(data) == 0L)
     stop("`data` must be a data frame with at least one row.", call. = FALSE)
   if (!is.numeric(fraction) || length(fraction) != 1L ||
