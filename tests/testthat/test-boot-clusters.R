@@ -35,3 +35,15 @@ test_that("clusters must be a named list", {
     "`clusters` must be a named list", fixed = TRUE
   )
 })
+
+test_that("duplicate cluster names are rejected, not silently half-checked", {
+  # `clusters[[nm]]` always returns the FIRST element of a duplicated name, so
+  # the validation loop checked the first "A" twice and never saw the second
+  # one's members -- a typo there escaped validation and surfaced later as
+  # "subscript out of bounds", naming neither the cluster nor the bad term.
+  expect_error(
+    boot_clusters(fx_cluster_replicates(),
+                  list(A = "a1", A = c("b1", "nope"))),
+    "`clusters` must have unique names; duplicated: A", fixed = TRUE
+  )
+})

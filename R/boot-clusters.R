@@ -29,6 +29,15 @@ boot_clusters <- function(x, clusters) {
   if (!is.list(clusters) || is.null(names(clusters)) ||
         any(names(clusters) == ""))
     stop("`clusters` must be a named list.", call. = FALSE)
+  # The validation loop below indexes with clusters[[nm]], which always returns
+  # the FIRST element of a duplicated name. Without this check a repeated
+  # cluster name means the later one's members are never validated, and a typo
+  # there surfaces downstream as "subscript out of bounds", naming neither the
+  # cluster nor the offending term.
+  dup <- unique(names(clusters)[duplicated(names(clusters))])
+  if (length(dup))
+    stop("`clusters` must have unique names; duplicated: ",
+         paste(dup, collapse = ", "), ".", call. = FALSE)
 
   for (nm in names(clusters)) {
     missing <- setdiff(clusters[[nm]], colnames(m))

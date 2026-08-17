@@ -51,3 +51,12 @@ test_that("boot_summary refuses input that is not replicate results", {
                "`x` must be a boot_selection object or a numeric matrix",
                fixed = TRUE)
 })
+
+test_that("a matrix without column names is refused clearly", {
+  # The documented input is "a numeric matrix", and an unnamed one used to die
+  # inside data.frame() with "arguments imply differing number of rows: 0, 2".
+  expect_error(
+    boot_summary(matrix(c(1, 2, NA, 4), nrow = 2)),
+    "`x` must have column names, one per candidate term", fixed = TRUE
+  )
+})

@@ -23,6 +23,11 @@ boot_summary <- function(x) {
   if (!is.matrix(m) || !is.numeric(m))
     stop("`x` must be a boot_selection object or a numeric matrix.",
          call. = FALSE)
+  # Every statistic below is per-column and reported against a term name. An
+  # unnamed matrix otherwise died inside data.frame() with "arguments imply
+  # differing number of rows", which says nothing about the real problem.
+  if (is.null(colnames(m)))
+    stop("`x` must have column names, one per candidate term.", call. = FALSE)
 
   n_rep <- nrow(m)
   stat <- function(f, col) {
