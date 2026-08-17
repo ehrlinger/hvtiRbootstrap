@@ -66,3 +66,57 @@ test_that("fit_cox returns named coefficients without an intercept", {
   expect_type(out, "double")
   expect_false("(Intercept)" %in% names(out))
 })
+
+test_that("a converged fit is kept even when the engine warns", {
+  # Regression: the fitters used to catch `warning` and return NULL, so a
+  # replicate that converged with usable coefficients was thrown away whenever
+  # glm emitted "fitted probabilities numerically 0 or 1". Quasi-separation is
+  # common in bootstrap replicates, so discarding those biased the resample
+  # against exactly the replicates where a predictor is strong. %bootreg gates
+  # on &regrc, a return code SAS warnings do not set, so SAS keeps them too.
+  set.seed(227)
+  n <- 80
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  d <- data.frame(y = rbinom(n, 1, plogis(4 * x1)), x1 = x1, x2 = x2)
+  warned <- FALSE
+  withCallingHandlers(
+    fit <- stats::glm(y ~ x1 + x2, data = d, family = stats::binomial()),
+    warning = function(w) {
+      warned <<- TRUE
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(warned)          # the engine really does warn here
+  expect_true(fit$converged)   # and the fit really is usable
+  out <- fit_logistic(d, y ~ x1 + x2,
+                      list(method = "none", sle = 0.10, sls = 0.05,
+                           max_steps = 0))
+  expect_false(is.null(out))
+  expect_true("x1" %in% names(out))
+})
+
+test_that("a genuinely non-convergent logistic fit is still rejected", {
+  d <- make_df()
+  d$y <- 0L
+  expect_null(fit_logistic(d, y ~ x1,
+                           list(method = "none", sle = 0.10, sls = 0.05,
+                                max_steps = 0)))
+})
+
+test_that("a fit that selected nothing is not confused with a failed fit", {
+  # Cox has no intercept, so a replicate where selection kept no terms has
+  # coef() of length zero. Returning NULL there made boot_select() treat a
+  # legitimate "nothing was selected" outcome as a failure and redraw it,
+  # dropping those replicates out of the pct denominator and inflating every
+  # variable's selection frequency. lm/glm never hit this: the intercept
+  # survives.
+  skip_if_not_installed("survival")
+  set.seed(4)
+  m <- 150
+  dc <- data.frame(time = rexp(m), status = rbinom(m, 1, 0.7))
+  null_cox <- survival::coxph(survival::Surv(time, status) ~ 1, data = dc)
+  out <- .coefs(null_cox)
+  expect_false(is.null(out))
+  expect_length(out, 0L)
+})

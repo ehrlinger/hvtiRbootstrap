@@ -15,8 +15,10 @@ fit_cox(data, formula, select)
 \code{max_steps}. \verb{\%bootreg} equivalents: \verb{SELECT=}, \verb{SLE=}, \verb{SLS=}, \verb{MAXSTEP=}.}
 }
 \value{
-Named numeric vector of kept coefficients, or \code{NULL}. Cox models
-carry no intercept, so none appears in the result.
+Named numeric vector of kept coefficients, or \code{NULL} if the fit
+errored. Cox models carry no intercept, so none appears in the result -
+which means a replicate where selection kept nothing returns a
+\strong{zero-length} vector, not \code{NULL}, and counts as a valid replicate.
 }
 \description{
 Fit a Cox proportional-hazards model for one bootstrap replicate

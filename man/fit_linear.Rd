@@ -17,7 +17,11 @@ fit_linear(data, formula, select)
 \value{
 Named numeric vector of kept coefficients, or \code{NULL} if the fit
 failed. \code{NULL} tells \code{\link[=boot_select]{boot_select()}} to discard the replicate and draw
-another, reproducing \verb{\%bootreg}'s \verb{&regrc} check.
+another, reproducing \verb{\%bootreg}'s \verb{&regrc} check. A \strong{warning} does not
+count as failure - the fit is kept, matching the macro, whose \verb{&regrc} is
+a return code that warnings do not set. A zero-length result is likewise
+not a failure: it means selection kept no terms, which is a valid
+replicate.
 }
 \description{
 Fit a linear model for one bootstrap replicate

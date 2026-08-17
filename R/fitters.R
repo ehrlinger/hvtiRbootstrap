@@ -8,6 +8,14 @@
 # attempt. Returning NULL is that contract -- boot_select() drops the replicate
 # and draws another.
 #
+# WARNINGS DO NOT DISCARD A REPLICATE. Only errors, and logistic
+# non-convergence, produce NULL. glm routinely warns "fitted probabilities
+# numerically 0 or 1" on a quasi-separated bootstrap replicate while still
+# converging to usable coefficients; treating that as a failure threw away
+# exactly the replicates where a predictor is strong, biasing the selection
+# frequencies downward. &regrc is a return code, which SAS warnings do not
+# set, so the macro keeps those models too.
+#
 # A named vector rather than a model object is also deliberate: %bootreg writes
 # outest=, one row per replicate, with a MISSING coefficient for any variable
 # not selected. That missingness is exactly what %SUMBOOT counts, so the vector
@@ -58,11 +66,21 @@
   stats::step(fit, direction = "both", trace = 0, steps = steps)
 }
 
+# A zero-length result is NOT a failure. Cox carries no intercept, so a
+# replicate where selection kept nothing has coef() of length zero. Returning
+# NULL there made boot_select() treat a legitimate "nothing was selected"
+# outcome as a failed fit and redraw it, which drops those replicates out of
+# the pct denominator and inflates every variable's selection frequency.
+# lm/glm never reach this: the intercept survives. NULL is reserved for a fit
+# that genuinely produced no coefficient vector at all.
+# coef() on an intercept-only coxph returns NULL rather than numeric(0), so
+# both spellings of "this model kept nothing" must map to the same zero-length
+# answer. .coefs() is only ever reached on a SUCCESSFUL fit -- failures are
+# caught by the fitters' tryCatch -- so it never needs to signal failure.
 .coefs <- function(fit) {
   cf <- stats::coef(fit)
-  cf <- cf[!is.na(cf)]
-  if (length(cf) == 0L) return(NULL)
-  cf
+  if (is.null(cf)) return(stats::setNames(numeric(0), character(0)))
+  cf[!is.na(cf)]
 }
 
 #' Fit a linear model for one bootstrap replicate
@@ -73,43 +91,61 @@
 #'   `max_steps`. `%bootreg` equivalents: `SELECT=`, `SLE=`, `SLS=`, `MAXSTEP=`.
 #' @return Named numeric vector of kept coefficients, or `NULL` if the fit
 #'   failed. `NULL` tells [boot_select()] to discard the replicate and draw
-#'   another, reproducing `%bootreg`'s `&regrc` check.
+#'   another, reproducing `%bootreg`'s `&regrc` check. A **warning** does not
+#'   count as failure - the fit is kept, matching the macro, whose `&regrc` is
+#'   a return code that warnings do not set. A zero-length result is likewise
+#'   not a failure: it means selection kept no terms, which is a valid
+#'   replicate.
 #' @export
 fit_linear <- function(data, formula, select) {
-  tryCatch({
-    fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
-    .coefs(.maybe_step(fit, select, data))
-  }, error = function(e) NULL, warning = function(w) NULL)
+  tryCatch(
+    suppressWarnings({
+      fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
+      .coefs(.maybe_step(fit, select, data))
+    }),
+    error = function(e) NULL
+  )
 }
 
 #' Fit a logistic model for one bootstrap replicate
 #'
 #' @inheritParams fit_linear
-#' @return Named numeric vector of kept coefficients, or `NULL`.
+#' @return Named numeric vector of kept coefficients, or `NULL` if the fit
+#'   errored or did not converge. Warnings - notably "fitted probabilities
+#'   numerically 0 or 1" on a quasi-separated replicate - do not discard a
+#'   converged fit.
 #' @export
 fit_logistic <- function(data, formula, select) {
-  tryCatch({
-    fit <- .fit_in_env(
-      quote(stats::glm(formula, data = data, family = stats::binomial())),
-      formula, data
-    )
-    if (!fit$converged) return(NULL)
-    .coefs(.maybe_step(fit, select, data))
-  }, error = function(e) NULL, warning = function(w) NULL)
+  tryCatch(
+    suppressWarnings({
+      fit <- .fit_in_env(
+        quote(stats::glm(formula, data = data, family = stats::binomial())),
+        formula, data
+      )
+      if (!isTRUE(fit$converged)) NULL
+      else .coefs(.maybe_step(fit, select, data))
+    }),
+    error = function(e) NULL
+  )
 }
 
 #' Fit a Cox proportional-hazards model for one bootstrap replicate
 #'
 #' @inheritParams fit_linear
-#' @return Named numeric vector of kept coefficients, or `NULL`. Cox models
-#'   carry no intercept, so none appears in the result.
+#' @return Named numeric vector of kept coefficients, or `NULL` if the fit
+#'   errored. Cox models carry no intercept, so none appears in the result -
+#'   which means a replicate where selection kept nothing returns a
+#'   **zero-length** vector, not `NULL`, and counts as a valid replicate.
 #' @export
 fit_cox <- function(data, formula, select) {
   if (!requireNamespace("survival", quietly = TRUE))
     stop("`fit_cox()` needs the survival package.", call. = FALSE)
-  tryCatch({
-    fit <- .fit_in_env(quote(survival::coxph(formula, data = data)),
-                       formula, data)
-    .coefs(.maybe_step(fit, select, data))
-  }, error = function(e) NULL, warning = function(w) NULL)
+  tryCatch(
+    suppressWarnings({
+      fit <- .fit_in_env(quote(survival::coxph(formula, data = data)),
+                         formula, data)
+      .coefs(.maybe_step(fit, select, data))
+    }),
+    error = function(e) NULL
+  )
 }

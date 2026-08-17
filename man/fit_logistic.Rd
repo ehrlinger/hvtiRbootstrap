@@ -15,7 +15,10 @@ fit_logistic(data, formula, select)
 \code{max_steps}. \verb{\%bootreg} equivalents: \verb{SELECT=}, \verb{SLE=}, \verb{SLS=}, \verb{MAXSTEP=}.}
 }
 \value{
-Named numeric vector of kept coefficients, or \code{NULL}.
+Named numeric vector of kept coefficients, or \code{NULL} if the fit
+errored or did not converge. Warnings - notably "fitted probabilities
+numerically 0 or 1" on a quasi-separated replicate - do not discard a
+converged fit.
 }
 \description{
 Fit a logistic model for one bootstrap replicate
