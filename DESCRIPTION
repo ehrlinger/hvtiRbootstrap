@@ -1,0 +1,22 @@
+Package: hvtiRbootstrap
+Title: Bootstrap Model Building for the HVTI CORR Group
+Version: 0.1.0
+Authors@R:
+    person("John", "Ehrlinger", , "ehrlinj@ccf.org", role = c("aut", "cre"))
+Description: Builds models by bootstrap resampling, in the manner of the
+    Cleveland Clinic CORR group's SAS macro library: fit a model on each of
+    many bootstrap replicates, record which variables survive selection, and
+    report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and
+    'cluster' macros.
+License: GPL-3
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    stats
+Suggests:
+    survival,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
