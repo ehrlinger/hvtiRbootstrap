@@ -19,3 +19,24 @@ fx_replicates <- function() {
     dimnames = list(NULL, c("x1", "x2", "x3"))
   )
 }
+
+# Replicate table where cluster membership matters:
+#
+#        a1   a2   b1
+#   r1  1.0   NA  1.0
+#   r2   NA  1.0  1.0
+#   r3  1.0  1.0   NA
+#   r4   NA   NA   NA
+#
+# cluster A = {a1, a2}: a1 selected twice, a2 twice, but "at least one of A"
+# happens in r1, r2, r3 = 3 replicates, NOT 4. That is the number the
+# per-variable summary cannot give you.
+fx_cluster_replicates <- function() {
+  matrix(
+    c(1, NA, 1, NA,
+      NA, 1, 1, NA,
+      1, 1, NA, NA),
+    nrow = 4,
+    dimnames = list(NULL, c("a1", "a2", "b1"))
+  )
+}

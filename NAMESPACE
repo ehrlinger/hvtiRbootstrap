@@ -2,6 +2,7 @@
 
 S3method(print,boot_selection)
 S3method(summary,boot_selection)
+export(boot_clusters)
 export(boot_select)
 export(boot_summary)
 export(fit_cox)
