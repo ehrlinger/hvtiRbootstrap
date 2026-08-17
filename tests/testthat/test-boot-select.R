@@ -103,3 +103,61 @@ test_that("max_attempts = Inf restores %bootreg's uncapped loop", {
                      select = "none", max_attempts = Inf, seed = 8)
   expect_equal(nrow(out$coefficients), 5L)
 })
+
+test_that("a factor predictor gets no phantom all-NA column", {
+  # Regression: candidate columns were seeded from terms(formula)'s term
+  # labels, but fitters return DUMMY-CODED coefficient names. A factor `sex`
+  # therefore produced both "sexM" (carrying the real counts) and a "sex"
+  # column that was NA in every replicate, which boot_summary() reported as a
+  # variable selected 0% of the time. Same phantom-term failure the Cox
+  # (Intercept) guard prevents, reached through dummy coding.
+  set.seed(1)
+  n <- 200
+  d <- data.frame(sex = factor(sample(c("M", "F"), n, TRUE)), x1 = rnorm(n))
+  d$y <- 2 * d$x1 + rnorm(n)
+  out <- boot_select(d, y ~ sex + x1, fit_linear, n_rep = 10,
+                     select = "none", seed = 1)
+  expect_true("sexM" %in% colnames(out$coefficients))
+  expect_false("sex" %in% colnames(out$coefficients))
+  # no column may be entirely unselected when every term was offered and kept
+  s <- boot_summary(out)
+  expect_true(all(s$n > 0L))
+})
+
+test_that("a replicate that selected nothing counts, as an all-NA row", {
+  # It is a valid bootstrap outcome, not a failed fit: it belongs in the pct
+  # denominator, contributing to no variable's n.
+  nothing <- function(data, formula, select) {
+    stats::setNames(numeric(0), character(0))
+  }
+  out <- boot_select(sim_df(), yc ~ x1 + x2, nothing, n_rep = 4,
+                     select = "none", seed = 1)
+  expect_equal(nrow(out$coefficients), 4L)
+  expect_equal(out$n_attempts, 4L)          # nothing was redrawn
+  expect_true(all(is.na(out$coefficients)))
+  s <- boot_summary(out)
+  expect_true(all(s$n == 0L))
+  expect_true(all(s$pct == 0))
+})
+
+test_that("boot_select restores the caller's RNG stream", {
+  # set.seed() inside a function mutates global state. Without a restore, a
+  # script that seeds once at the top stops being reproducible the moment it
+  # calls boot_select(seed = ...): every later draw shifts.
+  # Build the data OUTSIDE the call: sim_df() seeds internally, and `data` is
+  # a lazily-forced promise, so passing sim_df() inline would fire that
+  # set.seed() during the call and make the test measure its own helper.
+  d <- sim_df()
+  set.seed(99)
+  expected <- rnorm(1)
+  set.seed(99)
+  invisible(boot_select(d, yc ~ x1, fit_linear, n_rep = 3,
+                        select = "none", seed = 42))
+  expect_equal(rnorm(1), expected)
+
+  # And the stream is restored even when the data argument itself draws.
+  set.seed(99)
+  invisible(boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
+                        select = "none", seed = 42))
+  expect_equal(rnorm(1), expected)
+})

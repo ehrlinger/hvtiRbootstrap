@@ -41,6 +41,25 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
                         select = c("stepwise", "none"), sle = 0.10, sls = 0.05,
                         max_steps = 0, max_attempts = 10 * n_rep, seed = NULL) {
   select <- match.arg(select)
+  # Seeding is a global side effect, so put the caller's stream back. This runs
+  # FIRST, before any argument promise is forced: `data` is often an expression
+  # that itself draws (or calls set.seed), and the stream we owe the caller is
+  # the one in place when boot_select() was called, not after those side
+  # effects. Without a restore, a script that seeds once at the top silently
+  # loses reproducibility from the first boot_select(seed = ) call onward.
+  if (!is.null(seed)) {
+    # Held in a variable rather than written as a literal: `.Random.seed` is
+    # R's own reserved name for the RNG state, and a bare string here reads to
+    # the linter as this package naming an object in non-snake_case.
+    rng_state <- ".Random.seed"
+    if (exists(rng_state, envir = globalenv(), inherits = FALSE)) {
+      old_seed <- get(rng_state, envir = globalenv(), inherits = FALSE)
+      on.exit(assign(rng_state, old_seed, envir = globalenv()), add = TRUE)
+    } else {
+      on.exit(suppressWarnings(rm(list = rng_state, envir = globalenv())),
+              add = TRUE)
+    }
+  }
   if (!is.data.frame(data) || nrow(data) == 0L)
     stop("`data` must be a data frame with at least one row.", call. = FALSE)
   if (!is.numeric(fraction) || length(fraction) != 1L ||
@@ -52,12 +71,26 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
         is.na(max_attempts) || max_attempts < n_rep)
     stop("`max_attempts` must be a single number at least as large as `n_rep`.",
          call. = FALSE)
+
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
   draw <- max(1L, round(n * fraction))
   ctrl <- list(method = select, sle = sle, sls = sls, max_steps = max_steps)
-  terms_all <- attr(stats::terms(formula, data = data), "term.labels")
+  # Candidate columns must be the DUMMY-CODED names the fitters will return,
+  # not the formula's term labels. A factor `sex` yields a "sexM" coefficient,
+  # so seeding the matrix with "sex" left a column NA in every replicate that
+  # boot_summary() then reported as a term selected 0% of the time -- the same
+  # phantom-term failure the "(Intercept)" handling below avoids for Cox.
+  # Built on a zero-row frame so no model matrix is materialised, and with the
+  # response deleted so a Surv() left-hand side is never evaluated.
+  terms_all <- tryCatch({
+    tt <- stats::delete.response(stats::terms(formula, data = data))
+    setdiff(colnames(stats::model.matrix(tt, data[0, , drop = FALSE])),
+            "(Intercept)")
+  }, error = function(e) {
+    attr(stats::terms(formula, data = data), "term.labels")
+  })
 
   fits <- vector("list", n_rep)
   kept <- 0L
