@@ -110,7 +110,7 @@ the cap entirely and reproduces `%bootreg` exactly.
 - Consumes: nothing.
 - Produces: an installable package named `hvtiRbootstrap` at version `0.1.0`, with `testthat` edition 3 wired up. Later tasks add functions to `R/`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/test-package.R`:
 
@@ -120,12 +120,12 @@ test_that("the package is loadable and correctly identified", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-package.R")'`
 Expected: FAIL  -  there is no package yet.
 
-- [ ] **Step 3: Write DESCRIPTION**
+- [x] **Step 3: Write DESCRIPTION**
 
 ```
 Package: hvtiRbootstrap
@@ -157,7 +157,7 @@ Roxygen: list(markdown = TRUE)
 write it and commit what it produces; hand-restoring a version string fights
 the generator and will drift.
 
-- [ ] **Step 4: Write the remaining skeleton files**
+- [x] **Step 4: Write the remaining skeleton files**
 
 `R/hvtiRbootstrap-package.R`:
 
@@ -237,7 +237,7 @@ selection are each deferred to their own spec.
 
 `.github/workflows/R-CMD-check.yaml`: copy from `~/Documents/GitHub/hvtiRtables/.github/workflows/R-CMD-check.yaml` unchanged  -  it is repo-agnostic.
 
-- [ ] **Step 5: Run the test and the check**
+- [x] **Step 5: Run the test and the check**
 
 Run: `Rscript -e 'devtools::document(); devtools::install(quick = TRUE, upgrade = FALSE); testthat::test_dir("tests/testthat")'`
 Expected: PASS, 1 test.
@@ -245,7 +245,7 @@ Expected: PASS, 1 test.
 Run: `Rscript -e 'devtools::check(document = FALSE)'`
 Expected: 0 errors, 0 warnings. One NOTE for "New submission" is acceptable; anything else must be fixed now, not later.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -267,7 +267,7 @@ git commit -m "feat: package skeleton at 0.1.0"
 
 **Why a named vector:** `%bootreg` writes `outest=est`, one row per replicate, with a **missing coefficient for any variable not selected**. That missingness is what `%SUMBOOT` counts. Task 3 assembles these vectors into a matrix with `NA` in the gaps, reproducing `outest`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/test-fitters.R`:
 
@@ -320,12 +320,12 @@ test_that("fit_cox returns named coefficients without an intercept", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-fitters.R")'`
 Expected: FAIL  -  `could not find function "fit_linear"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `R/fitters.R`:
 
@@ -435,12 +435,12 @@ fit_cox <- function(data, formula, select) {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-fitters.R")'`
 Expected: PASS, 5 test_that blocks (11 expectations).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/fitters.R man/ NAMESPACE tests/testthat/test-fitters.R
@@ -460,7 +460,7 @@ git commit -m "feat: fitter contract with logistic, linear and Cox fitters"
 
 **The hinge:** a term not selected in a replicate is `NA` in that row. `boot_summary()` counts non-missing values per column, so `n` *is* the selection frequency. Do not fill `NA` with zero.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/test-boot-select.R`:
 
@@ -573,12 +573,12 @@ test_that("max_attempts = Inf restores %bootreg's uncapped loop", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-select.R")'`
 Expected: FAIL  -  `could not find function "boot_select"`.
 
-- [ ] **Step 3: Write the class**
+- [x] **Step 3: Write the class**
 
 Create `R/boot-class.R`:
 
@@ -605,7 +605,7 @@ print.boot_selection <- function(x, ...) {
 summary.boot_selection <- function(object, ...) boot_summary(object)
 ```
 
-- [ ] **Step 4: Write `boot_select()`**
+- [x] **Step 4: Write `boot_select()`**
 
 Create `R/boot-select.R`:
 
@@ -710,12 +710,12 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
 }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-select.R")'`
 Expected: PASS, 10 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add R/boot-select.R R/boot-class.R man/ NAMESPACE tests/testthat/test-boot-select.R
@@ -735,7 +735,7 @@ git commit -m "feat: boot_select() resampler with valid-model retry"
 
 **This is the one exactly parity-tested function.** `%SUMBOOT` runs `proc means n mean std min max`, transposes, computes `PCT = 100*N/&DS_SIZE` where `DS_SIZE` is the number of rows in its input (the replicate table), and sorts by descending `n`. All five statistics ignore missing values, which R matches with `na.rm = TRUE`. SAS `std` is the sample standard deviation, the same as R's `sd()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/testthat/helper-fixtures.R`:
 
@@ -821,12 +821,12 @@ test_that("boot_summary refuses input that is not replicate results", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-summary.R")'`
 Expected: FAIL  -  `could not find function "boot_summary"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `R/boot-summary.R`:
 
@@ -879,12 +879,12 @@ boot_summary <- function(x) {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-summary.R")'`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-summary.R man/ NAMESPACE tests/testthat/helper-fixtures.R tests/testthat/test-boot-summary.R
@@ -905,7 +905,7 @@ git commit -m "feat: boot_summary(), the parity-tested %SUMBOOT port"
 
 **Read `~/Documents/macro.library/bootstrap.clusters.sas` before implementing.** Its purpose comment: *"look for variables in a list of highly correlated variables (a cluster) and determine 1) how often each variable appeared, and 2) how often at least one variable in the cluster appears."* Per-variable frequency is already `boot_summary()`; this function adds the **at least one** count, which is not derivable from the per-variable numbers - two members selected in the same replicate count once.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/testthat/helper-fixtures.R`:
 
@@ -974,12 +974,12 @@ test_that("clusters must be a named list", {
 })
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `Rscript -e 'devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-clusters.R")'`
 Expected: FAIL  -  `could not find function "boot_clusters"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `R/boot-clusters.R`:
 
@@ -1036,12 +1036,12 @@ boot_clusters <- function(x, clusters) {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `Rscript -e 'devtools::document(); devtools::load_all("."); testthat::test_file("tests/testthat/test-boot-clusters.R")'`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-clusters.R man/ NAMESPACE tests/testthat/helper-fixtures.R tests/testthat/test-boot-clusters.R
@@ -1060,7 +1060,7 @@ git commit -m "feat: boot_clusters(), the %cluster port"
 - Consumes: every exported function from Tasks 2-5.
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Add a worked example to the README**
+- [x] **Step 1: Add a worked example to the README**
 
 Replace the README's `## Status` section with this, keeping everything above it:
 
@@ -1121,7 +1121,7 @@ behaviour.
 `boot_summary()` and `boot_clusters()` **are** held to exact parity.
 ````
 
-- [ ] **Step 2: Add the package-level doc**
+- [x] **Step 2: Add the package-level doc**
 
 Replace `R/hvtiRbootstrap-package.R`:
 
@@ -1144,12 +1144,12 @@ Replace `R/hvtiRbootstrap-package.R`:
 "_PACKAGE"
 ```
 
-- [ ] **Step 3: Add the remaining CI workflows**
+- [x] **Step 3: Add the remaining CI workflows**
 
 Copy `~/Documents/GitHub/hvtiRtables/.github/workflows/lint.yaml` and
 `test-coverage.yaml` unchanged - both are repo-agnostic.
 
-- [ ] **Step 4: Run the full gate**
+- [x] **Step 4: Run the full gate**
 
 Run: `Rscript -e 'devtools::document(); devtools::install(quick = TRUE, upgrade = FALSE)'`
 Run: `Rscript -e 'testthat::test_dir("tests/testthat")'`
@@ -1161,7 +1161,7 @@ Expected: no lints. A "no visible global function" lint means the installed copy
 Run: `Rscript -e 'devtools::check(document = FALSE)'`
 Expected: 0 errors, 0 warnings, at most the "New submission" NOTE.
 
-- [ ] **Step 5: Commit and open the PR**
+- [x] **Step 5: Commit and open the PR**
 
 ```bash
 git add -A
