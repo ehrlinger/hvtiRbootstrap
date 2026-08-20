@@ -1,8 +1,11 @@
 ^.*\.Rproj$
-^\.Rproj\.user$
-^\.github$
-^docs$
-^README\.md$
 ^LICENSE\.md$
-^\.superpowers$
+^README\.md$
+^\.Rproj\.user$
 ^\.claude$
+^\.github$
+^\.superpowers$
+^_pkgdown\.yml$
+^docs$
+^AGENTS\.md$
+^CLAUDE\.md$
