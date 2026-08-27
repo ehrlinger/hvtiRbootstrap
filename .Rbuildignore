@@ -5,9 +5,9 @@
 ^\.claude$
 ^\.github$
 ^\.superpowers$
+^\.remember$
 ^_pkgdown\.yml$
 ^docs$
 ^AGENTS\.md$
 ^CLAUDE\.md$
 ^pkgdown-site$
-^docs$
