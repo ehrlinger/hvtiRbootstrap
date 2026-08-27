@@ -25,19 +25,29 @@ imports this file.
 
 ## The automated gates
 
-Four workflows — **fewer than most of the family**. There is no PDF-manual gate and no
-pkgdown site gate here, so `R CMD check --as-cran` with the manual is a local
-responsibility rather than something CI will catch.
+Six workflows, now level with the rest of the family: the PDF-manual and pkgdown
+gates arrived in 0.1.1.
 
 | workflow | fails on |
 |---|---|
 | `R-CMD-check.yaml` | `R CMD check` across platforms |
+| `check-manual.yaml` | `R CMD check --as-cran` **with the manual built** |
+| `pkgdown.yaml` | the site build, including any exported topic missing from `_pkgdown.yml`'s reference index |
 | `lint.yaml` | `lintr::lint_package()` |
 | `house-style.yaml` | the composed house style |
 | `test-coverage.yaml` | coverage upload |
 
-⚠️ If `.github/workflows/pkgdown.yaml`, `check-manual.yaml` or `_pkgdown.yml` appear, this
-table is out of date — update it rather than trusting it.
+Two things worth knowing about the pkgdown gate, both learned the hard way:
+
+- **A new export fails the build until it is in the reference index.** That is the
+  gate working, not an obstacle — an undocumented export is the thing it exists to
+  catch. Add it to `_pkgdown.yml` in the same PR.
+- **The site builds into `pkgdown-site/`, not `docs/`.** `docs/` holds this project's
+  plans and specs, and pkgdown rightly refuses to build over a directory it did not
+  create — with the deploy step's settings it would have published the plans as the
+  package site. `build_site_github_pages()` takes `dest_dir = "docs"` as an explicit
+  default that **overrides** `destination:` in `_pkgdown.yml`, so the workflow passes
+  it directly.
 
 ## Rules for this repo
 

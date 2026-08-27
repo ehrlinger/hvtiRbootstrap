@@ -1,5 +1,18 @@
 # hvtiRbootstrap 0.1.1
 
+## CI
+
+* The **PDF-manual** (`check-manual.yaml`) and **pkgdown** gates arrive here,
+  bringing this package level with the rest of the family. `AGENTS.md`'s
+  workflow table is updated to match — it had a standing note to do exactly
+  that when these files appeared.
+
+  The site builds into `pkgdown-site/`, not the default `docs/`, which holds
+  this project's plans and specs. `build_site_github_pages()` takes
+  `dest_dir = "docs"` as an explicit default that **overrides** `destination:`
+  in `_pkgdown.yml`, so the workflow passes it directly.
+
+
 * Pooling for **chunked** bootstrap runs: `boot_pool_chunks()`,
   `boot_chunk_files()` and `boot_shortfall()`. Ported from a study's local `R/`,
   where they were unreachable by anything else.
