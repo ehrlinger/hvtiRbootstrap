@@ -9,3 +9,5 @@
 ^docs$
 ^AGENTS\.md$
 ^CLAUDE\.md$
+^pkgdown-site$
+^docs$
