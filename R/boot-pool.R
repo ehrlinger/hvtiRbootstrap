@@ -130,7 +130,11 @@ boot_pool_chunks <- function(chunks) {
            "with the ones that do.", call. = FALSE)
     }
 
-    txt <- vapply(vals, function(v) paste(format(v), collapse = "\r"),
+    # A printable separator. The comparison works with any separator, but the
+    # joined string is also what the error message prints, and a literal
+    # carriage return there overwrites the line in some terminals -- so the
+    # mismatch this exists to show becomes the thing you cannot read.
+    txt <- vapply(vals, function(v) paste(format(v), collapse = " | "),
                   character(1))
     if (length(unique(txt)) > 1L) {
       stop("boot_pool_chunks(): the chunks disagree on ", what, " (",
@@ -156,6 +160,27 @@ boot_pool_chunks <- function(chunks) {
          paste(unique(seeds[duplicated(seeds)]), collapse = ", "),
          ". Same seed means the SAME replicates, so pooling would count them ",
          "twice and understate the Monte-Carlo error.", call. = FALSE)
+  }
+
+  # The offset arithmetic below is only sound if `replicate` really does run
+  # within 1..n_boot in every chunk. Checked rather than trusted: an id outside
+  # that range does not error, it lands on top of a neighbouring chunk's
+  # replicate, and the only symptom is a frequency that is slightly too low.
+  for (i in seq_along(chunks)) {
+    r <- chunks[[i]]$boot$replicates
+    if (!is.data.frame(r) ||
+          !all(c("replicate", "parameter", "estimate") %in% names(r))) {
+      stop("boot_pool_chunks(): chunk ", i, " has no boot$replicates data ",
+           "frame with replicate/parameter/estimate columns.", call. = FALSE)
+    }
+    n_i <- as.integer(chunks[[i]]$n_boot)
+    if (!nrow(r)) next
+    if (min(r$replicate) < 1L || max(r$replicate) > n_i) {
+      stop("boot_pool_chunks(): chunk ", i, " reports n_boot = ", n_i,
+           " but its replicate ids run ", min(r$replicate), "..",
+           max(r$replicate), ". Stacking them would overlap the neighbouring ",
+           "chunk and understate every frequency.", call. = FALSE)
+    }
   }
 
   n_each <- vapply(chunks, function(k) as.integer(k$n_boot), integer(1))
@@ -196,7 +221,14 @@ boot_pool_chunks <- function(chunks) {
   out$boot$n_success  <- sum(n_ok)
   out$boot$n_failed   <- sum(n_bad)
   out$n_boot       <- n_boot
-  out$free_sd      <- if (length(free_est) > 1L) stats::sd(free_est) else 0
+  # NA, not 0, when there is nothing to take an SD of. Zero is a CLAIM -- "the
+  # base parameter did not vary" -- and one replicate cannot support it. This
+  # matches boot_summary(), which also yields NA for an undefined statistic.
+  out$free_sd <- if (length(free_est) > 1L) {
+    stats::sd(free_est)
+  } else {
+    NA_real_
+  }
   out$elapsed_mins <- sum(mins)
   # Character, so a provenance table prints every seed rather than silently
   # showing the first chunk's.
@@ -224,9 +256,13 @@ boot_pool_chunks <- function(chunks) {
 #'
 #' @export
 boot_chunk_files <- function(out_dir, prefix = "bagging") {
-  sort(list.files(out_dir,
-                  pattern = paste0("^", prefix, "[.]chunk[0-9]+[.]rds$"),
-                  full.names = TRUE))
+  # `prefix` is documented as a LITERAL file-name prefix, so it is quoted with
+  # \Q...\E before becoming part of a pattern. Interpolated raw, a prefix
+  # containing `.` or `+` matches files it was never meant to -- and the result
+  # is a pool built from the wrong chunks, which no downstream check can see.
+  pattern <- paste0("^\\Q", prefix, "\\E[.]chunk[0-9]+[.]rds$")
+  files <- list.files(out_dir, full.names = TRUE)
+  sort(files[grepl(pattern, basename(files), perl = TRUE)])
 }
 
 #' Is a pooled screen the run that was launched?

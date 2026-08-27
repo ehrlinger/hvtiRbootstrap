@@ -117,3 +117,51 @@ test_that("boot_shortfall is NULL only when the pool is the launched run", {
 test_that("boot_shortfall treats an unchunked run as one chunk", {
   expect_null(boot_shortfall(list(n_boot = 500L), 1L, 500L))
 })
+
+test_that("a replicate id outside 1..n_boot is refused", {
+  # The offset arithmetic is only sound if the ids stay in range. Out of range
+  # does not error on its own -- the id lands on top of a neighbouring chunk's
+  # replicate, and the only symptom is a frequency slightly too low.
+  bad <- chunk(1)
+  bad$boot$replicates$replicate <- bad$boot$replicates$replicate + 5L
+  expect_error(boot_pool_chunks(list(bad, chunk(2))), "replicate ids run")
+})
+
+test_that("a chunk without a usable replicates frame is refused", {
+  bad <- chunk(1)
+  bad$boot$replicates <- NULL
+  expect_error(boot_pool_chunks(list(bad, chunk(2))), "no boot\\$replicates")
+  bad2 <- chunk(1)
+  bad2$boot$replicates$estimate <- NULL
+  expect_error(boot_pool_chunks(list(bad2, chunk(2))), "no boot\\$replicates")
+})
+
+test_that("free_sd is NA, not 0, when there is nothing to take an SD of", {
+  # Zero is a CLAIM -- "the base parameter did not vary" -- and one replicate
+  # cannot support it.
+  one <- chunk(1, n_boot = 1L)
+  one$boot$replicates <- data.frame(
+    replicate = 1L,
+    parameter = "early.log_mu",
+    estimate = 0.5,
+    stringsAsFactors = FALSE
+  )
+  p <- boot_pool_chunks(list(one))
+  expect_true(is.na(p$free_sd))
+})
+
+test_that("a disagreement message is readable, with no control characters", {
+  a <- chunk(1, usable = c(early = 10L, late = 10L))
+  b <- chunk(2, usable = c(early = 11L, late = 10L))
+  msg <- tryCatch(boot_pool_chunks(list(a, b)), error = conditionMessage)
+  expect_false(grepl("\r", msg, fixed = TRUE))
+  expect_match(msg, "usable candidate counts")
+})
+
+test_that("boot_chunk_files treats prefix as a literal, not a pattern", {
+  # Unescaped, a `.` in the prefix matches any character and the pool is built
+  # from the wrong chunks -- which no downstream check can see.
+  d <- withr::local_tempdir()
+  for (f in c("a.b.chunk01.rds", "axb.chunk01.rds")) saveRDS(1, file.path(d, f))
+  expect_equal(basename(boot_chunk_files(d, prefix = "a.b")), "a.b.chunk01.rds")
+})
