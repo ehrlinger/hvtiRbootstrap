@@ -13,7 +13,8 @@
 # screen, and no two used the same seed. Each of those is checked rather than
 # assumed, because none of them fails loudly on its own.
 
-# The chunk's dataset checksum, as "<algo>:<digest>", or NULL if it records none.
+# The chunk's dataset checksum, as "<algo>:<digest>", or NULL if it records
+# none.
 #
 # WHY THE COLUMN NAME IS NOT HARD-CODED. A manifest writer moving from md5
 # to

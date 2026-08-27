@@ -4,8 +4,9 @@ chunk <- function(seed, n_boot = 2L, reps = NULL, ...) {
     reps <- data.frame(
       replicate = rep(seq_len(n_boot), each = 2L),
       parameter = rep(c("early.age", "late.bsa"), times = n_boot),
-      estimate  = seq_len(2L * n_boot) / 10,
-      stringsAsFactors = FALSE)
+      estimate = seq_len(2L * n_boot) / 10,
+      stringsAsFactors = FALSE
+    )
   }
   modifyList(list(
     seed = seed, n_boot = n_boot, slentry = 0.1, slstay = 0.07,
@@ -38,9 +39,9 @@ test_that("chunks that disagree on a gated field are refused", {
                "step cap")
   expect_error(boot_pool_chunks(list(chunk(1), chunk(2, slentry = 0.3))),
                "slentry")
-  expect_error(
-    boot_pool_chunks(list(chunk(1), chunk(2, manifest = list(md5 = "zzz")))),
-    "dataset checksum")
+  other_md5 <- chunk(2, manifest = list(md5 = "zzz"))
+  expect_error(boot_pool_chunks(list(chunk(1), other_md5)),
+               "dataset checksum")
 })
 
 test_that("a field NO chunk records is refused, not passed unanimously", {
@@ -51,13 +52,16 @@ test_that("a field NO chunk records is refused, not passed unanimously", {
   # it reads as a check that happened. This was real: max_steps was absent from
   # every chunk in a fixture and the suite was green.
   bare <- function(s) {
-    k <- chunk(s); k$max_steps <- NULL; k
+    k <- chunk(s)
+    k$max_steps <- NULL
+    k
   }
   expect_error(boot_pool_chunks(list(bare(1), bare(2))), "no chunk records")
 })
 
 test_that("a field only SOME chunks record is refused", {
-  k <- chunk(2); k$max_steps <- NULL
+  k <- chunk(2)
+  k$max_steps <- NULL
   expect_error(boot_pool_chunks(list(chunk(1), k)), "cannot be compared")
 })
 
