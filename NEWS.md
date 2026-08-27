@@ -1,3 +1,43 @@
+# hvtiRbootstrap 0.1.1
+
+* Pooling for **chunked** bootstrap runs: `boot_pool_chunks()`,
+  `boot_chunk_files()` and `boot_shortfall()`. Ported from a study's local `R/`,
+  where they were unreachable by anything else.
+
+  A screen that writes nothing until its last replicate is unrestartable — a
+  run that dies at 90% yields nothing — and on one real study a single forward
+  selection over 160 candidates per phase was still running at 22 minutes, with
+  501 of them to do. Chunking makes such a run restartable; these fold the
+  chunks back into one object of the same shape, so a report reads a pooled
+  screen and a single-run screen the same way.
+
+  Pooling is only legitimate when every chunk drew from the same data, ran the
+  same screen, and no two shared a seed. **Each is checked rather than assumed,
+  because none fails loudly on its own:** two chunks sharing a seed hold
+  literally the same replicates, so pooling counts each twice and reports a
+  Monte-Carlo error smaller than the run has; a dataset rewritten mid-run gives
+  chunks that each look fine and describe different cohorts. Neither shows up
+  as an error in a frequency table — both show up as a slightly different
+  number.
+
+  **Absence is checked before agreement**, and that order is the point. A field
+  no chunk records formats identically in every chunk, passes unanimously, and
+  hands back `NULL` as the agreed value. A gate that cannot tell "everyone
+  agrees" from "nobody recorded it" is worse than no gate, because it reads as
+  a check that happened. That is not hypothetical: `max_steps` was absent from
+  every chunk in one fixture and the suite was green.
+
+  Replicate ids are offset before stacking, since they run `1..n_boot` inside
+  each chunk and would otherwise merge — a variable selected in two chunks
+  counting once instead of twice, understating every frequency.
+
+  `boot_shortfall()` answers whether the pool is the run that was *launched*.
+  Pooling mid-run is reasonable; the hazard is that a partial pool produces a
+  report wrong in no visible way, where every check passes and only the
+  denominator is not the intended one. The expected totals must come from
+  outside the chunks, because nothing in a chunk knows how many siblings it was
+  launched alongside.
+
 # hvtiRbootstrap 0.1.0
 
 * Initial development version. Selection core only: `boot_select()`,
