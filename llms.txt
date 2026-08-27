@@ -1,0 +1,224 @@
+# hvtiRbootstrap
+
+Bootstrap model building for the HVTI CORR group - the R port of the SAS
+`%bootreg` / `%SUMBOOT` / `%cluster` macros.
+
+Fit a model on each of many bootstrap replicates, record which variables
+survive selection, and report how often each appeared.
+
+Destination for 31 macro-library files, assigned by the allocation map
+in `hvtiRtemplates:specs/2026-08-14-macro-allocation-design.md`. Design
+and scope: `docs/specs/2026-08-14-hvtirbootstrap-design.md`.
+
+## Install
+
+``` r
+
+remotes::install_github("ehrlinger/hvtiRbootstrap")
+```
+
+## If you already run the macros
+
+Three macros, three functions. Nothing else to learn.
+
+| SAS | R | Notes |
+|----|----|----|
+| `%bootreg` | [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md) | `PROC=` becomes the `fitter` argument |
+| `%SUMBOOT` | [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md) | parity-tested against the macro |
+| `%cluster` | [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md) | parity-tested against the macro |
+
+The `%bootreg` arguments you know carry the same meaning:
+
+| SAS | R |
+|----|----|
+| `RESAMPL=` | `n_rep` - still counts *valid* models |
+| `FRACTION=` | `fraction` - but see D1 below |
+| `PROC=LOGISTIC \| REG \| PHREG` | `fit_logistic` \| `fit_linear` \| `fit_cox` |
+| `SELECT=` / `FIXED=1` | `select = "stepwise"` / `select = "none"` |
+| `SLE=` / `SLS=` | `sle` / `sls` - but see D2 below |
+| `MAXSTEP=` | `max_steps` |
+| `SEED=` | `seed` |
+
+Note that `PROC=PHREG` maps to
+[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md),
+which is Cox proportional hazards. The **additive hazard** family
+(`bootstrap.hazard*.sas`) is a different thing and is not in v1 at all -
+it needs `TemporalHazard` and has its own spec. When it lands, the
+per-analysis copies (`_jr`, `_p`, `101703`, `jr1`) will not become
+separate functions: they differ from `bootstrap.hazard.sas` by a changed
+default and a dropped selection option, so they collapse into arguments
+you pass. `_tvc` is the exception, carrying genuine
+time-varying-covariate behaviour.
+
+## Example
+
+``` r
+
+library(hvtiRbootstrap)
+
+set.seed(1)
+n  <- 300
+x1 <- rnorm(n)
+df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
+                 x2 = rnorm(n), noise = rnorm(n))
+
+fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
+                   n_rep = 200, seed = 42)
+fit
+#> <boot_selection>
+#>   replicates: 200 valid of 200 attempts
+#>   terms:      4
+#> Use boot_summary() for per-variable selection frequencies.
+
+boot_summary(fit)
+#>      variable   n   pct         mean         sd         min       max
+#> 1 (Intercept) 200 100.0 -0.008863727 0.06139726 -0.15297676 0.1901373
+#> 2          x1 200 100.0  2.026035162 0.06718477  1.88008851 2.2223719
+#> 3          x2  57  28.5  0.094760094 0.04738065 -0.09018219 0.1573203
+#> 4       noise  39  19.5  0.106355941 0.05397506 -0.10429045 0.1834056
+
+boot_clusters(fit, list(size = c("x1", "x2")))
+#>   cluster n_any pct_any members
+#> 1    size   200     100  x1, x2
+```
+
+`x1` really drives `y` here, and it survives every replicate. `x2` and
+`noise` carry no signal by construction, so the 20-30% they show is
+stepwise keeping a useless term by chance - a reminder that a non-zero
+`pct` is not on its own evidence of anything.
+
+`n` counts the replicates in which a term was selected, so `pct` reads
+as a selection frequency.
+[`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)
+is not the sum of its members’ counts: a replicate selecting two members
+counts once, which is why `size` reads 100 and not 128.5.
+
+## What is checked against SAS, and what is not
+
+| Component | Standard |
+|----|----|
+| [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md) | **Exact.** Same replicate table in, same `n`, `pct`, mean, std, min, max out. |
+| [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md) | **Exact.** Same appeared / at-least-one counts. |
+| Resampling | Not parity-tested. Stochastic; matching SAS’s RNG stream is a research project, not a port. |
+| Model fitting | Not parity-tested. That belongs to `glm`, `lm` and `coxph`. |
+
+The parity fixtures are synthetic and checked in, so nothing here needs
+cohort data and no PHI enters this repo.
+
+## Status
+
+Under development. v1 covers the selection core with logistic, linear
+and Cox fitters. Hazard and quantile fitters, the bootstrap-CI family,
+and penalised selection are each deferred to their own spec.
+
+## Divergence from the SAS macros
+
+This port is **correct first, faithful second**: where the macro’s
+behaviour and its documented intent disagree, it implements the intent
+and says so here.
+
+**D1 - `fraction` is applied.** `%bootreg` documents `FRACTION=` but
+never uses it: it computes `ds_size * fraction`, prints it, and always
+draws `ds_size` rows.
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+draws `round(n * fraction)`. Pass `fraction = 1` (the default) to match
+SAS exactly. **A filed result run with `FRACTION` other than 1.0 was not
+subsampled**, so R will disagree with it.
+
+**D2 - stepwise selects on AIC, not p-values.** SAS `SELECTION=STEPWISE`
+uses `SLE=`/`SLS=` as p-value thresholds; R’s
+[`step()`](https://rdrr.io/r/stats/step.html) uses AIC. `sle` and `sls`
+are carried for interface fidelity and do not reproduce SAS’s selection
+term for term. This is why model fitting sits outside the parity claim.
+
+**D3 - the retry loop is capped.** `%bootreg` resamples until it has
+`RESAMPL` valid models and never gives up, so a model that fails on
+every replicate spins forever.
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+budgets `max_attempts = 10 * n_rep` and errors with a diagnostic when it
+runs out. Pass `max_attempts = Inf` for the macro’s behaviour.
+
+A warning is not a failed fit. `%bootreg` gates on `&regrc`, a return
+code that SAS warnings do not set, and the fitters match that: a
+converged model that merely warned - “fitted probabilities numerically 0
+or 1” on a quasi-separated replicate, say - is kept. Errors and
+non-convergence still cause a redraw.
+
+# Package index
+
+## 
+
+Resample and fit — `%bootreg`
+
+Start here. Fits a model on each of many bootstrap replicates and
+records which terms each one kept. `PROC=` becomes the `fitter`
+argument, and a term the model did not select is left missing — which is
+what makes the counts downstream read as selection frequencies.
+
+- [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+  : Build a model by bootstrap resampling
+
+## 
+
+Summarise the replicates — `%SUMBOOT` and `%cluster`
+
+Reach for these once you have replicates.
+[`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
+gives the per-variable selection frequency and coefficient distribution;
+[`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)
+answers the question it cannot — how often *at least one* member of a
+correlated group survived. Both are held to exact parity with the
+macros.
+
+- [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
+  : Summarise bootstrap replicates into selection frequencies
+- [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)
+  : Aggregate selection frequencies over clusters of correlated
+  variables
+
+## 
+
+Pool a chunked run
+
+Needed only when a screen was run in chunks, which is how a run of days
+is made restartable.
+[`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+folds them into one object of the same shape, refusing to pool chunks
+that did not draw from the same data or run the same screen;
+[`boot_shortfall()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_shortfall.md)
+says whether what you pooled is the run you launched, which nothing
+inside a chunk can know.
+
+- [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+  : Pool chunked bootstrap runs into one screen
+- [`boot_chunk_files()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_chunk_files.md)
+  : Find the chunk files of a chunked bootstrap run
+- [`boot_shortfall()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_shortfall.md)
+  : Is a pooled screen the run that was launched?
+
+## 
+
+Fitters — one per `PROC=`
+
+Passed to
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md),
+one per model family. Use these when choosing the model type; write a
+new one when adding a family, rather than a new pipeline. Each returns
+the coefficients its model kept, or `NULL` when the fit failed and the
+replicate should be redrawn.
+
+- [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)
+  : Fit a linear model for one bootstrap replicate
+- [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+  : Fit a logistic model for one bootstrap replicate
+- [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+  : Fit a Cox proportional-hazards model for one bootstrap replicate
+
+## Package overview
+
+The three-function shape of the port, and which macro each one replaces.
+
+- [`hvtiRbootstrap`](https://ehrlinger.github.io/hvtiRbootstrap/reference/hvtiRbootstrap-package.md)
+  [`hvtiRbootstrap-package`](https://ehrlinger.github.io/hvtiRbootstrap/reference/hvtiRbootstrap-package.md)
+  : hvtiRbootstrap: Bootstrap Model Building for the HVTI CORR Group
+
