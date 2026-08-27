@@ -33,6 +33,15 @@ macros. Resampling is stochastic and model fitting belongs to \code{glm}, \code{
 \code{coxph}, so neither is parity-tested; where R and SAS diverge on purpose, the
 README's divergence section and the function's own help say so.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/ehrlinger/hvtiRbootstrap}
+  \item \url{https://ehrlinger.github.io/hvtiRbootstrap/}
+  \item Report bugs at \url{https://github.com/ehrlinger/hvtiRbootstrap/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: John Ehrlinger \email{ehrlinj@ccf.org}
 

@@ -1,6 +1,6 @@
 Package: hvtiRbootstrap
 Title: Bootstrap Model Building for the HVTI CORR Group
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("John", "Ehrlinger", , "ehrlinj@ccf.org", role = c("aut", "cre"))
 Description: Builds models by bootstrap resampling, in the manner of the
@@ -9,6 +9,8 @@ Description: Builds models by bootstrap resampling, in the manner of the
     report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and
     'cluster' macros.
 License: GPL-3
+URL: https://github.com/ehrlinger/hvtiRbootstrap, https://ehrlinger.github.io/hvtiRbootstrap/
+BugReports: https://github.com/ehrlinger/hvtiRbootstrap/issues
 Encoding: UTF-8
 Depends:
     R (>= 4.1.0)

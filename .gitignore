@@ -3,4 +3,5 @@
 .RData
 *.tar.gz
 *.Rcheck
+pkgdown-site/
 .remember/

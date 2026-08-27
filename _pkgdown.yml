@@ -1,0 +1,94 @@
+url: https://ehrlinger.github.io/hvtiRbootstrap/
+
+# NOT the default `docs/`. That directory holds this project's plans and specs,
+# and pkgdown's check_dest_is_pkgdown() refuses to build over a directory it
+# did not create -- correctly, since building there would deploy the plans as
+# the package site and, with clean: true, delete them.
+destination: pkgdown-site
+template:
+  bootstrap: 5
+  bslib:
+    bootswatch: zephyr
+    base_font: {google: "Outfit"}
+    code_font: {google: "Fira Code"}
+  light-switch: true
+  theme: atom-one-light
+  theme-dark: atom-one-dark
+
+home:
+  sidebar:
+    structure: [badges, links, authors]
+    components:
+      badges:
+        title: Package badges
+        text: |
+          ![](https://img.shields.io/github/r-package/v/ehrlinger/hvtiRbootstrap)<br>
+          ![](https://img.shields.io/github/actions/workflow/status/ehrlinger/hvtiRbootstrap/pkgdown.yaml)<br>
+
+navbar:
+  structure:
+    left: [reference, news]
+    right: [search, github, my_linkedin, lightswitch]
+  components:
+    my_linkedin:
+      icon: fa-linkedin
+      href: https://www.linkedin.com/in/ehrlinger/
+      aria-label: LinkedIn
+
+reference:
+- title: "1. Resample and fit — `%bootreg`"
+  desc: >
+    Start here. Fits a model on each of many bootstrap replicates and records
+    which terms each one kept. `PROC=` becomes the `fitter` argument, and a
+    term the model did not select is left missing — which is what makes the
+    counts downstream read as selection frequencies.
+  contents:
+  - boot_select
+
+- title: "2. Summarise the replicates — `%SUMBOOT` and `%cluster`"
+  desc: >
+    Reach for these once you have replicates. `boot_summary()` gives the
+    per-variable selection frequency and coefficient distribution;
+    `boot_clusters()` answers the question it cannot — how often *at least
+    one* member of a correlated group survived. Both are held to exact parity
+    with the macros.
+  contents:
+  - boot_summary
+  - boot_clusters
+
+- title: "3. Pool a chunked run"
+  desc: >
+    Needed only when a screen was run in chunks, which is how a run of days is
+    made restartable. `boot_pool_chunks()` folds them into one object of the
+    same shape, refusing to pool chunks that did not draw from the same data or
+    run the same screen; `boot_shortfall()` says whether what you pooled is the
+    run you launched, which nothing inside a chunk can know.
+  contents:
+  - boot_pool_chunks
+  - boot_chunk_files
+  - boot_shortfall
+
+- title: "4. Fitters — one per `PROC=`"
+  desc: >
+    Passed to `boot_select()`, one per model family. Use these when choosing
+    the model type; write a new one when adding a family, rather than a new
+    pipeline. Each returns the coefficients its model kept, or `NULL` when the
+    fit failed and the replicate should be redrawn.
+  contents:
+  - fit_linear
+  - fit_logistic
+  - fit_cox
+
+- title: "Package overview"
+  desc: >
+    The three-function shape of the port, and which macro each one replaces.
+  contents:
+  - hvtiRbootstrap-package
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with_pkgdown
+  components:
+    developed_by: "John Ehrlinger"
+    built_with_pkgdown: "This site was built using [pkgdown](https://pkgdown.r-lib.org/)!&nbsp;&nbsp;<img src='https://pkgdown.r-lib.org/logo.png' alt='pkgdown logo' width='25'>"
