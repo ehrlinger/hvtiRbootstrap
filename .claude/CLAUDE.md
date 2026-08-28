@@ -22,8 +22,8 @@ with persona (c)'s bilingual anchor. Note for whoever maintains that file: (c) i
 titled "External R user migrating from SAS", and the *external* half does not fit
 here — the CORR team is internal and knows the macro library better than most
 external readers ever will. Likewise `memory/writing-context.md` scopes itself to
-the graphics ecosystem (hvtiPlotR, ggRandomForests, temporal_hazard,
-hvti_graphics) and does not yet mention the macro-migration packages.
+the graphics ecosystem (hvtiPlotR, ggRandomForests, TemporalHazard,
+hvtiGraphics) and does not yet mention the macro-migration packages.
 
 ## Voice
 
