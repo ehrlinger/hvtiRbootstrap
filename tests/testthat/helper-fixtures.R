@@ -40,3 +40,61 @@ fx_cluster_replicates <- function() {
     dimnames = list(NULL, c("a1", "a2", "b1"))
   )
 }
+
+# A bag shaped like the one boot_pool_chunks() returns, with hand-computable
+# answers. Synthetic: no cohort data enters this package.
+#
+#   replicate  terms selected
+#   1          base, early.age, early.ln_age
+#   2          base, early.age
+#   3          base, early.ln_age, early.bmi
+#   4          base, late.age
+#
+# Over n_boot = 4: base 4 (100%), early.age 2 (50%), early.ln_age 2 (50%),
+# early.bmi 1 (25%), late.age 1 (25%).
+#
+# The Age concept in the early phase is the union case: its two forms sit at
+# 50% each, and "at least one form" happens in replicates 1, 2 and 3 -- 75%,
+# not 100%. Replicate 1 took BOTH forms and must count once.
+#
+# `requested` and `usable` are scalars here so that a test giving them a
+# per-phase vector is visibly the variation, not the fixture's own shape.
+fx_bag <- function() {
+  reps <- data.frame(
+    replicate = c(1L, 1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 4L),
+    parameter = c("base", "early.age", "early.ln_age",
+                  "base", "early.age",
+                  "base", "early.ln_age", "early.bmi",
+                  "base", "late.age"),
+    estimate  = c(1.0, 0.5, 0.4,
+                  1.1, 0.6,
+                  0.9, 0.3, 0.2,
+                  1.2, 0.7),
+    stringsAsFactors = FALSE
+  )
+  summ <- data.frame(
+    parameter = c("base", "early.age", "early.ln_age", "early.bmi",
+                  "late.age"),
+    n         = c(4L, 2L, 2L, 1L, 1L),
+    pct       = c(100, 50, 50, 25, 25),
+    stringsAsFactors = FALSE
+  )
+  list(
+    n_boot       = 4L,
+    n_chunks     = 2L,
+    seed         = "101, 202",
+    seeds        = c(101, 202),
+    slentry      = 0.07,
+    slstay       = 0.05,
+    base_params  = "base",
+    requested    = 4L,
+    usable       = 3L,
+    n_rows       = 500L,
+    elapsed_mins = 120,
+    free_sd      = stats::sd(c(1.0, 1.1, 0.9, 1.2)),
+    th_sha       = "deadbeef",
+    manifest     = list(sha256 = "abc123"),
+    boot         = list(replicates = reps, summary = summ,
+                        n_success = 4L, n_failed = 0L)
+  )
+}
