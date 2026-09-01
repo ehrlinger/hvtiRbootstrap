@@ -13,7 +13,7 @@
 Finishes 0.9.1's sweep. That release made every *optional* bag field read by
 exact name; this one does the same for the fields nothing was protecting, and
 one of them was worse than 0.9.1's note claimed. It also gives a finished run
-a way to say what it was.
+a way to say what it was, and a way to become a report.
 
 ## New features
 
@@ -30,6 +30,41 @@ a way to say what it was.
 
   Recording them on the object means whatever assembles a bag can read the run
   rather than interview it.
+
+* **`boot_bag()` assembles it.** It converts a `boot_select()` result into the
+  bag `boot_validate()` accepts and every reporting function reads.
+
+  The two ends of this package were built against different studies and had
+  never met. `boot_select()` returns a *wide* object, one row per replicate and
+  one column per term with `NA` where a term was not selected. The reporting
+  layer reads a *long* one, because it was extracted from a hazard runner that
+  writes long. Nothing converted between them, so the package's own screen
+  function could not reach its own report, and every study would have
+  hand-written the pivot plus nine provenance fields, differently each time.
+
+  The pivot drops `NA` rather than recording it, and that is the whole design
+  rather than a shortcut: `boot_frequencies()` counts a term's rows against
+  `n_boot`, so a row written for an unselected term would be counted as a
+  selection and every frequency in the report would rise.
+
+  Four arguments, which are the facts a screen cannot know about itself: which
+  terms are the base model, how many candidates were offered before any were
+  dropped, the dataset manifest, and what was dropped. Everything else comes
+  from `$control`, so a bag cannot claim an entry level the screen did not use.
+  The result is validated before it is returned, so an invalid bag is never
+  emitted to be refused three chunks into a render.
+
+  **A Cox screen has no intercept.** `base_params = "(Intercept)"` copied from
+  a logistic runner names nothing there, and is refused rather than silently
+  excluding no terms and reporting the base model as a candidate.
+
+* **`boot_provenance()` reads `engine`.** Its "Fitting engine" row looked for
+  `th_sha` and then `th_version`, both written by TemporalHazard's hazard
+  runner. A bag this package assembled has neither, so the row that exists to
+  say *which codebase ran* printed `NA` on every `boot_select()` screen. That
+  is the blank-where-provenance-belongs failure the table was built to prevent,
+  occurring in the table itself. `boot_bag()` writes `engine`; the third branch
+  reads it.
 
 ## Bug fixes
 

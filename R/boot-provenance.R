@@ -98,10 +98,17 @@ boot_provenance <- function(bag) {
     }
   }
 
+  # th_sha and th_version are TemporalHazard's, written by the hazard runner.
+  # `engine` is the generic form, written by boot_bag() for a screen this
+  # package ran itself. Without the third branch that row printed NA on every
+  # boot_select() screen, which is the blank-where-provenance-belongs failure
+  # this table exists to prevent, in the table itself.
   engine <- if (!is.null(bag[["th_sha"]])) {
     paste0("sha:", bag[["th_sha"]])
   } else if (!is.null(bag[["th_version"]])) {
     paste0("version:", bag[["th_version"]])
+  } else if (!is.null(bag[["engine"]])) {
+    paste0("version:", bag[["engine"]])
   } else {
     NA_character_
   }

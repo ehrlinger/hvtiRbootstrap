@@ -65,8 +65,10 @@ reference:
     The ones that group their rows take an optional `phase`, so a multiphase
     hazard screen and a single-phase logistic screen run down the same code
     path; `boot_dropped()` and `boot_health()` have nothing to group and take
-    none.
+    none. `boot_bag()` is the way in from this package's own screen:
+    `boot_select()` returns a wide object and everything here reads a long one.
   contents:
+  - boot_bag
   - boot_validate
   - boot_provenance
   - boot_seeds

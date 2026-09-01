@@ -170,3 +170,21 @@ test_that("boot_seeds reads `seeds` by exact name, not by prefix", {
   expect_identical(nrow(out), 1L)
   expect_identical(out$seed, "4242")
 })
+
+test_that("a boot_bag() screen reports its engine rather than NA", {
+  # th_sha and th_version are the hazard runner's fields. A bag this package
+  # assembled has neither, and the row that exists to say WHICH CODEBASE RAN
+  # printed NA for every boot_select() screen until `engine` was read too.
+  set.seed(2)
+  n <- 120
+  x1 <- stats::rnorm(n)
+  df <- data.frame(y = 2 * x1 + stats::rnorm(n), x1 = x1, x2 = stats::rnorm(n))
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 5, seed = 7)
+  bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
+                  manifest = list(sha256 = "abc"))
+
+  p <- boot_provenance(bag)
+  engine <- p$value[p$item == "Fitting engine"]
+  expect_false(is.na(engine))
+  expect_match(engine, "^version:")
+})
