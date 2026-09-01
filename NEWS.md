@@ -48,6 +48,14 @@ a way to say what it was, and a way to become a report.
   a logistic runner names nothing there, and is refused rather than silently
   excluding no terms and reporting the base model as a candidate.
 
+* **`boot_provenance()` reads `engine`.** Its "Fitting engine" row looked for
+  `th_sha` and then `th_version`, both written by TemporalHazard's hazard
+  runner. A bag this package assembled has neither, so the row that exists to
+  say *which codebase ran* printed `NA` on every `boot_select()` screen. That
+  is the blank-where-provenance-belongs failure the table was built to prevent,
+  occurring in the table itself. `boot_bag()` writes `engine`; the third branch
+  reads it.
+
 ## Bug fixes
 
 * **A bag missing `base_params` no longer validates.** `boot_validate()` read
