@@ -77,7 +77,10 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
          "count it ran under are not recoverable from it.\nRe-run the screen ",
          "under 0.9.2 or later.", call. = FALSE)
   }
-  if (is.na(ctl$seed)) {
+  # length-1 checked before is.na(): a hand-edited control with no `seed` gives
+  # is.na(NULL) = logical(0), and `if (logical(0))` errors with "argument is of
+  # length zero", replacing the diagnosis below with one that names nothing.
+  if (length(ctl$seed) != 1L || is.na(ctl$seed)) {
     stop("This screen did not record a seed, so the report it feeds could ",
          "not be reproduced and the provenance table would print a blank ",
          "where the seed belongs.\nRe-run boot_select() with `seed =`.",
@@ -94,11 +97,25 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
          "reports the base model as a candidate.\nA Cox screen has no ",
          "intercept: name the terms you forced instead.", call. = FALSE)
   }
+  # Whole numbers, checked rather than truncated. as.integer(5.7) is 5, so a
+  # fractional count would silently under-report the pool the frequencies are
+  # conditional on. boot_select() guards n_rep the same way and for the same
+  # reason; this is that convention, not a second one.
+  .whole <- function(v, what) {
+    if (!is.numeric(v) || length(v) != 1L || is.na(v) || v < 0 ||
+          v != trunc(v)) {
+      stop("`", what, "` must be a single whole number of candidates, found ",
+           paste(format(v), collapse = ", "), ".", call. = FALSE)
+    }
+    as.integer(v)
+  }
+  requested <- .whole(requested, "requested")
+
   n_usable <- length(setdiff(terms_seen, base_params))
-  if (!is.null(usable) && !identical(as.integer(usable), n_usable)) {
-    stop("The runner reports ", as.integer(usable), " usable candidates; the ",
-         "screen carries ", n_usable, ". One of the two is describing a ",
-         "different run.", call. = FALSE)
+  if (!is.null(usable) && !identical(.whole(usable, "usable"), n_usable)) {
+    stop("The runner reports ", .whole(usable, "usable"), " usable ",
+         "candidates; the screen carries ", n_usable, ". One of the two is ",
+         "describing a different run.", call. = FALSE)
   }
 
   # Long form, NA dropped. See @details: a row written for an unselected term
@@ -119,7 +136,7 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
     slentry      = ctl$sle,
     slstay       = ctl$sls,
     base_params  = base_params,
-    requested    = as.integer(requested),
+    requested    = requested,
     usable       = n_usable,
     n_rows       = as.integer(ctl$n_rows),
     elapsed_mins = ctl$elapsed_mins,

@@ -146,3 +146,33 @@ test_that("a Cox screen has no intercept, and boot_bag() says so usefully", {
     "not among the screen's terms"
   )
 })
+
+test_that("a control with no seed gives the diagnosis, not a length error", {
+  # is.na(NULL) is logical(0), and `if (logical(0))` errors with "argument is
+  # of length zero" -- which replaces the message below with one naming
+  # nothing. Raised by Copilot on the PR that added boot_bag().
+  fit <- fx_selection()
+  fit$control$seed <- NULL
+  expect_error(
+    boot_bag(fit, base_params = "(Intercept)", requested = 5L,
+             manifest = list(sha256 = "a")),
+    "did not record a seed"
+  )
+})
+
+test_that("fractional counts are refused, not silently truncated", {
+  # as.integer(5.7) is 5. The pool a frequency is conditional on would then be
+  # under-reported by a number nobody chose. boot_select() guards n_rep the
+  # same way.
+  fit <- fx_selection()
+  expect_error(
+    boot_bag(fit, base_params = "(Intercept)", requested = 5.7,
+             manifest = list(sha256 = "a")),
+    "`requested` must be a single whole number"
+  )
+  expect_error(
+    boot_bag(fit, base_params = "(Intercept)", requested = 5L,
+             manifest = list(sha256 = "a"), usable = 3.2),
+    "`usable` must be a single whole number"
+  )
+})
