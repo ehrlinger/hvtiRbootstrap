@@ -62,8 +62,10 @@ reference:
     linear, Cox and hazard bootstrap reports are thin templates rather than
     near-copies of one another. `boot_validate()` checks that the screen a
     runner wrote has the shape a report reads; the rest turn it into tables.
-    Every one of them takes an optional `phase`, so a multiphase hazard
-    screen and a single-phase logistic screen run down the same code path.
+    The ones that group their rows take an optional `phase`, so a multiphase
+    hazard screen and a single-phase logistic screen run down the same code
+    path; `boot_dropped()` and `boot_health()` have nothing to group and take
+    none.
   contents:
   - boot_validate
   - boot_provenance

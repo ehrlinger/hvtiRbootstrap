@@ -87,3 +87,26 @@ test_that("boot_validate says what it expected and what it found", {
 test_that("boot_validate rejects something that is not a bag at all", {
   expect_error(boot_validate("bagging.rds"), "list")
 })
+
+test_that("boot_validate requires the manifest to be a list", {
+  # It is indexed by name, and `manifest[["sha256"]]` on a named ATOMIC
+  # vector that lacks the name is not NULL -- it is "subscript out of
+  # bounds", an error naming neither the field nor the file. The same
+  # indexing happens in boot_pool_chunks().
+  bag <- fx_bag()
+  bag$manifest <- c(md5sum = "abc")
+  err <- expect_error(boot_validate(bag), "manifest")
+  expect_match(conditionMessage(err), "found character")
+})
+
+test_that("boot_validate accepts a manifest with neither digest", {
+  # Which digests a runner records is its business; that the manifest is a
+  # list is not. boot_provenance() reports NA for a checksum it cannot find,
+  # and that is a legitimate screen, not a malformed one.
+  bag <- fx_bag()
+  bag$manifest <- list(md5sum = "abc")
+  expect_true(boot_validate(bag))
+  expect_true(is.na(
+    boot_provenance(bag)$value[boot_provenance(bag)$item == "Dataset checksum"]
+  ))
+})

@@ -10,12 +10,20 @@
   hand-synced copies of a report is a shape this family has watched drift
   before.
 
-  Every one of them takes an optional **`phase`** — a function mapping a term
-  to its phase. With `NULL` there is no phase dimension; a multiphase hazard
-  screen passes its own term-splitting rule. That one argument is what lets a
-  single code path serve four reports, and the alternative — the package
-  serving three of them while the fourth keeps its own copy — reintroduces
-  exactly the duplication the extraction removes.
+  The three that group their output — `boot_frequencies()`,
+  `boot_concepts()` and, through them, everything built on their rows — take
+  an optional **`phase`**: a function mapping a term to its phase. With
+  `NULL` there is no phase dimension; a multiphase hazard screen passes its
+  own term-splitting rule. That one argument is what lets a single code path
+  serve four reports, and the alternative — the package serving three of them
+  while the fourth keeps its own copy — reintroduces exactly the duplication
+  the extraction removes.
+
+  `boot_dropped()` and `boot_health()` take no `phase`, and that is not an
+  omission. A candidate dropped before screening never became a model term,
+  so `bag$dropped` carries its own `phase` column written by the runner that
+  dropped it; and a health check is screen-wide. An argument that cannot do
+  anything is worse than an absent one.
 
 * **`boot_validate()` checks field *shapes*, not just presence**, and it is
   the piece of this that would have prevented the defect that motivated it.

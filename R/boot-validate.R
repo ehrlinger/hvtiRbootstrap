@@ -41,6 +41,24 @@
   character(0)
 }
 
+# Present and a list, because it is indexed by name.
+#
+# `manifest[["sha256"]]` on a named ATOMIC vector that does not carry the name
+# is not NULL -- it is an error, "subscript out of bounds", which names
+# neither the field nor the file. The same indexing happens in
+# boot_pool_chunks(), so this is a shape the package relies on twice.
+.chk_named_list <- function(x, field) {
+  present <- .chk_any(x, field)
+  if (length(present)) {
+    return(present)
+  }
+  if (!is.list(x)) {
+    return(paste0(field, ": expected a list indexed by name, found ",
+                  class(x)[1L]))
+  }
+  character(0)
+}
+
 #' Check that a bootstrap bag has the shape a report reads
 #'
 #' @description
@@ -67,9 +85,13 @@
 #'   numeric and carry at least one value. `integer(0)` satisfies "is present"
 #'   and then contributes no element rather than one, which collapses any table
 #'   built from it.
-#' * **Any shape** - `base_params` and `manifest` are read whole, and
-#'   `boot` must carry `replicates`, `summary`, `n_success` and `n_failed`.
-#'   `boot` being present says nothing about what is inside it.
+#' * **Any shape** - `base_params` is read whole, and `boot` must carry
+#'   `replicates`, `summary`, `n_success` and `n_failed`. `boot` being present
+#'   says nothing about what is inside it. `manifest` is the one exception:
+#'   it must be a **list**, because it is indexed by name, and
+#'   `manifest[["sha256"]]` on a named atomic vector lacking that name is not
+#'   `NULL` but an error -- `subscript out of bounds`, naming neither the
+#'   field nor the file.
 #'
 #' Every failure is reported at once. An author fixing a runner wants the whole
 #' list; one at a time turns a single fix into five renders.
@@ -124,9 +146,8 @@ boot_validate <- function(bag) {
     unlist(lapply(c("requested", "usable"),
                   function(f) .chk_per_phase(bag[[f]], f)),
            use.names = FALSE),
-    unlist(lapply(c("base_params", "manifest"),
-                  function(f) .chk_any(bag[[f]], f)),
-           use.names = FALSE)
+    .chk_any(bag$base_params, "base_params"),
+    .chk_named_list(bag$manifest, "manifest")
   )
 
   # Guarded rather than folded into the loop above: with `boot` absent there is

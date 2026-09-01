@@ -105,6 +105,30 @@ test_that("a phase that is not a prefix leaves the variable alone", {
   expect_identical(out$variable, out$term)
 })
 
+test_that("an accidental prefix is not stripped", {
+  # A separator is required, not optional. A rule returning "e" for
+  # `early.age` would otherwise yield `arly.age` -- a name that matches no
+  # concept map and no cluster, and that nothing downstream can tell from a
+  # real one. Leaving the term whole is unhelpful; mangling it is untrue.
+  out <- boot_frequencies(fx_bag(), phase = function(term) "early")
+  expect_identical(out$variable[out$term == "early.age"], "age")
+  expect_identical(out$variable[out$term == "late.age"], "late.age")
+
+  first_letter <- function(term) substr(term, 1L, 1L)
+  out <- boot_frequencies(fx_bag(), phase = first_letter)
+  expect_identical(out$variable, out$term)
+})
+
+test_that("any separator works, not just a dot", {
+  # The package must not hardcode the separator either. Only its PRESENCE is
+  # required; which character it is belongs to the caller's naming scheme.
+  bag <- fx_bag()
+  bag$boot$replicates$parameter <- sub("[.]", "_",
+                                       bag$boot$replicates$parameter)
+  out <- boot_frequencies(bag, phase = function(term) sub("_.*$", "", term))
+  expect_identical(out$variable[out$term == "early_ln_age"], "ln_age")
+})
+
 test_that("boot_frequencies applies a scalar phase rule element by element", {
   # `bh` passes a vectorised sub(), but a rule written for one term must not
   # silently return one phase for the whole screen.

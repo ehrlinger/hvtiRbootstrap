@@ -14,8 +14,11 @@ there is no phase dimension and no \code{phase} column. A multiphase hazard
 screen passes \code{function(term) sub("[.].*$", "", term)}, which reads
 \code{early.age} as the early phase's decision about \code{age}; a logistic, linear
 or Cox screen has no phases and passes nothing. The rule is applied one
-term at a time, so it need not be vectorised, and \code{variable} is the term
-with the returned phase label stripped from its head when it is there.}
+term at a time, so it need not be vectorised. \code{variable} is the term with
+the returned phase label stripped from its head, and that happens only
+when a separator follows it: a label that runs straight into an
+alphanumeric character is an accidental prefix, and the term stands
+unstripped rather than being silently mangled.}
 
 \item{threshold}{The retention cutoff, as a percentage, or \code{NULL}. This is a
 \strong{reporting} decision and not something the run recorded: \code{slentry} and

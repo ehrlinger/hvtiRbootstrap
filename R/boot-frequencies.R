@@ -46,16 +46,25 @@
 
 # The term with its phase label removed, so that `early.age` reads as `age`.
 #
-# Derived from what the caller's own rule returned rather than from a
-# hardcoded separator: a logistic screen has no phases and a future model
-# family may build its terms differently. When the phase is not the head of
-# the term there is nothing to strip and the term stands as the variable.
+# Which characters separate the two is not hardcoded -- a logistic screen has
+# no phases and a future model family may build its terms differently -- but
+# the presence of a separator is REQUIRED. A label that is an accidental
+# prefix otherwise strips silently: a rule returning "e" for `early.age`
+# yields `arly.age`, and a rule returning "early" for `earlyage` yields `age`
+# from a term that was never phase-qualified. Neither matches any concept map
+# or cluster, and nothing downstream can tell a mangled name from a real one.
+#
+# So a term whose phase label runs straight into an alphanumeric character
+# stands as its own variable. That is wrong only in the sense of being
+# unhelpful; the alternative is wrong in the sense of being untrue.
 .variable_of <- function(terms, phases) {
   out <- terms
   for (i in seq_along(terms)) {
     ph <- phases[i]
     if (is.na(ph) || !nzchar(ph) || !startsWith(terms[i], ph)) next
-    rest <- sub("^[^[:alnum:]]", "", substring(terms[i], nchar(ph) + 1L))
+    rest <- substring(terms[i], nchar(ph) + 1L)
+    if (!grepl("^[^[:alnum:]]", rest)) next
+    rest <- sub("^[^[:alnum:]]", "", rest)
     if (nzchar(rest)) out[i] <- rest
   }
   out
@@ -95,8 +104,11 @@
 #'   screen passes `function(term) sub("[.].*$", "", term)`, which reads
 #'   `early.age` as the early phase's decision about `age`; a logistic, linear
 #'   or Cox screen has no phases and passes nothing. The rule is applied one
-#'   term at a time, so it need not be vectorised, and `variable` is the term
-#'   with the returned phase label stripped from its head when it is there.
+#'   term at a time, so it need not be vectorised. `variable` is the term with
+#'   the returned phase label stripped from its head, and that happens only
+#'   when a separator follows it: a label that runs straight into an
+#'   alphanumeric character is an accidental prefix, and the term stands
+#'   unstripped rather than being silently mangled.
 #' @param threshold The retention cutoff, as a percentage, or `NULL`. This is a
 #'   **reporting** decision and not something the run recorded: `slentry` and
 #'   `slstay` governed each replicate's stepwise fit, and neither says how

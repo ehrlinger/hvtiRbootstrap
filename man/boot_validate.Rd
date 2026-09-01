@@ -37,9 +37,13 @@ so \code{c(early = 230, late = 230)} is one pool seen twice. They must be
 numeric and carry at least one value. \code{integer(0)} satisfies "is present"
 and then contributes no element rather than one, which collapses any table
 built from it.
-\item \strong{Any shape} - \code{base_params} and \code{manifest} are read whole, and
-\code{boot} must carry \code{replicates}, \code{summary}, \code{n_success} and \code{n_failed}.
-\code{boot} being present says nothing about what is inside it.
+\item \strong{Any shape} - \code{base_params} is read whole, and \code{boot} must carry
+\code{replicates}, \code{summary}, \code{n_success} and \code{n_failed}. \code{boot} being present
+says nothing about what is inside it. \code{manifest} is the one exception:
+it must be a \strong{list}, because it is indexed by name, and
+\code{manifest[["sha256"]]} on a named atomic vector lacking that name is not
+\code{NULL} but an error -- \verb{subscript out of bounds}, naming neither the
+field nor the file.
 }
 
 Every failure is reported at once. An author fixing a runner wants the whole
