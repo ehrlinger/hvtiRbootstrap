@@ -44,7 +44,12 @@
 #' @param seed Optional integer for reproducibility.
 #' @return An object of class `boot_selection`. `$coefficients` is a matrix with
 #'   one row per valid replicate and one column per candidate term, `NA` where
-#'   the term was not selected.
+#'   the term was not selected. `$control` records the run's own settings --
+#'   `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`, `n_rows`,
+#'   `n_terms`, `elapsed_mins` and the `package` version -- so that
+#'   [boot_bag()] can build a provenance record from the run rather than from
+#'   what a caller retypes. `$call` cannot serve that purpose: `match.call()`
+#'   omits every argument left at its default.
 #' @seealso [boot_summary()] for the per-variable selection frequencies, and
 #'   [boot_clusters()] for the same question asked of a correlated group.
 #'   [fit_linear()], [fit_logistic()] and [fit_cox()] are the supplied fitters.
@@ -125,6 +130,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   fits <- vector("list", n_rep)
   kept <- 0L
   attempts <- 0L
+  .t0 <- proc.time()[["elapsed"]]
   # %bootreg's loop: keep resampling until n_rep VALID models exist. A failed
   # fit is redrawn in place and does not count toward n_rep, only toward
   # attempts -- the macro reports both.
@@ -157,6 +163,31 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
               dimnames = list(NULL, cols))
   for (i in seq_len(n_rep)) m[i, names(fits[[i]])] <- fits[[i]]
 
+  # What the run knows about itself. boot_bag() reads this rather than asking
+  # its caller to retype it: a bag whose slentry was typed by hand can disagree
+  # with the screen it describes, and the provenance table would then report
+  # the typed value as though the screen had used it.
+  #
+  # `call` cannot serve. match.call() omits every argument left at its default,
+  # so a run at the default sle = 0.10 records nothing at all about sle.
+  #
+  # elapsed is this call's own elapsed seconds, in the minutes boot_validate()
+  # expects. A chunked run sums them in boot_pool_chunks(), which is why the
+  # unit matters here rather than being whatever was convenient.
+  control <- list(
+    method       = ctrl$method,
+    sle          = ctrl$sle,
+    sls          = ctrl$sls,
+    max_steps    = as.integer(ctrl$max_steps),
+    fraction     = fraction,
+    seed         = if (is.null(seed)) NA_real_ else as.numeric(seed),
+    n_rows       = as.integer(n),
+    n_terms      = length(terms_all),
+    elapsed_mins = (proc.time()[["elapsed"]] - .t0) / 60,
+    package      = as.character(utils::packageVersion("hvtiRbootstrap"))
+  )
+
   new_boot_selection(m, n_rep = as.integer(n_rep),
-                     n_attempts = attempts, call = match.call())
+                     n_attempts = attempts, call = match.call(),
+                     control = control)
 }

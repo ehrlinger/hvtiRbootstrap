@@ -1,7 +1,12 @@
-new_boot_selection <- function(coefficients, n_rep, n_attempts, call) {
+# `control` defaults to NULL rather than being required. This constructor is
+# internal, but an object saved by 0.9.0 and reloaded under 0.9.1 carries no
+# control either, and boot_bag() refuses THAT case by name -- which it can only
+# do if the field is simply absent rather than the object being malformed.
+new_boot_selection <- function(coefficients, n_rep, n_attempts, call,
+                               control = NULL) {
   structure(
     list(coefficients = coefficients, n_rep = n_rep,
-         n_attempts = n_attempts, call = call),
+         n_attempts = n_attempts, call = call, control = control),
     class = "boot_selection"
   )
 }
