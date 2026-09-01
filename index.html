@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +72,7 @@
 <div class="section level2">
 <h2 id="if-you-already-run-the-macros">If you already run the macros<a class="anchor" aria-label="anchor" href="#if-you-already-run-the-macros"></a>
 </h2>
-<p>Three macros, three functions. Nothing else to learn.</p>
+<p>Three macros, three functions. To run a screen, that is all there is to learn.</p>
 <table class="table">
 <thead><tr>
 <th>SAS</th>
@@ -186,6 +186,74 @@
 <p><code>n</code> counts the replicates in which a term was selected, so <code>pct</code> reads as a selection frequency. <code><a href="reference/boot_clusters.html">boot_clusters()</a></code> is not the sum of its members’ counts: a replicate selecting two members counts once, which is why <code>size</code> reads 100 and not 128.5.</p>
 </div>
 <div class="section level2">
+<h2 id="beyond-the-macros">Beyond the macros<a class="anchor" aria-label="anchor" href="#beyond-the-macros"></a>
+</h2>
+<p>Two layers have grown around that core. Neither has a macro behind it, because a SAS batch job never needed one.</p>
+<p><strong>Pooling</strong>, for a screen too long to run in one go. A bootstrap that writes nothing until its last replicate is unrestartable, and a real screen can be days of compute — a run that dies at 90% yields nothing.</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>function</th>
+<th>does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code><a href="reference/boot_pool_chunks.html">boot_pool_chunks()</a></code></td>
+<td>folds chunk files into one object of the same shape, refusing chunks that disagree on the data or the screen</td>
+</tr>
+<tr>
+<td><code><a href="reference/boot_chunk_files.html">boot_chunk_files()</a></code></td>
+<td>finds them, in a deterministic order</td>
+</tr>
+<tr>
+<td><code><a href="reference/boot_shortfall.html">boot_shortfall()</a></code></td>
+<td>whether what you pooled is the run you launched — which nothing inside a chunk can know</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reporting</strong>, for turning a finished screen into tables. Each takes an optional <code>phase</code>, so a multiphase hazard screen and a single-phase logistic one run down the same code path.</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>function</th>
+<th>does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code><a href="reference/boot_validate.html">boot_validate()</a></code></td>
+<td>checks the screen has the shape a report reads — shapes, not just presence</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/boot_provenance.html">boot_provenance()</a></code>, <code><a href="reference/boot_seeds.html">boot_seeds()</a></code>
+</td>
+<td>where the screen came from, and every seed</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/boot_frequencies.html">boot_frequencies()</a></code>, <code><a href="reference/boot_dropped.html">boot_dropped()</a></code>
+</td>
+<td>the per-term view with its Monte-Carlo error, and the candidates never screened</td>
+</tr>
+<tr>
+<td><code><a href="reference/boot_concepts.html">boot_concepts()</a></code></td>
+<td>groups competing forms of one thing, counting a replicate that took two once</td>
+</tr>
+<tr>
+<td><code><a href="reference/boot_health.html">boot_health()</a></code></td>
+<td>whether the screen ran at all — not the same question as whether it finished</td>
+</tr>
+</tbody>
+</table>
+<p>These are computation only. Nothing here renders: no <code>kable()</code>, no <code>ggplot2</code>, no figure. A report decides what to say; this package decides what is true.</p>
+</div>
+<div class="section level2">
 <h2 id="what-is-checked-against-sas-and-what-is-not">What is checked against SAS, and what is not<a class="anchor" aria-label="anchor" href="#what-is-checked-against-sas-and-what-is-not"></a>
 </h2>
 <table class="table">
@@ -223,7 +291,8 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Under development. v1 covers the selection core with logistic, linear and Cox fitters. Hazard and quantile fitters, the bootstrap-CI family, and penalised selection are each deferred to their own spec.</p>
+<p>Under development, and at 0.9.0 rather than 1.0.0 deliberately. The selection core, chunk pooling and the reporting layer are all in place, with logistic, linear and Cox fitters.</p>
+<p>The hazard and quantile fitters, the bootstrap-CI family (<code>boot_predict_ci()</code>) and penalised selection are each deferred to their own spec — and the hazard fitter is why this is not 1.0.0. Its <code>_CP_*evnt</code> and <code>_tvc</code> variants encode competing-risks and time-varying-covariate structures that deserve reading before an API is fixed, and a 1.0.0 that then grew a whole new fitter family would be making a promise it had not earned.</p>
 </div>
 <div class="section level2">
 <h2 id="divergence-from-the-sas-macros">Divergence from the SAS macros<a class="anchor" aria-label="anchor" href="#divergence-from-the-sas-macros"></a>

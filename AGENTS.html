@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,15 +41,15 @@
 
 <div id="hvtirbootstrap" class="section level1">
 
-<p>Bootstrap variable selection: the R port of the CORR macro library’s <code>%bootreg</code>, <code>%SUMBOOT</code> and <code>%cluster</code>. Six exports — <code><a href="reference/boot_select.html">boot_select()</a></code>, <code><a href="reference/boot_summary.html">boot_summary()</a></code>, <code><a href="reference/boot_clusters.html">boot_clusters()</a></code>, and the three fitters <code><a href="reference/fit_logistic.html">fit_logistic()</a></code>, <code><a href="reference/fit_linear.html">fit_linear()</a></code>, <code><a href="reference/fit_cox.html">fit_cox()</a></code>.</p>
-<p><strong>The parity scope is narrow and deliberate.</strong> <code><a href="reference/boot_summary.html">boot_summary()</a></code> is held to <em>exact</em> parity with <code>%SUMBOOT</code>. Resampling and model fitting are <strong>not</strong> parity-tested — they cannot be, since the two languages draw different samples. Know which side of that line a change falls on before claiming it matches SAS.</p>
+<p>Bootstrap variable selection: the R port of the CORR macro library’s <code>%bootreg</code>, <code>%SUMBOOT</code> and <code>%cluster</code>. The core is six exports — <code><a href="reference/boot_select.html">boot_select()</a></code>, <code><a href="reference/boot_summary.html">boot_summary()</a></code>, <code><a href="reference/boot_clusters.html">boot_clusters()</a></code>, and the three fitters <code><a href="reference/fit_logistic.html">fit_logistic()</a></code>, <code><a href="reference/fit_linear.html">fit_linear()</a></code>, <code><a href="reference/fit_cox.html">fit_cox()</a></code> — with two layers around it that have no macro behind them: <strong>pooling</strong> (<code><a href="reference/boot_pool_chunks.html">boot_pool_chunks()</a></code>, <code><a href="reference/boot_chunk_files.html">boot_chunk_files()</a></code>, <code><a href="reference/boot_shortfall.html">boot_shortfall()</a></code>) and <strong>reporting</strong> (<code><a href="reference/boot_validate.html">boot_validate()</a></code>, <code><a href="reference/boot_provenance.html">boot_provenance()</a></code>, <code><a href="reference/boot_seeds.html">boot_seeds()</a></code>, <code><a href="reference/boot_frequencies.html">boot_frequencies()</a></code>, <code><a href="reference/boot_dropped.html">boot_dropped()</a></code>, <code><a href="reference/boot_concepts.html">boot_concepts()</a></code>, <code><a href="reference/boot_health.html">boot_health()</a></code>).</p>
+<p><strong>The parity scope is narrow and deliberate.</strong> <code><a href="reference/boot_summary.html">boot_summary()</a></code> and <code><a href="reference/boot_clusters.html">boot_clusters()</a></code> are held to <em>exact</em> parity with <code>%SUMBOOT</code> and <code>%cluster</code>. Resampling and model fitting are <strong>not</strong> parity-tested — they cannot be, since the two languages draw different samples. Know which side of that line a change falls on before claiming it matches SAS.</p>
 <p>This file is the operational contract and applies in full. It is tool neutral, so Codex and any other agent read the same rules. Claude Code affordances live in <code>CLAUDE.md</code>, which imports this file.</p>
 <div class="section level2">
 <h2 id="definition-of-done">Definition of done<a class="anchor" aria-label="anchor" href="#definition-of-done"></a></h2>
 <ul><li>
 <code>devtools::test()</code> passes. The runner is <code>tests/testthat.R</code>.</li>
 <li>
-<code>devtools::check()</code> is <strong>0 errors, 0 warnings, 0 notes</strong>. Verified 2026-08-20 at 0.1.0 (22s with <code>--no-manual</code> and vignettes skipped; the manual has its own gate).</li>
+<code>devtools::check()</code> is <strong>0 errors, 0 warnings, 0 notes</strong>. Verified 2026-09-01 at 0.9.0 (22s with <code>--no-manual</code>; 31s under <code>--as-cran</code> with the manual built, from a clean <code>git archive</code> export, where the only NOTE is CRAN incoming feasibility).</li>
 <li>
 <code>devtools::document()</code> has been run and <code>man/</code> and <code>NAMESPACE</code> are committed with the source change.</li>
 <li>Any divergence from the macro is in the roxygen, marked <strong>Divergence</strong>, with the default chosen so that the default behaviour still matches SAS.</li>
@@ -105,9 +105,9 @@
 </ul></div>
 <div class="section level2">
 <h2 id="gotchas">Gotchas<a class="anchor" aria-label="anchor" href="#gotchas"></a></h2>
-<ul><li>The package is <strong>0.x</strong> and is the selection core only. The <strong>hazard fitter is deliberately deferred</strong> — the variants were judged to deserve reading before an API is fixed, so <code>fit_hazard()</code> does not exist and should not be improvised.</li>
+<ul><li>The package is <strong>0.x</strong>. The <strong>hazard fitter is deliberately deferred</strong> — the variants were judged to deserve reading before an API is fixed, so <code>fit_hazard()</code> does not exist and should not be improvised. The quantile fitter (<a href="https://github.com/ehrlinger/hvtiRbootstrap/issues/16" class="external-link">#16</a>), <code>boot_predict_ci()</code> and penalised selection are deferred the same way, each to its own spec. Those four deferrals are why this is 0.9.0 and not 1.0.0.</li>
 <li>
-<strong>Chunking is a known gap, not an oversight.</strong> <code><a href="reference/boot_select.html">boot_select()</a></code> returns replicate results and <code><a href="reference/boot_summary.html">boot_summary()</a></code> consumes them, but nothing covers splitting a long run across processes. If pooling is added, <code><a href="reference/boot_summary.html">boot_summary()</a></code>’s exact-parity standard means the pooled summary must <strong>recompute</strong> <code>n</code> and <code>pct</code> from the pooled replicates — averaging across chunks is not the same number.</li>
+<strong>Chunking is done, not a gap.</strong> ⚠️ This entry used to say the opposite, and an agent reading the old text could reimplement what already ships. <code><a href="reference/boot_pool_chunks.html">boot_pool_chunks()</a></code>, <code><a href="reference/boot_chunk_files.html">boot_chunk_files()</a></code> and <code><a href="reference/boot_shortfall.html">boot_shortfall()</a></code> arrived in 0.1.1. The rule that entry anticipated is now a shipped property rather than a caution: the pooled summary <strong>recomputes</strong> <code>n</code> and <code>pct</code> from the pooled replicates rather than averaging across chunks, because a percentage of a percentage is not a percentage of the whole and the chunks need not be the same size.</li>
 <li>
 <code>DESCRIPTION</code> has no <code>Date:</code> field, so there is nothing to refresh on a version bump.</li>
 <li>There are no vignettes, so <code>R CMD check</code> is fast here. That is not evidence of coverage.</li>

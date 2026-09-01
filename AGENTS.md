@@ -1,21 +1,35 @@
 # hvtiRbootstrap
 
 Bootstrap variable selection: the R port of the CORR macro library’s
-`%bootreg`, `%SUMBOOT` and `%cluster`. Six exports —
+`%bootreg`, `%SUMBOOT` and `%cluster`. The core is six exports —
 [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md),
 [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md),
 [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md),
 and the three fitters
 [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md),
 [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md),
-[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md).
+[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+— with two layers around it that have no macro behind them: **pooling**
+([`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md),
+[`boot_chunk_files()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_chunk_files.md),
+[`boot_shortfall()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_shortfall.md))
+and **reporting**
+([`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md),
+[`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md),
+[`boot_seeds()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_seeds.md),
+[`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md),
+[`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md),
+[`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md),
+[`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)).
 
 **The parity scope is narrow and deliberate.**
 [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
-is held to *exact* parity with `%SUMBOOT`. Resampling and model fitting
-are **not** parity-tested — they cannot be, since the two languages draw
-different samples. Know which side of that line a change falls on before
-claiming it matches SAS.
+and
+[`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)
+are held to *exact* parity with `%SUMBOOT` and `%cluster`. Resampling
+and model fitting are **not** parity-tested — they cannot be, since the
+two languages draw different samples. Know which side of that line a
+change falls on before claiming it matches SAS.
 
 This file is the operational contract and applies in full. It is tool
 neutral, so Codex and any other agent read the same rules. Claude Code
@@ -25,8 +39,9 @@ affordances live in `CLAUDE.md`, which imports this file.
 
 - `devtools::test()` passes. The runner is `tests/testthat.R`.
 - `devtools::check()` is **0 errors, 0 warnings, 0 notes**. Verified
-  2026-08-20 at 0.1.0 (22s with `--no-manual` and vignettes skipped; the
-  manual has its own gate).
+  2026-09-01 at 0.9.0 (22s with `--no-manual`; 31s under `--as-cran`
+  with the manual built, from a clean `git archive` export, where the
+  only NOTE is CRAN incoming feasibility).
 - `devtools::document()` has been run and `man/` and `NAMESPACE` are
   committed with the source change.
 - Any divergence from the macro is in the roxygen, marked
@@ -114,20 +129,26 @@ way:
 
 ## Gotchas
 
-- The package is **0.x** and is the selection core only. The **hazard
-  fitter is deliberately deferred** — the variants were judged to
-  deserve reading before an API is fixed, so `fit_hazard()` does not
-  exist and should not be improvised.
-- **Chunking is a known gap, not an oversight.**
-  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
-  returns replicate results and
-  [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
-  consumes them, but nothing covers splitting a long run across
-  processes. If pooling is added,
-  [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)’s
-  exact-parity standard means the pooled summary must **recompute** `n`
-  and `pct` from the pooled replicates — averaging across chunks is not
-  the same number.
+- The package is **0.x**. The **hazard fitter is deliberately deferred**
+  — the variants were judged to deserve reading before an API is fixed,
+  so `fit_hazard()` does not exist and should not be improvised. The
+  quantile fitter
+  ([\#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)),
+  `boot_predict_ci()` and penalised selection are deferred the same way,
+  each to its own spec. Those four deferrals are why this is 0.9.0 and
+  not 1.0.0.
+- **Chunking is done, not a gap.** ⚠️ This entry used to say the
+  opposite, and an agent reading the old text could reimplement what
+  already ships.
+  [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md),
+  [`boot_chunk_files()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_chunk_files.md)
+  and
+  [`boot_shortfall()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_shortfall.md)
+  arrived in 0.1.1. The rule that entry anticipated is now a shipped
+  property rather than a caution: the pooled summary **recomputes** `n`
+  and `pct` from the pooled replicates rather than averaging across
+  chunks, because a percentage of a percentage is not a percentage of
+  the whole and the chunks need not be the same size.
 - `DESCRIPTION` has no `Date:` field, so there is nothing to refresh on
   a version bump.
 - There are no vignettes, so `R CMD check` is fast here. That is not

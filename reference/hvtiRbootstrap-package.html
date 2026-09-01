@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,7 +47,8 @@
 
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Three macros, three functions:</p><ul><li><p><code><a href="boot_select.html">boot_select()</a></code> - resample, fit, and record which terms each model kept
+    <p><strong>Three macros, three functions.</strong> That is the core, and to run a screen it
+is still all there is to learn:</p><ul><li><p><code><a href="boot_select.html">boot_select()</a></code> - resample, fit, and record which terms each model kept
 (<code>%bootreg</code>).</p></li>
 <li><p><code><a href="boot_summary.html">boot_summary()</a></code> - per-variable selection frequency and coefficient
 distribution (<code>%SUMBOOT</code>).</p></li>
@@ -56,6 +57,21 @@ selected (<code>%cluster</code>).</p></li>
 </ul><p>Fitters are pluggable, standing in for <code>%bootreg</code>'s <code>PROC=</code>:
 <code><a href="fit_logistic.html">fit_logistic()</a></code>, <code><a href="fit_linear.html">fit_linear()</a></code> and <code><a href="fit_cox.html">fit_cox()</a></code> ship with the package, and a
 new model family arrives as a new fitter rather than a new pipeline.</p>
+<p>Two layers have grown around that core. Neither has a macro behind it,
+because a SAS batch job never needed one.</p>
+<p><strong>Pooling</strong>, for a screen too long to run in one go. A bootstrap that writes
+nothing until its last replicate is unrestartable, and a real screen can be
+days of compute. <code><a href="boot_pool_chunks.html">boot_pool_chunks()</a></code> folds chunk files into one object of
+the same shape, refusing chunks that did not draw from the same data or run
+the same screen; <code><a href="boot_chunk_files.html">boot_chunk_files()</a></code> finds them, and <code><a href="boot_shortfall.html">boot_shortfall()</a></code>
+says whether what you pooled is the run you launched.</p>
+<p><strong>Reporting</strong>, for turning a finished screen into tables.
+<code><a href="boot_validate.html">boot_validate()</a></code> checks that the screen a runner wrote has the shape a
+report reads; <code><a href="boot_provenance.html">boot_provenance()</a></code> and <code><a href="boot_seeds.html">boot_seeds()</a></code> say where it came from;
+<code><a href="boot_frequencies.html">boot_frequencies()</a></code> and <code><a href="boot_dropped.html">boot_dropped()</a></code> give the per-term view, with the
+Monte-Carlo error each frequency carries; <code><a href="boot_concepts.html">boot_concepts()</a></code> groups competing
+forms of one thing; and <code><a href="boot_health.html">boot_health()</a></code> says whether the screen ran at all,
+which is not the same question as whether it finished.</p>
 <p>The hinge of the whole design is that a term the model did not select is
 <code>NA</code> in that replicate's row, so counting non-missing values down a column
 gives the selection frequency directly. That is how the macros work, and the

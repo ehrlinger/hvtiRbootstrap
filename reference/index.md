@@ -102,7 +102,8 @@ replicate should be redrawn.
 
 ## Package overview
 
-The three-function shape of the port, and which macro each one replaces.
+The shape of the port: three macros and three functions at the core,
+with the pooling and reporting layers that grew around them.
 
 - [`hvtiRbootstrap`](https://ehrlinger.github.io/hvtiRbootstrap/reference/hvtiRbootstrap-package.md)
   [`hvtiRbootstrap-package`](https://ehrlinger.github.io/hvtiRbootstrap/reference/hvtiRbootstrap-package.md)
