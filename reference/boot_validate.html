@@ -11,7 +11,7 @@ shared function enforces. This is that function."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,6 +98,11 @@ list; one at a time turns a single fix into five renders.</p>
 are <strong>not</strong> required. A single unchunked run legitimately carries none of
 them, and <code><a href="boot_provenance.html">boot_provenance()</a></code>, <code><a href="boot_health.html">boot_health()</a></code> and <code><a href="boot_dropped.html">boot_dropped()</a></code> each say
 what they do in their absence.</p>
+<p><code>free_sd</code> is the one of those with a shape to it: absent is fine, present
+means a single value. It is the standard deviation of the <em>first</em> free base
+parameter, so one number is all it can be. A per-phase value validated
+cleanly and then met <code><a href="boot_health.html">boot_health()</a></code>'s scalar <code>if</code>, which R makes an error
+naming neither the field nor the function.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

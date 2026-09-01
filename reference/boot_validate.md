@@ -65,6 +65,14 @@ and
 [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md)
 each say what they do in their absence.
 
+`free_sd` is the one of those with a shape to it: absent is fine,
+present means a single value. It is the standard deviation of the
+*first* free base parameter, so one number is all it can be. A per-phase
+value validated cleanly and then met
+[`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)'s
+scalar `if`, which R makes an error naming neither the field nor the
+function.
+
 ## See also
 
 [`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md),

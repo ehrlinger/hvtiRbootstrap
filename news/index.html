@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,22 @@
       <small>Source: <a href="https://github.com/ehrlinger/hvtiRbootstrap/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.1" id="hvtirbootstrap-091">hvtiRbootstrap 0.9.1<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-091"></a></h2>
+<p>Two defects in the reporting layer, and one mistake made twice: a field read under an assumption about its shape that nothing enforced.</p>
+<div class="section level3">
+<h3 id="bug-fixes-0-9-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-9-1"></a></h3>
+<ul><li>
+<p><strong><code><a href="../reference/boot_dropped.html">boot_dropped()</a></code> no longer refuses a <code>dropped</code> field that is absent</strong> (<a href="https://github.com/ehrlinger/hvtiRbootstrap/issues/21" class="external-link">#21</a>). <code>$</code> on a list falls back to prefix matching, so a runner that recorded only <code>dropped_collinear</code> resolved <code>bag$dropped</code> to that character vector, and <code><a href="../reference/boot_dropped.html">boot_dropped()</a></code> rejected it as the wrong type – for a field the runner never wrote. The message named <code>bag$dropped</code> and sent its reader hunting for something that was not there.</p>
+<p>The shape it broke on is the one the documentation goes out of its way to promise: a screen that dropped nothing reports no rows rather than a fault. Any bag carrying a real <code>dropped</code> finds the exact match first and never saw this, which is why it took a constructed case to surface it, and why it is the worst distribution a defect can have – invisible in every bag in hand, fatal in the case that was advertised.</p>
+<p>Every optional field is now read by exact name: <code>dropped</code>, <code>free_sd</code>, <code>n_chunks</code>, <code>seeds</code>, <code>th_sha</code> and <code>th_version</code>. The class is gone rather than the instance.</p>
+</li>
+<li>
+<p><strong>A per-phase <code>free_sd</code> is refused by <code><a href="../reference/boot_validate.html">boot_validate()</a></code> rather than fatal in <code><a href="../reference/boot_health.html">boot_health()</a></code></strong> (<a href="https://github.com/ehrlinger/hvtiRbootstrap/issues/22" class="external-link">#22</a>). <code><a href="../reference/boot_health.html">boot_health()</a></code> branches on <code>free_sd</code> with a scalar <code>if</code>, so a length-2 value killed the call with a message naming neither the field nor the function – and the validator had passed the bag happily on the way in.</p>
+<p><code>free_sd</code> is scalar by contract. It is the standard deviation of the <em>first</em> free base parameter, and <code><a href="../reference/boot_pool_chunks.html">boot_pool_chunks()</a></code>, its only writer, computes one number. So the validator now says so, alongside <code>n_boot</code> and <code>seed</code>, and fails with the field named. Absent stays valid: a single unchunked run went through no pooling and carries none.</p>
+</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.0" id="hvtirbootstrap-090">hvtiRbootstrap 0.9.0<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-090"></a></h2>
 <p>The version moves from 0.1.x to 0.9.0 because the package has arrived at the scope it was designed for. <code><a href="../reference/boot_select.html">boot_select()</a></code> and the fitters run the screen, <code><a href="../reference/boot_summary.html">boot_summary()</a></code> and <code><a href="../reference/boot_clusters.html">boot_clusters()</a></code> summarise it, <code><a href="../reference/boot_pool_chunks.html">boot_pool_chunks()</a></code> makes a run of days restartable, and this release adds the reporting layer that turns a finished screen into tables. A study can now go from a candidate pool to a finished report without leaving this package.</p>

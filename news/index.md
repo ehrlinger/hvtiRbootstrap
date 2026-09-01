@@ -1,5 +1,52 @@
 # Changelog
 
+## hvtiRbootstrap 0.9.1
+
+Two defects in the reporting layer, and one mistake made twice: a field
+read under an assumption about its shape that nothing enforced.
+
+### Bug fixes
+
+- **[`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md)
+  no longer refuses a `dropped` field that is absent**
+  ([\#21](https://github.com/ehrlinger/hvtiRbootstrap/issues/21)). `$`
+  on a list falls back to prefix matching, so a runner that recorded
+  only `dropped_collinear` resolved `bag$dropped` to that character
+  vector, and
+  [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md)
+  rejected it as the wrong type – for a field the runner never wrote.
+  The message named `bag$dropped` and sent its reader hunting for
+  something that was not there.
+
+  The shape it broke on is the one the documentation goes out of its way
+  to promise: a screen that dropped nothing reports no rows rather than
+  a fault. Any bag carrying a real `dropped` finds the exact match first
+  and never saw this, which is why it took a constructed case to surface
+  it, and why it is the worst distribution a defect can have – invisible
+  in every bag in hand, fatal in the case that was advertised.
+
+  Every optional field is now read by exact name: `dropped`, `free_sd`,
+  `n_chunks`, `seeds`, `th_sha` and `th_version`. The class is gone
+  rather than the instance.
+
+- **A per-phase `free_sd` is refused by
+  [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+  rather than fatal in
+  [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)**
+  ([\#22](https://github.com/ehrlinger/hvtiRbootstrap/issues/22)).
+  [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+  branches on `free_sd` with a scalar `if`, so a length-2 value killed
+  the call with a message naming neither the field nor the function –
+  and the validator had passed the bag happily on the way in.
+
+  `free_sd` is scalar by contract. It is the standard deviation of the
+  *first* free base parameter, and
+  [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md),
+  its only writer, computes one number. So the validator now says so,
+  alongside `n_boot` and `seed`, and fails with the field named. Absent
+  stays valid: a single unchunked run went through no pooling and
+  carries none.
+
 ## hvtiRbootstrap 0.9.0
 
 The version moves from 0.1.x to 0.9.0 because the package has arrived at
