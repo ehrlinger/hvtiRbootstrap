@@ -118,6 +118,19 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
          "describing a different run.", call. = FALSE)
   }
 
+  # A pool cannot be smaller than what came out of it. `requested` counts the
+  # candidates OFFERED, before the runner dropped any, so it is at least the
+  # number the screen carries. A smaller value is not a near-miss: the
+  # provenance table would report fewer offered than usable, and a selection
+  # frequency is conditional on the pool, so the figure a reader takes away is
+  # attributed to a pool that never existed.
+  if (requested < n_usable) {
+    stop("`requested` is ", requested, " but the screen carries ", n_usable,
+         " candidates. `requested` counts the pool OFFERED, before anything ",
+         "was dropped, so it cannot be smaller than what was screened.",
+         call. = FALSE)
+  }
+
   # Long form, NA dropped. See @details: a row written for an unselected term
   # would be counted as a selection by boot_frequencies().
   idx <- which(!is.na(m), arr.ind = TRUE)

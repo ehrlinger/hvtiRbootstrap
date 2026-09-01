@@ -176,3 +176,21 @@ test_that("fractional counts are refused, not silently truncated", {
     "`usable` must be a single whole number"
   )
 })
+
+test_that("requested cannot be smaller than the pool the screen carries", {
+  # `requested` counts the candidates offered BEFORE any were dropped, so it is
+  # at least what the screen holds. A smaller value would print fewer offered
+  # than usable in the provenance table, and a selection frequency is
+  # conditional on its pool, so every figure would be attributed to a pool that
+  # never existed. Raised by Copilot on the PR that added boot_bag().
+  fit <- fx_selection()
+  expect_error(
+    boot_bag(fit, base_params = "(Intercept)", requested = 2L,
+             manifest = list(sha256 = "a")),
+    "cannot be smaller than what was screened"
+  )
+  # The boundary is allowed: a runner that dropped nothing offered exactly what
+  # it screened.
+  expect_silent(boot_bag(fit, base_params = "(Intercept)", requested = 3L,
+                         manifest = list(sha256 = "a")))
+})
