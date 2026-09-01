@@ -123,17 +123,17 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
   because no repository in the family has a `CODEOWNERS` file, so a PR can merge unreviewed.
 - Versions are **straight three digits** (`0.1.0`). Never a `.9000` suffix or a fourth digit.
 - **Patch-digit bumps only.** Minor and major are the maintainer's decision.
-- **Bump when you tag, not when you merge.** `DESCRIPTION` and the top `NEWS.md`
-  heading must always match -- `test-package.R` greps for exactly that -- but matching
-  is the whole requirement, and it does not ask the number to be new. So while the top
-  heading is a version that was never tagged, work lands as **bullets under it** rather
-  than under a heading of its own.
-  ⚠️ This bullet used to say to bump in the same commit as the change, which reads as
-  once per PR. That mints versions nobody installs: 0.9.1 and 0.9.2 both landed in a
-  single afternoon, and `v0.1.1` and `v0.9.0` are the only tags that have ever existed.
-  The precedent is 0.9.0's own notes, which folded 0.1.2's entries in "rather than split
-  across two version numbers" -- this is that rule applied before the fact instead of
-  after.
+- **Bump when you tag, not when you merge.** `DESCRIPTION` and the top `NEWS.md` heading
+  must always match -- `tests/testthat/test-package.R` checks for exactly that -- but
+  matching is the whole requirement, and it does not ask the number to be new. So while
+  the top heading is a version that was never tagged, work lands as **bullets under it**
+  rather than under a heading of its own.
+  ⚠️ This bullet used to say to bump in the same commit as the change, which reads as once
+  per PR. That mints versions nobody installs. As of 2026-09-01, 0.9.1 and 0.9.2 had both
+  landed in a single afternoon while `v0.1.1` and `v0.9.0` were the only tags in the repo
+  -- a snapshot, not a standing claim, and the state that prompted this rewording. The
+  precedent is 0.9.0's own notes, which folded 0.1.2's entries in "rather than split
+  across two version numbers"; this is that rule applied before the fact instead of after.
   The cost is real and worth paying: two branches adding bullets to the same heading
   conflict in `NEWS.md`. That is one small conflict per PR.
 
