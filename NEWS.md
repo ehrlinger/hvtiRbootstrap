@@ -4,6 +4,9 @@
   work can sit under this heading without moving `DESCRIPTION`. The test read
   the first heading in the file and compared it against `DESCRIPTION`, which
   fails as soon as an unreleased heading is on top.
+  It also reads only level-one headings, matching the family convention settled
+  on 2026-09-01, and no longer accepts `#hvtiRbootstrap`, which CommonMark does
+  not treat as a heading at all.
 
 # hvtiRbootstrap 0.9.2
 
