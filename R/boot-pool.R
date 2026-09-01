@@ -295,8 +295,12 @@ boot_chunk_files <- function(out_dir, prefix = "bagging") {
 #'
 #' @export
 boot_shortfall <- function(bag, expect_chunks, expect_boot) {
-  found_chunks <- if (is.null(bag$n_chunks)) 1L else as.integer(bag$n_chunks)
-  found_boot   <- as.integer(bag$n_boot)
+  found_chunks <- if (is.null(bag[["n_chunks"]])) {
+    1L
+  } else {
+    as.integer(bag[["n_chunks"]])
+  }
+  found_boot   <- as.integer(bag[["n_boot"]])
 
   parts <- character(0)
   if (!identical(found_chunks, as.integer(expect_chunks))) {

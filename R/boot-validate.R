@@ -17,6 +17,19 @@
   character(0)
 }
 
+# Optional, and a single value when present. `free_sd` is the SD of the FIRST
+# free base parameter -- one number by construction, and one number is what
+# boot_pool_chunks(), its only writer, computes. A per-phase value is the
+# per-phase reasoning of `requested` applied to a field that cannot carry it:
+# it validated cleanly and then met boot_health()'s scalar `if`, which R makes
+# an error naming neither the field nor the function.
+.chk_scalar_if_present <- function(x, field) {
+  if (is.null(x)) {
+    return(character(0))
+  }
+  .chk_scalar(x, field)
+}
+
 # Present, numeric, at least one value. A length > 1 value is VALID here: a
 # multiphase screen offers its candidate pool to each phase separately and
 # records one count per phase. Names are preferred and not required.
@@ -101,6 +114,12 @@
 #' them, and [boot_provenance()], [boot_health()] and [boot_dropped()] each say
 #' what they do in their absence.
 #'
+#' `free_sd` is the one of those with a shape to it: absent is fine, present
+#' means a single value. It is the standard deviation of the *first* free base
+#' parameter, so one number is all it can be. A per-phase value validated
+#' cleanly and then met [boot_health()]'s scalar `if`, which R makes an error
+#' naming neither the field nor the function.
+#'
 #' @param bag A bootstrap screen: the object [boot_pool_chunks()] returns, or a
 #'   single unchunked run of the same shape.
 #'
@@ -146,6 +165,7 @@ boot_validate <- function(bag) {
     unlist(lapply(c("requested", "usable"),
                   function(f) .chk_per_phase(bag[[f]], f)),
            use.names = FALSE),
+    .chk_scalar_if_present(bag[["free_sd"]], "free_sd"),
     .chk_any(bag$base_params, "base_params"),
     .chk_named_list(bag$manifest, "manifest")
   )

@@ -91,3 +91,13 @@ test_that("boot_health calls boot_validate and propagates its error", {
   bag$base_params <- NULL
   expect_error(boot_health(bag), "base_params")
 })
+
+test_that("boot_health reads `free_sd` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$free_sd <- NULL
+  bag$free_sd_by_phase <- c(early = 0, late = 0.7)
+  out <- boot_health(bag)
+  row <- out[out$check == "SD of the first free base parameter", ]
+  expect_identical(row$value, format(stats::sd(c(1.0, 1.1, 0.9, 1.2))))
+  expect_true(row$ok)
+})

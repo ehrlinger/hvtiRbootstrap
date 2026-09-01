@@ -165,3 +165,10 @@ test_that("boot_chunk_files treats prefix as a literal, not a pattern", {
   for (f in c("a.b.chunk01.rds", "axb.chunk01.rds")) saveRDS(1, file.path(d, f))
   expect_equal(basename(boot_chunk_files(d, prefix = "a.b")), "a.b.chunk01.rds")
 })
+
+test_that("boot_shortfall reads `n_chunks` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$n_chunks <- NULL
+  bag$n_chunks_expected <- 25L
+  expect_null(boot_shortfall(bag, expect_chunks = 1L, expect_boot = 4L))
+})

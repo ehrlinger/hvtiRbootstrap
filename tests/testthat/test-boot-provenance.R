@@ -143,3 +143,30 @@ test_that("boot_seeds calls boot_validate and propagates its error", {
   bag$boot$summary <- NULL
   expect_error(boot_seeds(bag), "boot\\$summary")
 })
+
+test_that("boot_provenance reads `n_chunks` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$n_chunks <- NULL
+  bag$n_chunks_expected <- 25L
+  out <- boot_provenance(bag)
+  expect_identical(out$value[out$item == "Chunks pooled"], "1")
+})
+
+test_that("boot_provenance reads `th_sha` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$th_sha <- NULL
+  bag$th_sha256 <- "deadbeef"
+  bag$th_version <- "1.2.3"
+  out <- boot_provenance(bag)
+  expect_true(any(grepl("version:1.2.3", out$value, fixed = TRUE)))
+})
+
+test_that("boot_seeds reads `seeds` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$seeds <- NULL
+  bag$seeds_by_chunk <- c(101, 202, 303)
+  bag$seed <- 4242
+  out <- boot_seeds(bag)
+  expect_identical(nrow(out), 1L)
+  expect_identical(out$seed, "4242")
+})

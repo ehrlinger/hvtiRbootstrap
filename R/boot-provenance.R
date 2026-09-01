@@ -98,15 +98,19 @@ boot_provenance <- function(bag) {
     }
   }
 
-  engine <- if (!is.null(bag$th_sha)) {
-    paste0("sha:", bag$th_sha)
-  } else if (!is.null(bag$th_version)) {
-    paste0("version:", bag$th_version)
+  engine <- if (!is.null(bag[["th_sha"]])) {
+    paste0("sha:", bag[["th_sha"]])
+  } else if (!is.null(bag[["th_version"]])) {
+    paste0("version:", bag[["th_version"]])
   } else {
     NA_character_
   }
 
-  n_chunks <- if (is.null(bag$n_chunks)) 1L else as.integer(bag$n_chunks)
+  n_chunks <- if (is.null(bag[["n_chunks"]])) {
+    1L
+  } else {
+    as.integer(bag[["n_chunks"]])
+  }
 
   data.frame(
     item = c("Replicates pooled", "Chunks pooled", "Entry level (slentry)",
@@ -162,7 +166,7 @@ boot_provenance <- function(bag) {
 boot_seeds <- function(bag) {
   boot_validate(bag)
 
-  seed_list <- if (!is.null(bag$seeds)) bag$seeds else bag$seed
+  seed_list <- if (!is.null(bag[["seeds"]])) bag[["seeds"]] else bag[["seed"]]
   data.frame(
     chunk = seq_along(seed_list),
     seed  = format(seed_list, scientific = FALSE),
