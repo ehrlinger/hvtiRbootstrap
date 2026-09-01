@@ -182,3 +182,31 @@ test_that("a finite max_attempts must be a whole number, but Inf is allowed", {
                      max_attempts = Inf, select = "none", seed = 1)
   expect_equal(nrow(out$coefficients), 3L)
 })
+
+test_that("boot_select() records the run's own control settings", {
+  out <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_rep = 5,
+                     sle = 0.08, sls = 0.04, seed = 77)
+
+  # Every field boot_bag() reads, named individually rather than by setdiff(),
+  # so a failure says WHICH one went missing.
+  ctl <- out$control
+  expect_type(ctl, "list")
+  expect_identical(ctl$method, "stepwise")
+  expect_identical(ctl$sle, 0.08)
+  expect_identical(ctl$sls, 0.04)
+  expect_identical(ctl$seed, 77)
+  expect_identical(ctl$n_rows, 150L)
+  expect_identical(ctl$n_terms, 2L)
+  expect_type(ctl$elapsed_mins, "double")
+  expect_gte(ctl$elapsed_mins, 0)
+  expect_identical(ctl$package,
+                   as.character(utils::packageVersion("hvtiRbootstrap")))
+})
+
+test_that("an unseeded run records NA rather than inventing a seed", {
+  # boot_bag() refuses this bag rather than writing a blank into the
+  # provenance table, so the NA has to survive to it.
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
+                     select = "none")
+  expect_true(is.na(out$control$seed))
+})

@@ -62,7 +62,12 @@ budget raises an error reporting how many valid models were obtained. Pass
 \value{
 An object of class \code{boot_selection}. \verb{$coefficients} is a matrix with
 one row per valid replicate and one column per candidate term, \code{NA} where
-the term was not selected.
+the term was not selected. \verb{$control} records the run's own settings --
+\code{method}, \code{sle}, \code{sls}, \code{max_steps}, \code{fraction}, \code{seed}, \code{n_rows},
+\code{n_terms}, \code{elapsed_mins} and the \code{package} version -- so that a bag
+builder (\code{boot_bag()}, not yet written) can take a provenance record from
+the run rather than from what a caller retypes. \verb{$call} cannot serve
+that purpose: \code{match.call()} omits every argument left at its default.
 }
 \description{
 The R port of \verb{\%bootreg} (\code{bootstrap.models.sas} in the CORR macro library).
