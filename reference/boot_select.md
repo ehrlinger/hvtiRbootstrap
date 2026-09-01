@@ -94,7 +94,14 @@ boot_select(
 
 An object of class `boot_selection`. `$coefficients` is a matrix with
 one row per valid replicate and one column per candidate term, `NA`
-where the term was not selected.
+where the term was not selected. `$control` records the run's own
+settings – `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`,
+`n_rows`, `n_terms`, `elapsed_mins` and the `package` version – so that
+a bag builder (`boot_bag()`, not yet written) can take a provenance
+record from the run rather than from what a caller retypes. `$call`
+cannot serve that purpose:
+[`match.call()`](https://rdrr.io/r/base/match.call.html) omits every
+argument left at its default.
 
 ## Details
 

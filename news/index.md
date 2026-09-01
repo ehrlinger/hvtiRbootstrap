@@ -4,7 +4,28 @@
 
 Finishes 0.9.1’s sweep. That release made every *optional* bag field
 read by exact name; this one does the same for the fields nothing was
-protecting, and one of them was worse than 0.9.1’s note claimed.
+protecting, and one of them was worse than 0.9.1’s note claimed. It also
+gives a finished run a way to say what it was.
+
+### New features
+
+- **A
+  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+  run now records its own settings.** The returned object carries
+  `$control`: `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`,
+  `n_rows`, `n_terms`, `elapsed_mins` and the `package` version.
+
+  `$call` cannot do that job, for a reason that is invisible until it
+  bites. [`match.call()`](https://rdrr.io/r/base/match.call.html) omits
+  every argument left at its default, so a screen run the ordinary way –
+  taking `sle`, `sls` and `max_steps` as given – has a `$call` naming
+  none of the thresholds that produced it. A provenance table built from
+  it prints blanks exactly where the screen’s criteria belong, and the
+  alternative is asking the caller to retype settings the run already
+  knew.
+
+  Recording them on the object means whatever assembles a bag can read
+  the run rather than interview it.
 
 ### Bug fixes
 
