@@ -1,12 +1,17 @@
 # hvtiRbootstrap
 
 Bootstrap variable selection: the R port of the CORR macro library's `%bootreg`,
-`%SUMBOOT` and `%cluster`. Six exports — `boot_select()`, `boot_summary()`,
-`boot_clusters()`, and the three fitters `fit_logistic()`, `fit_linear()`, `fit_cox()`.
+`%SUMBOOT` and `%cluster`. The core is six exports — `boot_select()`,
+`boot_summary()`, `boot_clusters()`, and the three fitters `fit_logistic()`,
+`fit_linear()`, `fit_cox()` — with two layers around it that have no macro behind
+them: **pooling** (`boot_pool_chunks()`, `boot_chunk_files()`, `boot_shortfall()`)
+and **reporting** (`boot_validate()`, `boot_provenance()`, `boot_seeds()`,
+`boot_frequencies()`, `boot_dropped()`, `boot_concepts()`, `boot_health()`).
 
-**The parity scope is narrow and deliberate.** `boot_summary()` is held to *exact* parity
-with `%SUMBOOT`. Resampling and model fitting are **not** parity-tested — they cannot be,
-since the two languages draw different samples. Know which side of that line a change falls
+**The parity scope is narrow and deliberate.** `boot_summary()` and `boot_clusters()`
+are held to *exact* parity with `%SUMBOOT` and `%cluster`. Resampling and model fitting
+are **not** parity-tested — they cannot be, since the two languages draw different
+samples. Know which side of that line a change falls
 on before claiming it matches SAS.
 
 This file is the operational contract and applies in full. It is tool neutral, so Codex and
@@ -16,8 +21,9 @@ imports this file.
 ## Definition of done
 
 - `devtools::test()` passes. The runner is `tests/testthat.R`.
-- `devtools::check()` is **0 errors, 0 warnings, 0 notes**. Verified 2026-08-20 at 0.1.0
-  (22s with `--no-manual` and vignettes skipped; the manual has its own gate).
+- `devtools::check()` is **0 errors, 0 warnings, 0 notes**. Verified 2026-09-01 at 0.9.0
+  (22s with `--no-manual`; 31s under `--as-cran` with the manual built, from a clean
+  `git archive` export, where the only NOTE is CRAN incoming feasibility).
 - `devtools::document()` has been run and `man/` and `NAMESPACE` are committed with the
   source change.
 - Any divergence from the macro is in the roxygen, marked **Divergence**, with the default
@@ -87,14 +93,20 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
 
 ## Gotchas
 
-- The package is **0.x** and is the selection core only. The **hazard fitter is deliberately
-  deferred** — the variants were judged to deserve reading before an API is fixed, so
-  `fit_hazard()` does not exist and should not be improvised.
-- **Chunking is a known gap, not an oversight.** `boot_select()` returns replicate results
-  and `boot_summary()` consumes them, but nothing covers splitting a long run across
-  processes. If pooling is added, `boot_summary()`'s exact-parity standard means the pooled
-  summary must **recompute** `n` and `pct` from the pooled replicates — averaging across
-  chunks is not the same number.
+- The package is **0.x**. The **hazard fitter is deliberately deferred** — the variants
+  were judged to deserve reading before an API is fixed, so `fit_hazard()` does not exist
+  and should not be improvised. The quantile fitter
+  ([#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)),
+  `boot_predict_ci()` and
+  penalised selection are deferred the same way, each to its own spec. Those four
+  deferrals are why this is 0.9.0 and not 1.0.0.
+- **Chunking is done, not a gap.** ⚠️ This entry used to say the opposite, and an agent
+  reading the old text could reimplement what already ships. `boot_pool_chunks()`,
+  `boot_chunk_files()` and `boot_shortfall()` arrived in 0.1.1. The rule that entry
+  anticipated is now a shipped property rather than a caution: the pooled summary
+  **recomputes** `n` and `pct` from the pooled replicates rather than averaging across
+  chunks, because a percentage of a percentage is not a percentage of the whole and the
+  chunks need not be the same size.
 - `DESCRIPTION` has no `Date:` field, so there is nothing to refresh on a version bump.
 - There are no vignettes, so `R CMD check` is fast here. That is not evidence of coverage.
 

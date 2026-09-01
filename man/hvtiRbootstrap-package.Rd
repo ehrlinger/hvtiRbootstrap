@@ -9,7 +9,8 @@
 Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR group's SAS macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and 'cluster' macros.
 }
 \details{
-Three macros, three functions:
+\strong{Three macros, three functions.} That is the core, and to run a screen it
+is still all there is to learn:
 \itemize{
 \item \code{\link[=boot_select]{boot_select()}} - resample, fit, and record which terms each model kept
 (\verb{\%bootreg}).
@@ -22,6 +23,24 @@ selected (\verb{\%cluster}).
 Fitters are pluggable, standing in for \verb{\%bootreg}'s \verb{PROC=}:
 \code{\link[=fit_logistic]{fit_logistic()}}, \code{\link[=fit_linear]{fit_linear()}} and \code{\link[=fit_cox]{fit_cox()}} ship with the package, and a
 new model family arrives as a new fitter rather than a new pipeline.
+
+Two layers have grown around that core. Neither has a macro behind it,
+because a SAS batch job never needed one.
+
+\strong{Pooling}, for a screen too long to run in one go. A bootstrap that writes
+nothing until its last replicate is unrestartable, and a real screen can be
+days of compute. \code{\link[=boot_pool_chunks]{boot_pool_chunks()}} folds chunk files into one object of
+the same shape, refusing chunks that did not draw from the same data or run
+the same screen; \code{\link[=boot_chunk_files]{boot_chunk_files()}} finds them, and \code{\link[=boot_shortfall]{boot_shortfall()}}
+says whether what you pooled is the run you launched.
+
+\strong{Reporting}, for turning a finished screen into tables.
+\code{\link[=boot_validate]{boot_validate()}} checks that the screen a runner wrote has the shape a
+report reads; \code{\link[=boot_provenance]{boot_provenance()}} and \code{\link[=boot_seeds]{boot_seeds()}} say where it came from;
+\code{\link[=boot_frequencies]{boot_frequencies()}} and \code{\link[=boot_dropped]{boot_dropped()}} give the per-term view, with the
+Monte-Carlo error each frequency carries; \code{\link[=boot_concepts]{boot_concepts()}} groups competing
+forms of one thing; and \code{\link[=boot_health]{boot_health()}} says whether the screen ran at all,
+which is not the same question as whether it finished.
 
 The hinge of the whole design is that a term the model did not select is
 \code{NA} in that replicate's row, so counting non-missing values down a column

@@ -18,7 +18,7 @@ remotes::install_github("ehrlinger/hvtiRbootstrap")
 
 ## If you already run the macros
 
-Three macros, three functions. Nothing else to learn.
+Three macros, three functions. To run a screen, that is all there is to learn.
 
 | SAS | R | Notes |
 |---|---|---|
@@ -87,6 +87,36 @@ selection frequency. `boot_clusters()` is not the sum of its members' counts: a
 replicate selecting two members counts once, which is why `size` reads 100 and
 not 128.5.
 
+## Beyond the macros
+
+Two layers have grown around that core. Neither has a macro behind it, because
+a SAS batch job never needed one.
+
+**Pooling**, for a screen too long to run in one go. A bootstrap that writes
+nothing until its last replicate is unrestartable, and a real screen can be days
+of compute — a run that dies at 90% yields nothing.
+
+| function | does |
+|---|---|
+| `boot_pool_chunks()` | folds chunk files into one object of the same shape, refusing chunks that disagree on the data or the screen |
+| `boot_chunk_files()` | finds them, in a deterministic order |
+| `boot_shortfall()` | whether what you pooled is the run you launched — which nothing inside a chunk can know |
+
+**Reporting**, for turning a finished screen into tables. Each takes an optional
+`phase`, so a multiphase hazard screen and a single-phase logistic one run down
+the same code path.
+
+| function | does |
+|---|---|
+| `boot_validate()` | checks the screen has the shape a report reads — shapes, not just presence |
+| `boot_provenance()`, `boot_seeds()` | where the screen came from, and every seed |
+| `boot_frequencies()`, `boot_dropped()` | the per-term view with its Monte-Carlo error, and the candidates never screened |
+| `boot_concepts()` | groups competing forms of one thing, counting a replicate that took two once |
+| `boot_health()` | whether the screen ran at all — not the same question as whether it finished |
+
+These are computation only. Nothing here renders: no `kable()`, no `ggplot2`, no
+figure. A report decides what to say; this package decides what is true.
+
 ## What is checked against SAS, and what is not
 
 | Component | Standard |
@@ -101,9 +131,16 @@ data and no PHI enters this repo.
 
 ## Status
 
-Under development. v1 covers the selection core with logistic, linear and Cox
-fitters. Hazard and quantile fitters, the bootstrap-CI family, and penalised
-selection are each deferred to their own spec.
+Under development, and at 0.9.0 rather than 1.0.0 deliberately. The selection
+core, chunk pooling and the reporting layer are all in place, with logistic,
+linear and Cox fitters.
+
+The hazard and quantile fitters, the bootstrap-CI family (`boot_predict_ci()`)
+and penalised selection are each deferred to their own spec — and the hazard
+fitter is why this is not 1.0.0. Its `_CP_*evnt` and `_tvc` variants encode
+competing-risks and time-varying-covariate structures that deserve reading
+before an API is fixed, and a 1.0.0 that then grew a whole new fitter family
+would be making a promise it had not earned.
 
 ## Divergence from the SAS macros
 
