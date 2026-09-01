@@ -40,3 +40,102 @@ fx_cluster_replicates <- function() {
     dimnames = list(NULL, c("a1", "a2", "b1"))
   )
 }
+
+# A bag shaped like the one boot_pool_chunks() returns, with hand-computable
+# answers. Synthetic: no cohort data enters this package.
+#
+#   replicate  terms selected
+#   1          base, early.age, early.ln_age
+#   2          base, early.age
+#   3          base, early.ln_age, early.bmi
+#   4          base, late.age
+#
+# Over n_boot = 4: base 4 (100%), early.age 2 (50%), early.ln_age 2 (50%),
+# early.bmi 1 (25%), late.age 1 (25%).
+#
+# The Age concept in the early phase is the union case: its two forms sit at
+# 50% each, and "at least one form" happens in replicates 1, 2 and 3 -- 75%,
+# not 100%. Replicate 1 took BOTH forms and must count once.
+#
+# `requested` and `usable` are scalars here so that a test giving them a
+# per-phase vector is visibly the variation, not the fixture's own shape.
+fx_bag <- function() {
+  reps <- data.frame(
+    replicate = c(1L, 1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 4L),
+    parameter = c("base", "early.age", "early.ln_age",
+                  "base", "early.age",
+                  "base", "early.ln_age", "early.bmi",
+                  "base", "late.age"),
+    estimate  = c(1.0, 0.5, 0.4,
+                  1.1, 0.6,
+                  0.9, 0.3, 0.2,
+                  1.2, 0.7),
+    stringsAsFactors = FALSE
+  )
+  summ <- data.frame(
+    parameter = c("base", "early.age", "early.ln_age", "early.bmi",
+                  "late.age"),
+    n         = c(4L, 2L, 2L, 1L, 1L),
+    pct       = c(100, 50, 50, 25, 25),
+    stringsAsFactors = FALSE
+  )
+  list(
+    n_boot       = 4L,
+    n_chunks     = 2L,
+    seed         = "101, 202",
+    seeds        = c(101, 202),
+    slentry      = 0.07,
+    slstay       = 0.05,
+    base_params  = "base",
+    requested    = 4L,
+    usable       = 3L,
+    n_rows       = 500L,
+    elapsed_mins = 120,
+    free_sd      = stats::sd(c(1.0, 1.1, 0.9, 1.2)),
+    th_sha       = "deadbeef",
+    manifest     = list(sha256 = "abc123"),
+    boot         = list(replicates = reps, summary = summ,
+                        n_success = 4L, n_failed = 0L)
+  )
+}
+
+# A bag with prescribed selection counts, for tests that need a denominator
+# larger than fx_bag()'s four. Term `nm` is selected in the FIRST
+# counts[[nm]] replicates, so its selection frequency is exactly
+# counts[[nm]] / n_boot and its Monte-Carlo error is hand-computable. The base
+# parameter is selected in every replicate, with an estimate that varies, so
+# the screen reads as healthy.
+fx_bag_counts <- function(counts, n_boot = 400L) {
+  n_boot <- as.integer(n_boot)
+  base_est <- seq_len(n_boot) / n_boot
+  rows <- list(data.frame(replicate = seq_len(n_boot), parameter = "base",
+                          estimate = base_est, stringsAsFactors = FALSE))
+  for (nm in names(counts)) {
+    k <- counts[[nm]]
+    if (k > 0L) {
+      rows[[length(rows) + 1L]] <- data.frame(
+        replicate = seq_len(k), parameter = nm, estimate = 1,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  reps <- do.call(rbind, rows)
+  reps <- reps[order(reps$replicate), , drop = FALSE]
+  rownames(reps) <- NULL
+
+  n <- c(base = n_boot, unlist(counts))
+  bag <- fx_bag()
+  bag$n_boot <- n_boot
+  bag$free_sd <- stats::sd(base_est)
+  bag$boot$replicates <- reps
+  bag$boot$summary <- data.frame(parameter = names(n), n = as.integer(n),
+                                 pct = 100 * n / n_boot,
+                                 stringsAsFactors = FALSE)
+  bag$boot$n_success <- n_boot
+  bag
+}
+
+# The term-splitting rule a multiphase hazard screen passes: `early.age` is
+# the early phase's screening decision about `age`. Deliberately NOT the
+# package's default -- a logistic screen has no phases at all.
+fx_phase <- function(term) sub("[.].*$", "", term)
