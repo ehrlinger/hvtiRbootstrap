@@ -66,8 +66,8 @@ boot_health <- function(bag) {
   reps <- bag$boot$replicates
   candidates <- setdiff(unique(reps$parameter), bag$base_params)
 
-  free_sd <- if (!is.null(bag$free_sd)) {
-    bag$free_sd
+  free_sd <- if (!is.null(bag[["free_sd"]])) {
+    bag[["free_sd"]]
   } else {
     est <- reps$estimate[reps$parameter == bag$base_params[[1L]]]
     if (length(est) > 1L) stats::sd(est) else NA_real_

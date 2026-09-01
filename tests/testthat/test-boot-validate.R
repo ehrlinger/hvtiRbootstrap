@@ -110,3 +110,23 @@ test_that("boot_validate accepts a manifest with neither digest", {
     boot_provenance(bag)$value[boot_provenance(bag)$item == "Dataset checksum"]
   ))
 })
+
+test_that("a per-phase free_sd is refused, naming the field", {
+  # `free_sd` is the SD of the FIRST free base parameter, and
+  # boot_pool_chunks() -- its only writer -- computes one number. A runner
+  # extending the per-phase reasoning of `requested` to it produced a bag
+  # that validated and then killed boot_health() with a message naming
+  # neither the field nor the function.
+  bag <- fx_bag()
+  bag$free_sd <- c(early = 0.5, late = 0.7)
+  expect_error(boot_validate(bag), "free_sd")
+})
+
+test_that("an absent free_sd is still valid", {
+  # Optional: a single unchunked run never went through boot_pool_chunks()
+  # and carries none. Refusing the per-phase shape must not require the
+  # scalar one.
+  bag <- fx_bag()
+  bag$free_sd <- NULL
+  expect_true(boot_validate(bag))
+})

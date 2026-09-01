@@ -199,3 +199,15 @@ test_that("boot_dropped calls boot_validate and propagates its error", {
   bag$manifest <- NULL
   expect_error(boot_dropped(bag), "manifest")
 })
+
+test_that("boot_dropped reads `dropped` by exact name, not by prefix", {
+  # `$` on a list falls back to prefix matching, so a runner that recorded
+  # only collinear drops resolved `bag$dropped` to that character vector.
+  # boot_dropped() then refused a field the runner genuinely never wrote,
+  # with a message naming a field that is not there.
+  bag <- fx_bag()
+  bag$dropped_collinear <- c("early.age", "early.ln_age")
+
+  expect_null(bag[["dropped"]])
+  expect_identical(nrow(boot_dropped(bag)), 0L)
+})

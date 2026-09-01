@@ -53,6 +53,12 @@ list; one at a time turns a single fix into five renders.
 are \strong{not} required. A single unchunked run legitimately carries none of
 them, and \code{\link[=boot_provenance]{boot_provenance()}}, \code{\link[=boot_health]{boot_health()}} and \code{\link[=boot_dropped]{boot_dropped()}} each say
 what they do in their absence.
+
+\code{free_sd} is the one of those with a shape to it: absent is fine, present
+means a single value. It is the standard deviation of the \emph{first} free base
+parameter, so one number is all it can be. A per-phase value validated
+cleanly and then met \code{\link[=boot_health]{boot_health()}}'s scalar \code{if}, which R makes an error
+naming neither the field nor the function.
 }
 \examples{
 bag <- list(

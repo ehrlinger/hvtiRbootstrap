@@ -243,7 +243,7 @@ boot_frequencies <- function(bag, phase = NULL, threshold = NULL) {
 boot_dropped <- function(bag) {
   boot_validate(bag)
 
-  d <- bag$dropped
+  d <- bag[["dropped"]]
   if (is.null(d)) {
     return(data.frame(variable = character(0), phase = character(0),
                       reason = character(0), stringsAsFactors = FALSE))
