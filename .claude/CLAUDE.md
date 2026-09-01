@@ -36,7 +36,7 @@ strings state the condition plainly and are not in scope for the voice.
 - **No cohort data, ever.** All fixtures and examples are synthetic. This corpus
   has a PHI history.
 - **ASCII only** in R source string literals; use `\uXXXX` if a symbol is needed.
-- **Version stays at 0.1.0** until the maintainer cuts a release. Never roll the
-  minor or major digit.
+- **Patch-digit bumps only**, as work lands, with the matching `NEWS.md` entry.
+  Never roll the minor or major digit — that is the maintainer's decision.
 - Examples must run without `survival` installed — guard with
   `requireNamespace()`, since it is in Suggests.
