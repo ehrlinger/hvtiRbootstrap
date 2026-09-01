@@ -1,4 +1,20 @@
-# hvtiRbootstrap 0.1.2
+# hvtiRbootstrap 0.9.0
+
+The version moves from 0.1.x to 0.9.0 because the package has arrived at the
+scope it was designed for. `boot_select()` and the fitters run the screen,
+`boot_summary()` and `boot_clusters()` summarise it, `boot_pool_chunks()`
+makes a run of days restartable, and this release adds the reporting layer
+that turns a finished screen into tables. A study can now go from a candidate
+pool to a finished report without leaving this package.
+
+It is not 1.0.0, and the reason is specific: the **hazard fitter is still
+deferred**. `fit_hazard()` does not exist, because the variants deserve
+reading before an API is fixed, and a 1.0.0 that then grows a new fitter
+family would be making a promise it has not earned. Chunk pooling has also
+been exercised on one real shape rather than many.
+
+Nothing in 0.1.2 was ever tagged or released, so its notes are carried here
+rather than split across two version numbers.
 
 ## New features
 
