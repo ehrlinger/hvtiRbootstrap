@@ -98,3 +98,44 @@ fx_bag <- function() {
                         n_success = 4L, n_failed = 0L)
   )
 }
+
+# A bag with prescribed selection counts, for tests that need a denominator
+# larger than fx_bag()'s four. Term `nm` is selected in the FIRST
+# counts[[nm]] replicates, so its selection frequency is exactly
+# counts[[nm]] / n_boot and its Monte-Carlo error is hand-computable. The base
+# parameter is selected in every replicate, with an estimate that varies, so
+# the screen reads as healthy.
+fx_bag_counts <- function(counts, n_boot = 400L) {
+  n_boot <- as.integer(n_boot)
+  base_est <- seq_len(n_boot) / n_boot
+  rows <- list(data.frame(replicate = seq_len(n_boot), parameter = "base",
+                          estimate = base_est, stringsAsFactors = FALSE))
+  for (nm in names(counts)) {
+    k <- counts[[nm]]
+    if (k > 0L) {
+      rows[[length(rows) + 1L]] <- data.frame(
+        replicate = seq_len(k), parameter = nm, estimate = 1,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  reps <- do.call(rbind, rows)
+  reps <- reps[order(reps$replicate), , drop = FALSE]
+  rownames(reps) <- NULL
+
+  n <- c(base = n_boot, unlist(counts))
+  bag <- fx_bag()
+  bag$n_boot <- n_boot
+  bag$free_sd <- stats::sd(base_est)
+  bag$boot$replicates <- reps
+  bag$boot$summary <- data.frame(parameter = names(n), n = as.integer(n),
+                                 pct = 100 * n / n_boot,
+                                 stringsAsFactors = FALSE)
+  bag$boot$n_success <- n_boot
+  bag
+}
+
+# The term-splitting rule a multiphase hazard screen passes: `early.age` is
+# the early phase's screening decision about `age`. Deliberately NOT the
+# package's default -- a logistic screen has no phases at all.
+fx_phase <- function(term) sub("[.].*$", "", term)
