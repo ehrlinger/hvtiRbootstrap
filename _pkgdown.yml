@@ -56,7 +56,24 @@ reference:
   - boot_summary
   - boot_clusters
 
-- title: "3. Pool a chunked run"
+- title: "3. Report over a screen"
+  desc: >
+    The model-agnostic reporting layer, extracted so that the logistic,
+    linear, Cox and hazard bootstrap reports are thin templates rather than
+    near-copies of one another. `boot_validate()` checks that the screen a
+    runner wrote has the shape a report reads; the rest turn it into tables.
+    Every one of them takes an optional `phase`, so a multiphase hazard
+    screen and a single-phase logistic screen run down the same code path.
+  contents:
+  - boot_validate
+  - boot_provenance
+  - boot_seeds
+  - boot_frequencies
+  - boot_dropped
+  - boot_concepts
+  - boot_health
+
+- title: "4. Pool a chunked run"
   desc: >
     Needed only when a screen was run in chunks, which is how a run of days is
     made restartable. `boot_pool_chunks()` folds them into one object of the
@@ -68,7 +85,7 @@ reference:
   - boot_chunk_files
   - boot_shortfall
 
-- title: "4. Fitters — one per `PROC=`"
+- title: "5. Fitters — one per `PROC=`"
   desc: >
     Passed to `boot_select()`, one per model family. Use these when choosing
     the model type; write a new one when adding a family, rather than a new
