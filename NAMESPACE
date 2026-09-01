@@ -2,6 +2,7 @@
 
 S3method(print,boot_selection)
 S3method(summary,boot_selection)
+export(boot_bag)
 export(boot_chunk_files)
 export(boot_clusters)
 export(boot_concepts)
