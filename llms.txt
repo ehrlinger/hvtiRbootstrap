@@ -232,7 +232,13 @@ logistic screen run down the same code path;
 and
 [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
 have nothing to group and take none.
+[`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+is the way in from this package’s own screen:
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+returns a wide object and everything here reads a long one.
 
+- [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  : A screen the reporting layer can read
 - [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
   : Check that a bootstrap bag has the shape a report reads
 - [`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md)

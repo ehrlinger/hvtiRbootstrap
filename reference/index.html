@@ -85,7 +85,7 @@
       <h2 id="-report-over-a-screen"></h2><li>Report over a screen</li>
 
 
-      <div class="section-desc"><p>The model-agnostic reporting layer, extracted so that the logistic, linear, Cox and hazard bootstrap reports are thin templates rather than near-copies of one another. <code><a href="../reference/boot_validate.html">boot_validate()</a></code> checks that the screen a runner wrote has the shape a report reads; the rest turn it into tables. The ones that group their rows take an optional <code>phase</code>, so a multiphase hazard screen and a single-phase logistic screen run down the same code path; <code><a href="../reference/boot_dropped.html">boot_dropped()</a></code> and <code><a href="../reference/boot_health.html">boot_health()</a></code> have nothing to group and take none.</p></div>
+      <div class="section-desc"><p>The model-agnostic reporting layer, extracted so that the logistic, linear, Cox and hazard bootstrap reports are thin templates rather than near-copies of one another. <code><a href="../reference/boot_validate.html">boot_validate()</a></code> checks that the screen a runner wrote has the shape a report reads; the rest turn it into tables. The ones that group their rows take an optional <code>phase</code>, so a multiphase hazard screen and a single-phase logistic screen run down the same code path; <code><a href="../reference/boot_dropped.html">boot_dropped()</a></code> and <code><a href="../reference/boot_health.html">boot_health()</a></code> have nothing to group and take none. <code><a href="../reference/boot_bag.html">boot_bag()</a></code> is the way in from this package’s own screen: <code><a href="../reference/boot_select.html">boot_select()</a></code> returns a wide object and everything here reads a long one.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -93,6 +93,13 @@
 
 
       <dl><dt>
+
+          <code><a href="boot_bag.html">boot_bag()</a></code>
+
+        </dt>
+        <dd>A screen the reporting layer can read</dd>
+
+        <dt>
 
           <code><a href="boot_validate.html">boot_validate()</a></code>
 

@@ -41,7 +41,7 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.2" id="hvtirbootstrap-092">hvtiRbootstrap 0.9.2<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-092"></a></h2>
-<p>Finishes 0.9.1’s sweep. That release made every <em>optional</em> bag field read by exact name; this one does the same for the fields nothing was protecting, and one of them was worse than 0.9.1’s note claimed. It also gives a finished run a way to say what it was.</p>
+<p>Finishes 0.9.1’s sweep. That release made every <em>optional</em> bag field read by exact name; this one does the same for the fields nothing was protecting, and one of them was worse than 0.9.1’s note claimed. It also gives a finished run a way to say what it was, and a way to become a report.</p>
 <div class="section level3">
 <h3 id="new-features-0-9-2">New features<a class="anchor" aria-label="anchor" href="#new-features-0-9-2"></a></h3>
 <ul><li>
@@ -49,6 +49,14 @@
 <p><code>$call</code> cannot do that job, for a reason that is invisible until it bites. <code><a href="https://rdrr.io/r/base/match.call.html" class="external-link">match.call()</a></code> omits every argument left at its default, so a screen run the ordinary way – taking <code>sle</code>, <code>sls</code> and <code>max_steps</code> as given – has a <code>$call</code> naming none of the thresholds that produced it. A provenance table built from it prints blanks exactly where the screen’s criteria belong, and the alternative is asking the caller to retype settings the run already knew.</p>
 <p>Recording them on the object means whatever assembles a bag can read the run rather than interview it.</p>
 </li>
+<li>
+<p><strong><code><a href="../reference/boot_bag.html">boot_bag()</a></code> assembles it.</strong> It converts a <code><a href="../reference/boot_select.html">boot_select()</a></code> result into the bag <code><a href="../reference/boot_validate.html">boot_validate()</a></code> accepts and every reporting function reads.</p>
+<p>The two ends of this package were built against different studies and had never met. <code><a href="../reference/boot_select.html">boot_select()</a></code> returns a <em>wide</em> object, one row per replicate and one column per term with <code>NA</code> where a term was not selected. The reporting layer reads a <em>long</em> one, because it was extracted from a hazard runner that writes long. Nothing converted between them, so the package’s own screen function could not reach its own report, and every study would have hand-written the pivot plus nine provenance fields, differently each time.</p>
+<p>The pivot drops <code>NA</code> rather than recording it, and that is the whole design rather than a shortcut: <code><a href="../reference/boot_frequencies.html">boot_frequencies()</a></code> counts a term’s rows against <code>n_boot</code>, so a row written for an unselected term would be counted as a selection and every frequency in the report would rise.</p>
+<p>Four arguments, which are the facts a screen cannot know about itself: which terms are the base model, how many candidates were offered before any were dropped, the dataset manifest, and what was dropped. Everything else comes from <code>$control</code>, so a bag cannot claim an entry level the screen did not use. The result is validated before it is returned, so an invalid bag is never emitted to be refused three chunks into a render.</p>
+<p><strong>A Cox screen has no intercept.</strong> <code>base_params = "(Intercept)"</code> copied from a logistic runner names nothing there, and is refused rather than silently excluding no terms and reporting the base model as a candidate.</p>
+</li>
+<li><p><strong><code><a href="../reference/boot_provenance.html">boot_provenance()</a></code> reads <code>engine</code>.</strong> Its “Fitting engine” row looked for <code>th_sha</code> and then <code>th_version</code>, both written by TemporalHazard’s hazard runner. A bag this package assembled has neither, so the row that exists to say <em>which codebase ran</em> printed <code>NA</code> on every <code><a href="../reference/boot_select.html">boot_select()</a></code> screen. That is the blank-where-provenance-belongs failure the table was built to prevent, occurring in the table itself. <code><a href="../reference/boot_bag.html">boot_bag()</a></code> writes <code>engine</code>; the third branch reads it.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-0-9-2">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-9-2"></a></h3>
