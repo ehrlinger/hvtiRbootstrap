@@ -27,7 +27,7 @@
 # file are different strings, and of different files may not be. Comparing bare
 # digests across algorithms compares things that are not comparable.
 .chunk_checksum <- function(k) {
-  m <- k$manifest
+  m <- k[["manifest"]]
   if (is.null(m)) return(NULL)
   for (algo in c("sha256", "md5")) {
     if (!is.null(m[[algo]])) return(paste0(algo, ":", m[[algo]]))
@@ -48,8 +48,10 @@
 # its commit must not be pooled with one that cannot, even when both report the
 # same version.
 .chunk_engine_provenance <- function(k) {
-  if (!is.null(k$th_sha))     return(paste0("sha:", k$th_sha))
-  if (!is.null(k$th_version)) return(paste0("version:", k$th_version))
+  if (!is.null(k[["th_sha"]]))     return(paste0("sha:", k[["th_sha"]]))
+  if (!is.null(k[["th_version"]])) {
+    return(paste0("version:", k[["th_version"]]))
+  }
   NULL
 }
 
@@ -147,14 +149,14 @@ boot_pool_chunks <- function(chunks) {
 
   # The checksum first: it is the one that means the cohort itself changed.
   agree(.chunk_checksum, "the dataset checksum")
-  agree(function(k) k$slentry,     "slentry")
-  agree(function(k) k$slstay,      "slstay")
-  agree(function(k) k$base_params, "the base model parameters")
-  agree(function(k) k$usable,      "the usable candidate counts")
+  agree(function(k) k[["slentry"]],     "slentry")
+  agree(function(k) k[["slstay"]],      "slstay")
+  agree(function(k) k[["base_params"]], "the base model parameters")
+  agree(function(k) k[["usable"]],      "the usable candidate counts")
   agree(.chunk_engine_provenance,  "the fitting engine version")
-  agree(function(k) k$max_steps,   "the step cap (max_steps)")
+  agree(function(k) k[["max_steps"]],   "the step cap (max_steps)")
 
-  seeds <- vapply(chunks, function(k) as.numeric(k$seed), numeric(1))
+  seeds <- vapply(chunks, function(k) as.numeric(k[["seed"]]), numeric(1))
   if (anyDuplicated(seeds)) {
     stop("boot_pool_chunks(): two chunks share the seed ",
          paste(unique(seeds[duplicated(seeds)]), collapse = ", "),
@@ -183,7 +185,7 @@ boot_pool_chunks <- function(chunks) {
     }
   }
 
-  n_each <- vapply(chunks, function(k) as.integer(k$n_boot), integer(1))
+  n_each <- vapply(chunks, function(k) as.integer(k[["n_boot"]]), integer(1))
   offset <- cumsum(c(0L, n_each))
   reps <- do.call(rbind, lapply(seq_along(chunks), function(i) {
     r <- chunks[[i]]$boot$replicates
@@ -208,12 +210,18 @@ boot_pool_chunks <- function(chunks) {
   }))
   summ <- summ[order(-summ$pct, summ$parameter), ]
 
-  base_params <- chunks[[1]]$base_params
+  base_params <- chunks[[1]][["base_params"]]
   free_est <- reps$estimate[reps$parameter == base_params[1]]
 
-  n_ok   <- vapply(chunks, function(k) as.integer(k$boot$n_success), integer(1))
-  n_bad  <- vapply(chunks, function(k) as.integer(k$boot$n_failed), integer(1))
-  mins   <- vapply(chunks, function(k) as.numeric(k$elapsed_mins), numeric(1))
+  n_ok   <- vapply(chunks,
+                   function(k) as.integer(k[["boot"]][["n_success"]]),
+                   integer(1))
+  n_bad  <- vapply(chunks,
+                   function(k) as.integer(k[["boot"]][["n_failed"]]),
+                   integer(1))
+  mins   <- vapply(chunks,
+                   function(k) as.numeric(k[["elapsed_mins"]]),
+                   numeric(1))
 
   out <- chunks[[1]]
   out$boot$replicates <- reps

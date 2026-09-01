@@ -130,3 +130,30 @@ test_that("an absent free_sd is still valid", {
   bag$free_sd <- NULL
   expect_true(boot_validate(bag))
 })
+
+test_that("boot_validate reads `base_params` by exact name, not by prefix", {
+  # The severe member of the class. `.chk_any()` asks only whether there is a
+  # value, and `$` hands it the sibling's -- so a bag MISSING a required field
+  # validated clean. `base_params` is what boot_frequencies() subtracts to get
+  # candidates and what boot_health() takes the free parameter from, so the
+  # sibling then substitutes silently into both.
+  bag <- fx_bag()
+  bag$base_params <- NULL
+  bag$base_params_original <- "base"
+  expect_error(boot_validate(bag), "base_params")
+})
+
+test_that("boot_validate reads `manifest` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$manifest <- NULL
+  bag$manifest_path <- "/data/screen/manifest.json"
+  expect_error(boot_validate(bag), "manifest: expected a value, found nothing")
+})
+
+test_that("boot_validate reads `boot` by exact name, not by prefix", {
+  bag <- fx_bag()
+  bag$boot <- NULL
+  bag$boot_dir <- "/data/screen/chunks"
+  expect_error(boot_validate(bag),
+               "boot: expected the results list, found nothing")
+})

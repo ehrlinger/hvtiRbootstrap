@@ -172,3 +172,57 @@ test_that("boot_shortfall reads `n_chunks` by exact name, not by prefix", {
   bag$n_chunks_expected <- 25L
   expect_null(boot_shortfall(bag, expect_chunks = 1L, expect_boot = 4L))
 })
+
+# boot_pool_chunks() calls no validator, so every field it reads from a chunk
+# is in the reachable class: there is nothing in front of it to turn an absent
+# field into an error first. These two tests cover that whole surface.
+
+test_that("every gated chunk field is read by exact name, not by prefix", {
+  # The gates exist to refuse chunks that are not draws from the same screen.
+  # Read by prefix, a gate compares SIBLINGS -- and when the chunks agree on
+  # the sibling, it passes on evidence it never had, which is the one outcome
+  # the "no chunk records" branch was written to prevent.
+  gated <- c(slentry = "slentry_used", slstay = "slstay_used",
+             base_params = "base_params_original", usable = "usable_counts",
+             max_steps = "max_steps_used", manifest = "manifest_path")
+  for (f in names(gated)) {
+    sib <- function(s) {
+      k <- chunk(s)
+      k[[f]] <- NULL
+      k[[gated[[f]]]] <- "X"
+      k
+    }
+    expect_error(boot_pool_chunks(list(sib(1), sib(2))), "no chunk records",
+                 info = f)
+  }
+})
+
+test_that("the engine-provenance gate reads `th_sha` by exact name", {
+  # Two fields with a fallback between them, so it needs its own case: a
+  # chunk recording `th_sha256` and no `th_sha` made the gate return
+  # "sha:<a digest of something else>" and call the engine verified.
+  sib <- function(s) {
+    k <- chunk(s)
+    k$th_version <- NULL
+    k$th_sha256 <- "aaa111"
+    k
+  }
+  expect_error(boot_pool_chunks(list(sib(1), sib(2))), "no chunk records")
+})
+
+test_that("an ungated chunk field is not silently taken from a sibling", {
+  # These are read straight, with no gate to fail first, so an absent field
+  # taken from a sibling pools a WRONG NUMBER rather than refusing. Read
+  # exactly, the absent field fails instead -- which is the whole ask.
+  ungated <- c(seed = "seeds", n_boot = "n_boot_requested",
+               elapsed_mins = "elapsed_mins_total")
+  for (f in names(ungated)) {
+    sib <- function(s) {
+      k <- chunk(s)
+      k[[f]] <- NULL
+      k[[ungated[[f]]]] <- if (f == "seed") s else 99
+      k
+    }
+    expect_error(boot_pool_chunks(list(sib(1), sib(2))), info = f)
+  }
+})

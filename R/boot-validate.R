@@ -166,24 +166,25 @@ boot_validate <- function(bag) {
                   function(f) .chk_per_phase(bag[[f]], f)),
            use.names = FALSE),
     .chk_scalar_if_present(bag[["free_sd"]], "free_sd"),
-    .chk_any(bag$base_params, "base_params"),
-    .chk_named_list(bag$manifest, "manifest")
+    .chk_any(bag[["base_params"]], "base_params"),
+    .chk_named_list(bag[["manifest"]], "manifest")
   )
 
   # Guarded rather than folded into the loop above: with `boot` absent there is
   # nothing to index, and reporting four nested fields it could not have looked
   # at sends the reader hunting for four problems that are one.
   nested <- c("replicates", "summary", "n_success", "n_failed")
-  if (is.null(bag$boot)) {
+  if (is.null(bag[["boot"]])) {
     problems <- c(problems,
                   "boot: expected the results list, found nothing")
-  } else if (!is.list(bag$boot)) {
+  } else if (!is.list(bag[["boot"]])) {
     problems <- c(problems,
-                  paste0("boot: expected a list, found ", class(bag$boot)[1L]))
+                  paste0("boot: expected a list, found ",
+                         class(bag[["boot"]])[1L]))
   } else {
     problems <- c(problems,
                   unlist(lapply(nested, function(f) {
-                    .chk_any(bag$boot[[f]], paste0("boot$", f))
+                    .chk_any(bag[["boot"]][[f]], paste0("boot$", f))
                   }), use.names = FALSE))
   }
 

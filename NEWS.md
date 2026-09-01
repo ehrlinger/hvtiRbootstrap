@@ -1,3 +1,47 @@
+# hvtiRbootstrap 0.9.2
+
+Finishes 0.9.1's sweep. That release made every *optional* bag field read by
+exact name; this one does the same for the fields nothing was protecting, and
+one of them was worse than 0.9.1's note claimed.
+
+## Bug fixes
+
+* **A bag missing `base_params` no longer validates.** `boot_validate()` read
+  it with `$`, and `.chk_any()` asks only whether there is a value -- so a
+  runner that wrote `base_params_original` and no `base_params` produced a bag
+  that passed validation with the required field absent. 0.9.1's note said an
+  absent required field was "reported as absent either way, only the message
+  misdescribes what was found". That was true of `manifest` and `boot`. It was
+  not true of this one.
+
+  The consequence was silent rather than loud. `base_params` is what
+  `boot_frequencies()` subtracts to get the candidate set and what
+  `boot_health()` takes the free base parameter from, so the sibling
+  substituted into both and every table downstream was computed against a base
+  set the screen never had.
+
+* **`boot_pool_chunks()`'s consistency gates read their fields by exact
+  name.** This function calls no validator, so nothing stood between a chunk
+  and a prefix match. Read by prefix, a gate compares *siblings* -- and when
+  two chunks agreed on the sibling, the gate passed on evidence it never had.
+  A pair of chunks recording `th_sha256` and no `th_sha` were pooled with
+  their fitting engine reported as verified.
+
+  That inverts what the gates are for. `boot_pool_chunks()` refuses to pool
+  chunks that cannot be shown to be draws from the same screen, and the
+  `no chunk records` branch exists precisely so that a check which did not
+  happen is never mistaken for one that passed.
+
+  Every chunk field is now exact: the six gated ones (`slentry`, `slstay`,
+  `base_params`, `usable`, `max_steps`, `manifest`), the engine provenance
+  pair (`th_sha`, `th_version`), and the ungated reads that pooled a wrong
+  number rather than refusing (`seed`, `n_boot`, `elapsed_mins`, and the
+  per-chunk success and failure counts).
+
+* **`boot_validate()`'s `manifest` and `boot` messages now name what is
+  actually wrong.** Both errored before, but described the sibling they had
+  found rather than the field they had not.
+
 # hvtiRbootstrap 0.9.1
 
 Two defects in the reporting layer, and one mistake made twice: a field read
