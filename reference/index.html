@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,6 +81,65 @@
 
         </dt>
         <dd>Aggregate selection frequencies over clusters of correlated variables</dd>
+      </dl></div><div class="section level2">
+      <h2 id="-report-over-a-screen"></h2><li>Report over a screen</li>
+
+
+      <div class="section-desc"><p>The model-agnostic reporting layer, extracted so that the logistic, linear, Cox and hazard bootstrap reports are thin templates rather than near-copies of one another. <code><a href="../reference/boot_validate.html">boot_validate()</a></code> checks that the screen a runner wrote has the shape a report reads; the rest turn it into tables. The ones that group their rows take an optional <code>phase</code>, so a multiphase hazard screen and a single-phase logistic screen run down the same code path; <code><a href="../reference/boot_dropped.html">boot_dropped()</a></code> and <code><a href="../reference/boot_health.html">boot_health()</a></code> have nothing to group and take none.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="boot_validate.html">boot_validate()</a></code>
+
+        </dt>
+        <dd>Check that a bootstrap bag has the shape a report reads</dd>
+
+        <dt>
+
+          <code><a href="boot_provenance.html">boot_provenance()</a></code>
+
+        </dt>
+        <dd>Where a bootstrap screen came from</dd>
+
+        <dt>
+
+          <code><a href="boot_seeds.html">boot_seeds()</a></code>
+
+        </dt>
+        <dd>Every seed a bootstrap screen used</dd>
+
+        <dt>
+
+          <code><a href="boot_frequencies.html">boot_frequencies()</a></code>
+
+        </dt>
+        <dd>Selection frequencies, with the error they carry</dd>
+
+        <dt>
+
+          <code><a href="boot_dropped.html">boot_dropped()</a></code>
+
+        </dt>
+        <dd>Candidates the screen never saw</dd>
+
+        <dt>
+
+          <code><a href="boot_concepts.html">boot_concepts()</a></code>
+
+        </dt>
+        <dd>Selection frequencies grouped by concept</dd>
+
+        <dt>
+
+          <code><a href="boot_health.html">boot_health()</a></code>
+
+        </dt>
+        <dd>Did the bootstrap screen actually run?</dd>
       </dl></div><div class="section level2">
       <h2 id="-pool-a-chunked-run"></h2><li>Pool a chunked run</li>
 

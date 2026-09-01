@@ -1,5 +1,112 @@
 # Changelog
 
+## hvtiRbootstrap 0.1.2
+
+### New features
+
+- The **reporting layer**:
+  [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md),
+  [`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md),
+  [`boot_seeds()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_seeds.md),
+  [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md),
+  [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md),
+  [`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md)
+  and
+  [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md).
+  Each replaces a chunk that every bootstrap report in `hvtiRtemplates`
+  carried, so the logistic, linear and Cox reports can be thin templates
+  rather than near-copies of the ~825-line hazard one. Four hand-synced
+  copies of a report is a shape this family has watched drift before.
+
+  The three that group their output —
+  [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md),
+  [`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md)
+  and, through them, everything built on their rows — take an optional
+  **`phase`**: a function mapping a term to its phase. With `NULL` there
+  is no phase dimension; a multiphase hazard screen passes its own
+  term-splitting rule. That one argument is what lets a single code path
+  serve four reports, and the alternative — the package serving three of
+  them while the fourth keeps its own copy — reintroduces exactly the
+  duplication the extraction removes.
+
+  [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md)
+  and
+  [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+  take no `phase`, and that is not an omission. A candidate dropped
+  before screening never became a model term, so `bag$dropped` carries
+  its own `phase` column written by the runner that dropped it; and a
+  health check is screen-wide. An argument that cannot do anything is
+  worse than an absent one.
+
+- **[`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+  checks field *shapes*, not just presence**, and it is the piece of
+  this that would have prevented the defect that motivated it. The chunk
+  it replaces checked that eleven fields existed. It passed a real
+  screen happily while `requested` was a length-2 vector the report
+  could not render, and that shipped in three releases: a length-2 value
+  against a length-13 column does not recycle, it errors, so the
+  provenance table could not build on **any** multiphase screen.
+
+  So `requested` and `usable` may be vectors and are checked as such,
+  while `n_boot` and `seed` may not. `integer(0)` is refused on both
+  sides of that line: it satisfies “is present” and then contributes no
+  element rather than one, which collapses the table built from it.
+  Every failure is reported at once, because an author fixing a runner
+  wants the whole list.
+
+- **A selection frequency now carries its error.**
+  [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md)
+  reports `mc_error` per variable rather than one figure for the table:
+  the Monte-Carlo error is largest at 50% and shrinks towards either
+  end, so a single quoted value overstates it at the top of the table
+  and understates it in the middle — and the middle is where the
+  retention decision is being made. `near_threshold` marks the variables
+  whose retention would not survive a rerun with different seeds.
+
+- **[`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md)
+  answers the question a per-variable frequency cannot.** Competing
+  forms of one concept split replicates between them, so each form’s own
+  frequency understates the concept; `pct_any` counts a replicate that
+  took two forms **once**, for the same reason
+  [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)’s
+  `n_any` does. Two forms at 30% each are anywhere between 30% and 60%
+  of replicates depending on how often the same replicate took both, and
+  no marginal percentage records that — so it is computed from the
+  replicates, and the computation *is*
+  [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md),
+  called rather than repeated.
+
+- **[`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+  calls an empty screen a failure.** A screen that selected nothing is
+  the signature of a formula that did not survive the per-replicate
+  rewrite: the refit errors, the error is caught, the step accepts
+  nothing, and the run halts with no warning and `n_failed = 0`. The
+  summary then reads as a table of perfectly reliable variables. It
+  returns its findings rather than stopping, so a report decides how to
+  present them.
+
+### Under the hood
+
+- `n` and `pct` are
+  [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)‘s,
+  and the at-least-one count is
+  [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)’.
+  Neither is reimplemented in the new layer. Those two are the
+  invariants this package is judged on — `NA` means a term was not
+  selected, and “at least one” is not a sum — and each keeps exactly one
+  implementation.
+
+- Reporting reads a **wide** replicate matrix while a runner writes a
+  **long** one, so the pivot moves here from the template. Its row count
+  is `n_boot`, not the number of replicate ids present: a replicate that
+  selected nothing outside the base model writes no rows at all, and
+  counting ids would use a smaller denominator and inflate every
+  frequency in the report. A replicate id outside `1..n_boot` is
+  refused, because
+  [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+  checks that only for the chunks it stacks and an out-of-range id lands
+  on a neighbour’s row rather than erroring.
+
 ## hvtiRbootstrap 0.1.1
 
 ### CI

@@ -178,6 +178,38 @@ macros.
 
 ## 
 
+Report over a screen
+
+The model-agnostic reporting layer, extracted so that the logistic,
+linear, Cox and hazard bootstrap reports are thin templates rather than
+near-copies of one another.
+[`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+checks that the screen a runner wrote has the shape a report reads; the
+rest turn it into tables. The ones that group their rows take an
+optional `phase`, so a multiphase hazard screen and a single-phase
+logistic screen run down the same code path;
+[`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md)
+and
+[`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+have nothing to group and take none.
+
+- [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+  : Check that a bootstrap bag has the shape a report reads
+- [`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md)
+  : Where a bootstrap screen came from
+- [`boot_seeds()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_seeds.md)
+  : Every seed a bootstrap screen used
+- [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md)
+  : Selection frequencies, with the error they carry
+- [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md)
+  : Candidates the screen never saw
+- [`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md)
+  : Selection frequencies grouped by concept
+- [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+  : Did the bootstrap screen actually run?
+
+## 
+
 Pool a chunked run
 
 Needed only when a screen was run in chunks, which is how a run of days
