@@ -195,20 +195,14 @@ boot_pool_chunks <- function(chunks) {
   }))
   n_boot <- sum(n_each)
 
-  summ <- do.call(rbind, lapply(split(reps, reps$parameter), function(x) {
-    n <- length(unique(x$replicate))
-    data.frame(parameter = x$parameter[1],
-               n         = n,
-               pct       = 100 * n / n_boot,
-               mean      = mean(x$estimate),
-               sd        = stats::sd(x$estimate),
-               min       = min(x$estimate),
-               max       = max(x$estimate),
-               ci_lower  = unname(stats::quantile(x$estimate, 0.025)),
-               ci_upper  = unname(stats::quantile(x$estimate, 0.975)),
-               row.names = NULL, stringsAsFactors = FALSE)
-  }))
-  summ <- summ[order(-summ$pct, summ$parameter), ]
+  # The same constructor boot_bag() uses, so the pooled and unpooled shapes
+  # cannot drift apart. It also gets the pooling property this block used to
+  # state for itself: `n` and `pct` are recomputed from the pooled replicates
+  # rather than averaged across chunks, because a percentage of a percentage is
+  # not a percentage of the whole and the chunks need not be the same size.
+  summ <- .bag_summary(
+    .replicate_matrix(list(boot = list(replicates = reps), n_boot = n_boot))
+  )
 
   base_params <- chunks[[1]][["base_params"]]
   free_est <- reps$estimate[reps$parameter == base_params[1]]
