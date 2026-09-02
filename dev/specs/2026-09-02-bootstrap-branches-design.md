@@ -322,21 +322,48 @@ Batch 2a Phase 3 (`bl`, `br`, `bc` as thin templates) inherits the branch shape
 set out here. Note that `bl_ord.*` is on the **interval** branch, not the
 selection branch, and returns the 95% pair only.
 
+## Two refinements
+
+Two decisions the sections above did not settle explicitly, recorded here to
+match `docs/plans/2026-09-02-bootstrap-branch-split.md`, which is where they
+were made.
+
+**Refinement 1 - the validator checks three columns, not nine.**
+`boot_validate()` requires `parameter`, `n` and `pct` on `$boot$summary`, not
+the full nine. The nine-column agreement between `boot_bag()` and
+`boot_pool_chunks()` is guaranteed by their sharing `.bag_summary()`, which is
+stronger than a check; the validator's job is the defect that actually
+shipped - a summary keyed `variable` where the reporting layer reads
+`parameter`. Requiring nine would reject every hand-built bag, including this
+package's own `fx_bag()` fixture and the example in `boot_validate()`'s
+roxygen, both of which carry exactly those three.
+
+**Refinement 2 - no version bump.** The "Definition of done" item below used to
+say "patch bump", which is wrong under the convention now in force: `AGENTS.md`
+says to bump when you tag, not when you merge, and
+`tests/testthat/test-package.R` skips headings that carry no version precisely
+so work can merge under a standing `(unreleased)` heading. `DESCRIPTION` stays
+`0.9.2`.
+
 ## Definition of done
 
 - [x] Design note written and listed in `dev/specs/README.md`
-- [ ] The two branches have distinct entry points, and the split is stated in
+- [x] The two branches have distinct entry points, and the split is stated in
       `AGENTS.md` and the README
-- [ ] No `conf` argument anywhere; coverage is carried in column names
-- [ ] `sel_q025`/`sel_q975` renamed, `type = 4`, roxygen says conditional on
+- [x] No `conf` argument anywhere; coverage is carried in column names
+- [x] `sel_q025`/`sel_q975` renamed, `type = 4`, roxygen says conditional on
       selection
-- [ ] One `$boot$summary` shape from `boot_bag()` and `boot_pool_chunks()`,
+- [x] One `$boot$summary` shape from `boot_bag()` and `boot_pool_chunks()`,
       keyed `parameter`
-- [ ] `boot_validate()` checks the `$boot$summary` columns
-- [ ] `boot_predict_ci()` specified here, deferred to its own spec
-- [ ] `bn`'s home recorded as deliberately open, with the deferral cost bounded
-- [ ] Downstream impact on `04.02`-`04.05` stated
-- [ ] Patch bump and `NEWS.md` bullets under the current heading
+- [x] `boot_validate()` checks the `$boot$summary` columns
+- [x] `boot_predict_ci()` specified here, deferred to its own spec
+- [x] `bn`'s home recorded as deliberately open, with the deferral cost bounded
+- [x] Downstream impact on `04.02`-`04.05` stated
+- [x] `NEWS.md` bullets under the standing `(unreleased)` heading. **No version
+      bump:** `AGENTS.md` says to bump when you tag, not when you merge, and
+      `tests/testthat/test-package.R` skips unversioned headings so that work
+      can merge under `(unreleased)`. This line previously said "patch bump",
+      which was wrong under that convention.
 
 ## Open questions
 

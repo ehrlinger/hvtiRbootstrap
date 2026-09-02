@@ -46,6 +46,24 @@ separate functions: they differ from `bootstrap.hazard.sas` by a changed default
 and a dropped selection option, so they collapse into arguments you pass.
 `_tvc` is the exception, carrying genuine time-varying-covariate behaviour.
 
+## Two branches, one resampling loop
+
+Bootstrapping here does one of two jobs, and they are not the same job.
+
+**Selection** - `%bootreg`, `%SUMBOOT`, `%cluster` - refits on every replicate
+and counts which terms survived. The replicates are a vote, and a term the
+model did not select is `NA`. That is the whole of what this package ships
+today: `boot_select()`, `boot_summary()`, `boot_clusters()`, the fitters, and
+the pooling and reporting layers around them.
+
+**Intervals** - `%BNMNR`, `%BNPREV`, `bl_ord.*` - resample to put a band around
+an estimate. Nothing is selected, so there is no `NA` semantics; the replicates
+are a distribution. That branch is specified and not yet built.
+
+No function here takes a confidence level. The macros do not either: they
+hardcode `PCTLPTS=2.5 16 50 84 97.5` and return both the 95% and the 68% band
+in columns named for their coverage, so there is no level to mislabel.
+
 ## Example
 
 ```r

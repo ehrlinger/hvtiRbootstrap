@@ -7,6 +7,28 @@
   It also reads only level-one headings, matching the family convention settled
   on 2026-09-01, and no longer accepts `#hvtiRbootstrap`, which CommonMark does
   not treat as a heading at all.
+* **`boot_pool_chunks()` no longer reports a confidence interval it never
+  computed.** `ci_lower` and `ci_upper` were quantiles taken over the
+  replicates in which the term was *selected*, because `boot_bag()` writes
+  `$boot$replicates` with `NA` dropped. For a term chosen in 30% of replicates
+  that was an interval over 30% of them, and the weaker the term, the narrower
+  its interval looked. They are now `sel_q025` and `sel_q975`, named for what
+  they are: a sibling of `mean`, `sd`, `min` and `max`, which are conditional
+  on selection in exactly the same way.
+* **`boot_bag()` and `boot_pool_chunks()` now build `$boot$summary` through one
+  constructor**, so the two cannot disagree. They had been building it
+  separately, in two shapes with two different key columns -- `variable` from
+  the bag, `parameter` from the pool -- so a renderer saw a different shape
+  depending on whether the run happened to be chunked, and `boot_bag()`
+  contradicted the key that `boot_validate()`'s own documented example uses.
+  Both now key on `parameter`. `boot_summary()` is unchanged and keeps
+  `variable`: it is the standalone `%SUMBOOT` port, not a bag.
+* **`boot_validate()` checks `$boot$summary`'s columns**, not merely that the
+  slot is filled. Nothing in the package reads that slot -- `boot_frequencies()`
+  rebuilds from `$boot$replicates` -- so without this the two constructors
+  could drift apart indefinitely without a test failing.
+* Quantiles on the selection branch use `stats::quantile(type = 4)`, which is
+  SAS `PROC STDIZE`'s `PCTLDEF=1`, rather than R's `type = 7` default.
 
 # hvtiRbootstrap 0.9.2
 
