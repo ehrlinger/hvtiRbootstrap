@@ -105,8 +105,7 @@ test_that("the pooled summary has the same shape as the bagged one", {
   expect_equal(names(pooled$boot$summary), names(bagged$boot$summary))
 })
 
-test_that(
-  "the pooled summary no longer claims to carry a confidence interval", {
+test_that("pooled summary drops false confidence intervals", {
   # ci_lower/ci_upper were computed over the NA-dropped replicates, so they
   # were conditional on selection and were not confidence intervals at all.
   p <- boot_pool_chunks(list(chunk(1), chunk(2)))
