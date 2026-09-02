@@ -153,6 +153,14 @@
 <p>Note that <code>PROC=PHREG</code> maps to <code><a href="reference/fit_cox.html">fit_cox()</a></code>, which is Cox proportional hazards. The <strong>additive hazard</strong> family (<code>bootstrap.hazard*.sas</code>) is a different thing and is not in v1 at all - it needs <code>TemporalHazard</code> and has its own spec. When it lands, the per-analysis copies (<code>_jr</code>, <code>_p</code>, <code>101703</code>, <code>jr1</code>) will not become separate functions: they differ from <code>bootstrap.hazard.sas</code> by a changed default and a dropped selection option, so they collapse into arguments you pass. <code>_tvc</code> is the exception, carrying genuine time-varying-covariate behaviour.</p>
 </div>
 <div class="section level2">
+<h2 id="two-branches-one-resampling-loop">Two branches, one resampling loop<a class="anchor" aria-label="anchor" href="#two-branches-one-resampling-loop"></a>
+</h2>
+<p>Bootstrapping here does one of two jobs, and they are not the same job.</p>
+<p><strong>Selection</strong> - <code>%bootreg</code>, <code>%SUMBOOT</code>, <code>%cluster</code> - refits on every replicate and counts which terms survived. The replicates are a vote, and a term the model did not select is <code>NA</code>. That is the whole of what this package ships today: <code><a href="reference/boot_select.html">boot_select()</a></code>, <code><a href="reference/boot_summary.html">boot_summary()</a></code>, <code><a href="reference/boot_clusters.html">boot_clusters()</a></code>, the fitters, and the pooling and reporting layers around them.</p>
+<p><strong>Intervals</strong> - <code>%BNMNR</code>, <code>%BNPREV</code>, <code>bl_ord.*</code> - resample to put a band around an estimate. Nothing is selected, so there is no <code>NA</code> semantics; the replicates are a distribution. That branch is specified and not yet built.</p>
+<p>No function here takes a confidence level. The macros do not either: they hardcode <code>PCTLPTS=2.5 16 50 84 97.5</code> and return both the 95% and the 68% band in columns named for their coverage, so there is no level to mislabel.</p>
+</div>
+<div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">

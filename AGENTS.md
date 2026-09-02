@@ -113,6 +113,26 @@ way:
   cluster counts **once** — the point is how often *at least one* member
   was chosen, because correlated terms split replicates between them and
   each one’s individual frequency understates the cluster.
+- **THIS PACKAGE DOES TWO JOBS, AND THEY ARE NOT THE SAME JOB.**
+  *Selection* refits on each replicate and counts which terms survived -
+  the replicates are a vote, and `NA` is how a vote is cast. *Intervals*
+  resample to put a band around an estimate - the replicates are a
+  distribution, nothing is selected, and there is no `NA` semantics at
+  all. Everything shipped today is the selection branch. The interval
+  branch (`%BNMNR`, `%BNPREV`, `bl_ord.*`) is specified in
+  `dev/specs/2026-09-02-bootstrap-branches-design.md` and not built. A
+  CI-shaped output computed on the selection branch is the mistake this
+  rule exists to stop:
+  [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+  shipped `ci_lower`/`ci_upper` that were quantiles over only the
+  replicates that selected the term, so the weaker the term the narrower
+  its “interval” looked. They are now `sel_q025`/`sel_q975`.
+- **Coverage lives in a column name, never in an argument.** No function
+  in this package takes a confidence level. The macro family hardcodes
+  `PCTLPTS=2.5 16 50 84 97.5` and returns both the 95% and the 68% band
+  in named columns; a function that takes no level cannot mislabel one,
+  which is the point. Quantiles are `stats::quantile(type = 4)`, SAS’s
+  `PCTLDEF=1`, never R’s `type = 7` default.
 - **The `fraction` divergence is deliberate and defaults to parity.**
   `%bootreg` documents `FRACTION=`, computes `ds_size * fraction`,
   prints it, and then always draws `ds_size`. This implementation

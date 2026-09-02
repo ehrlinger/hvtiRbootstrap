@@ -63,9 +63,19 @@ A list carrying the fields
 requires: `n_boot`, `seed`, `slentry`, `slstay`, `base_params`,
 `requested`, `usable`, `n_rows`, `elapsed_mins`, `manifest`, `engine`,
 `dropped` when supplied, and `boot` holding `replicates`, `summary`,
-`n_success` and `n_failed`. Validated before it is returned, so this
-function cannot emit a bag that a report will refuse three chunks into a
-render.
+`n_success` and `n_failed`. `boot$summary` is keyed `parameter` – as
+`boot$replicates` and
+[`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+are, and as
+[`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+returns – rather than
+[`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)'s
+`variable`, and carries `sel_q025` and `sel_q975` alongside the
+`%SUMBOOT` statistics. Those two are the spread of the coefficient
+across the replicates that **selected** it, not a confidence interval: a
+term chosen half the time has an interval over half the replicates.
+Validated before it is returned, so this function cannot emit a bag that
+a report will refuse three chunks into a render.
 
 ## Details
 

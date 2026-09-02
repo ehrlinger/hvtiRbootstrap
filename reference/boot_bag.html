@@ -99,6 +99,13 @@ run.</p></dd>
 <code>seed</code>, <code>slentry</code>, <code>slstay</code>, <code>base_params</code>, <code>requested</code>, <code>usable</code>,
 <code>n_rows</code>, <code>elapsed_mins</code>, <code>manifest</code>, <code>engine</code>, <code>dropped</code> when supplied,
 and <code>boot</code> holding <code>replicates</code>, <code>summary</code>, <code>n_success</code> and <code>n_failed</code>.
+<code>boot$summary</code> is keyed <code>parameter</code> – as <code>boot$replicates</code> and
+<code><a href="boot_health.html">boot_health()</a></code> are, and as <code><a href="boot_pool_chunks.html">boot_pool_chunks()</a></code> returns – rather than
+<code><a href="boot_summary.html">boot_summary()</a></code>'s <code>variable</code>, and carries <code>sel_q025</code> and <code>sel_q975</code>
+alongside the <code>%SUMBOOT</code> statistics. Those two are the spread of the
+coefficient across the replicates that <strong>selected</strong> it, not a confidence
+interval: a term chosen half the time has an interval over half the
+replicates.
 Validated before it is returned, so this function cannot emit a bag that a
 report will refuse three chunks into a render.</p>
     </div>

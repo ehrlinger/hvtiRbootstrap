@@ -92,7 +92,12 @@ it must be a <strong>list</strong>, because it is indexed by name, and
 <code>manifest[["sha256"]]</code> on a named atomic vector lacking that name is not
 <code>NULL</code> but an error – <code>subscript out of bounds</code>, naming neither the
 field nor the file.</p></li>
-</ul><p>Every failure is reported at once. An author fixing a runner wants the whole
+</ul><p><code>boot$summary</code> is additionally checked for the columns <code>parameter</code>, <code>n</code> and
+<code>pct</code> – the ones a report reads. It is not required to carry the full shape
+<code><a href="boot_bag.html">boot_bag()</a></code> writes, because a runner may report a frequency table and
+nothing more. A summary keyed <code>variable</code> is <code><a href="boot_summary.html">boot_summary()</a></code>'s shape rather
+than a bag's, and is refused by name.</p>
+<p>Every failure is reported at once. An author fixing a runner wants the whole
 list; one at a time turns a single fix into five renders.</p>
 <p><code>dropped</code>, <code>free_sd</code>, <code>n_chunks</code>, <code>seeds</code> and the engine provenance fields
 are <strong>not</strong> required. A single unchunked run legitimately carries none of

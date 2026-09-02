@@ -53,6 +53,15 @@ Three shapes are checked, because three things can be true of a field:
   not `NULL` but an error – `subscript out of bounds`, naming neither
   the field nor the file.
 
+`boot$summary` is additionally checked for the columns `parameter`, `n`
+and `pct` – the ones a report reads. It is not required to carry the
+full shape
+[`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+writes, because a runner may report a frequency table and nothing more.
+A summary keyed `variable` is
+[`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)'s
+shape rather than a bag's, and is refused by name.
+
 Every failure is reported at once. An author fixing a runner wants the
 whole list; one at a time turns a single fix into five renders.
 
