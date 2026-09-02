@@ -298,22 +298,25 @@ function.
 
 - [ ] **Step 4: Update the `@return` roxygen**
 
-In `R/boot-bag.R`, find the `@return` tag and replace its text with:
+In `R/boot-bag.R`, replace the whole `@return` block with exactly this. The
+existing sentences about `dropped` and about validation are preserved; the
+summary-shape sentences are what is new.
 
 ```r
 #' @return A list carrying the fields [boot_validate()] requires: `n_boot`,
 #'   `seed`, `slentry`, `slstay`, `base_params`, `requested`, `usable`,
-#'   `n_rows`, `elapsed_mins`, `manifest`, `engine`, and `boot`. `boot$summary`
-#'   is keyed `parameter` -- as `boot$replicates` and [boot_health()] are, and
-#'   as [boot_pool_chunks()] returns -- rather than [boot_summary()]'s
-#'   `variable`, and carries `sel_q025` and `sel_q975` alongside the `%SUMBOOT`
-#'   statistics. Those two are the spread of the coefficient across the
-#'   replicates that **selected** it, not a confidence interval: a term chosen
-#'   half the time has an interval over half the replicates.
+#'   `n_rows`, `elapsed_mins`, `manifest`, `engine`, `dropped` when supplied,
+#'   and `boot` holding `replicates`, `summary`, `n_success` and `n_failed`.
+#'   `boot$summary` is keyed `parameter` -- as `boot$replicates` and
+#'   [boot_health()] are, and as [boot_pool_chunks()] returns -- rather than
+#'   [boot_summary()]'s `variable`, and carries `sel_q025` and `sel_q975`
+#'   alongside the `%SUMBOOT` statistics. Those two are the spread of the
+#'   coefficient across the replicates that **selected** it, not a confidence
+#'   interval: a term chosen half the time has an interval over half the
+#'   replicates.
+#'   Validated before it is returned, so this function cannot emit a bag that a
+#'   report will refuse three chunks into a render.
 ```
-
-Keep any other sentences already present in that `@return` block that describe
-`dropped` or other fields; only the summary-shape sentences are new.
 
 - [ ] **Step 5: Run the tests to verify they pass**
 
