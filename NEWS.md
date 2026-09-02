@@ -27,6 +27,18 @@
   slot is filled. Nothing in the package reads that slot -- `boot_frequencies()`
   rebuilds from `$boot$replicates` -- so without this the two constructors
   could drift apart indefinitely without a test failing.
+* **A bag saved by hvtiRbootstrap 0.9.2 is now refused by the whole reporting
+  layer.** `boot_validate()`'s new column check requires the key `parameter`,
+  and 0.9.2's `boot_bag()` wrote `$boot$summary` keyed `variable` -- so
+  `boot_frequencies()`, `boot_dropped()`, `boot_health()`, `boot_provenance()`,
+  `boot_seeds()` and `boot_concepts()`, which all gate on `boot_validate()`
+  first, now refuse a bag that release wrote. The numbers in it were never
+  wrong: nothing in the package reads `$boot$summary`, and `boot_frequencies()`
+  rebuilds its table from `$boot$replicates` instead. Fix a saved bag `b` with
+
+      names(b$boot$summary)[names(b$boot$summary) == "variable"] <- "parameter"
+
+  or re-run `boot_bag()`.
 * Quantiles on the selection branch use `stats::quantile(type = 4)`, which is
   SAS `PROC STDIZE`'s `PCTLDEF=1`, rather than R's `type = 7` default.
 

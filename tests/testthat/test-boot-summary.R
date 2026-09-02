@@ -109,3 +109,23 @@ test_that(".bag_summary yields NA, not an error, for a term never selected", {
   expect_true(is.na(s$sel_q975[s$parameter == "x3"]))
   expect_equal(s$n[s$parameter == "x3"], 0L)
 })
+
+test_that(".bag_summary matches quantiles to their own column, not by name", {
+  # match(out$parameter, colnames(m)) used to return the FIRST hit for a
+  # name, so two identically-named columns could take a row's quantiles
+  # from a different column than its own mean/sd/min/max came from. Column
+  # 2 ("a") is entirely larger than column 1 ("a"); if its row took column
+  # 1's quantiles instead, they would fall far outside its own min/max.
+  m <- matrix(c(1, 2, 10, 20), nrow = 2, dimnames = list(NULL, c("a", "a")))
+  s <- .bag_summary(m)
+
+  expect_equal(s$mean, c(1.5, 15))
+  expect_equal(s$sel_q025[s$mean == 1.5],
+               unname(stats::quantile(c(1, 2), 0.025, type = 4)))
+  expect_equal(s$sel_q025[s$mean == 15],
+               unname(stats::quantile(c(10, 20), 0.025, type = 4)))
+  expect_equal(s$sel_q975[s$mean == 1.5],
+               unname(stats::quantile(c(1, 2), 0.975, type = 4)))
+  expect_equal(s$sel_q975[s$mean == 15],
+               unname(stats::quantile(c(10, 20), 0.975, type = 4)))
+})

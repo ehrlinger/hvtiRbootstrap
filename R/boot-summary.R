@@ -107,9 +107,22 @@ boot_summary <- function(x) {
     if (length(v) == 0L) return(NA_real_)
     unname(stats::quantile(v, p, type = 4))
   }
-  j <- match(out$parameter, colnames(m))
-  out$sel_q025 <- vapply(j, function(k) q(m[, k], 0.025), numeric(1))
-  out$sel_q975 <- vapply(j, function(k) q(m[, k], 0.975), numeric(1))
+  # Computed over the matrix's OWN column order, then permuted into out's row
+  # order -- never matched back to it by name. match(out$parameter,
+  # colnames(m)) returns the FIRST hit for a name, so two same-named columns
+  # would let a row's quantiles come from a different column than
+  # boot_summary() took that row's mean/sd/min/max from. Not reachable
+  # through either caller today, but nothing here should assume it can't
+  # happen.
+  q025 <- vapply(seq_len(ncol(m)), function(k) q(m[, k], 0.025), numeric(1))
+  q975 <- vapply(seq_len(ncol(m)), function(k) q(m[, k], 0.975), numeric(1))
+  # boot_summary()'s own sort order(-out$n, out$variable), recomputed on the
+  # same inputs rather than read back off `out`, so it reproduces that exact
+  # permutation -- tie order among duplicate names included -- with no
+  # dependence on names being unique.
+  perm <- order(-colSums(!is.na(m)), colnames(m))
+  out$sel_q025 <- q025[perm]
+  out$sel_q975 <- q975[perm]
 
   rownames(out) <- NULL
   out

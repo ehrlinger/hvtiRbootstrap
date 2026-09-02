@@ -206,17 +206,35 @@ boot_validate <- function(bag) {
       want <- c("parameter", "n", "pct")
       miss <- setdiff(want, names(s))
       if (length(miss)) {
+        # The `variable` key is not always a foreign runner's mistake: it is
+        # exactly the shape hvtiRbootstrap 0.9.2's own boot_bag() wrote, so
+        # the hint has to rescue that reader specifically, not just name the
+        # shape. The migration is one line, because the numbers underneath
+        # were never wrong -- nothing in this package reads $boot$summary.
         hint <- if ("variable" %in% names(s)) {
-          paste0(". A summary keyed `variable` is boot_summary()'s shape, ",
-                 "not a bag's")
+          paste0(
+            ". A summary keyed `variable` is boot_summary()'s shape, not a ",
+            "bag's. hvtiRbootstrap 0.9.2's boot_bag() wrote summaries keyed ",
+            "this way; the numbers are fine, only the key is wrong. Fix a ",
+            "saved bag `b` with ",
+            "names(b$boot$summary)[names(b$boot$summary) == \"variable\"] ",
+            "<- \"parameter\", or re-run boot_bag()"
+          )
         } else {
           ""
+        }
+        # names(s) is NULL for an unnamed list or vector, and pasting that
+        # collapses to "", so the message would read "found " with nothing
+        # after it. Naming the class found still says something concrete.
+        found <- if (is.null(names(s))) {
+          paste0("an unnamed ", class(s)[1L])
+        } else {
+          paste(names(s), collapse = ", ")
         }
         problems <- c(
           problems,
           paste0("boot$summary: expected the columns ",
-                 paste(want, collapse = ", "), ", found ",
-                 paste(names(s), collapse = ", "), hint)
+                 paste(want, collapse = ", "), ", found ", found, hint)
         )
       }
     }

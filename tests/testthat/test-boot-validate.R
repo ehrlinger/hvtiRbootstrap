@@ -175,6 +175,18 @@ test_that("a summary missing a count column is refused", {
   expect_error(boot_validate(bag), "boot\\$summary")
 })
 
+test_that("an unnamed summary names the class found, not trailing off", {
+  # names(s) is NULL for an unnamed vector, and pasting that collapses to
+  # "", so the message used to read "found " with nothing after it. It
+  # must say something concrete instead.
+  bag <- fx_bag()
+  bag$boot$summary <- c(1, 2, 3)
+
+  err <- expect_error(boot_validate(bag), "boot\\$summary")
+  expect_match(conditionMessage(err), "found an unnamed numeric",
+               fixed = TRUE)
+})
+
 test_that("the three columns a report reads are enough", {
   # Deliberately NOT the nine columns .bag_summary() produces. boot_validate()
   # accepts bags written by runners, and the fixture and this function's own
