@@ -47,6 +47,13 @@
 #'   `seed`, `slentry`, `slstay`, `base_params`, `requested`, `usable`,
 #'   `n_rows`, `elapsed_mins`, `manifest`, `engine`, `dropped` when supplied,
 #'   and `boot` holding `replicates`, `summary`, `n_success` and `n_failed`.
+#'   `boot$summary` is keyed `parameter` -- as `boot$replicates` and
+#'   [boot_health()] are, and as [boot_pool_chunks()] returns -- rather than
+#'   [boot_summary()]'s `variable`, and carries `sel_q025` and `sel_q975`
+#'   alongside the `%SUMBOOT` statistics. Those two are the spread of the
+#'   coefficient across the replicates that **selected** it, not a confidence
+#'   interval: a term chosen half the time has an interval over half the
+#'   replicates.
 #'   Validated before it is returned, so this function cannot emit a bag that a
 #'   report will refuse three chunks into a render.
 #'
@@ -160,7 +167,7 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
     engine       = ctl$package,
     boot         = list(
       replicates = reps,
-      summary    = boot_summary(x),
+      summary    = .bag_summary(m),
       n_success  = as.integer(x$n_rep),
       n_failed   = as.integer(x$n_attempts) - as.integer(x$n_rep)
     )

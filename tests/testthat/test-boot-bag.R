@@ -194,3 +194,23 @@ test_that("requested cannot be smaller than the pool the screen carries", {
   expect_silent(boot_bag(fit, base_params = "(Intercept)", requested = 3L,
                          manifest = list(sha256 = "a")))
 })
+
+test_that("the bag's summary is keyed parameter and carries the quantiles", {
+  # Before this, boot_bag() filled the slot with boot_summary() unrenamed, so
+  # the bag said `variable` while boot_validate()'s own documented example,
+  # $boot$replicates and boot_health() all say `parameter`. The bag
+  # contradicted its own validator's contract.
+  set.seed(1)
+  n <- 200
+  x1 <- rnorm(n)
+  df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, x2 = rnorm(n))
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, seed = 42)
+  bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
+                  manifest = list(sha256 = "abc123"))
+
+  expect_equal(names(bag$boot$summary),
+               c("parameter", "n", "pct", "mean", "sd", "min", "max",
+                 "sel_q025", "sel_q975"))
+  expect_false("variable" %in% names(bag$boot$summary))
+  expect_true(all(bag$boot$summary$parameter %in% colnames(fit$coefficients)))
+})
