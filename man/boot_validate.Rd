@@ -46,6 +46,12 @@ it must be a \strong{list}, because it is indexed by name, and
 field nor the file.
 }
 
+\code{boot$summary} is additionally checked for the columns \code{parameter}, \code{n} and
+\code{pct} -- the ones a report reads. It is not required to carry the full shape
+\code{\link[=boot_bag]{boot_bag()}} writes, because a runner may report a frequency table and
+nothing more. A summary keyed \code{variable} is \code{\link[=boot_summary]{boot_summary()}}'s shape rather
+than a bag's, and is refused by name.
+
 Every failure is reported at once. An author fixing a runner wants the whole
 list; one at a time turns a single fix into five renders.
 

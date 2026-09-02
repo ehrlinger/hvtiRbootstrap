@@ -106,6 +106,12 @@
 #'   `NULL` but an error -- `subscript out of bounds`, naming neither the
 #'   field nor the file.
 #'
+#' `boot$summary` is additionally checked for the columns `parameter`, `n` and
+#' `pct` -- the ones a report reads. It is not required to carry the full shape
+#' [boot_bag()] writes, because a runner may report a frequency table and
+#' nothing more. A summary keyed `variable` is [boot_summary()]'s shape rather
+#' than a bag's, and is refused by name.
+#'
 #' Every failure is reported at once. An author fixing a runner wants the whole
 #' list; one at a time turns a single fix into five renders.
 #'
@@ -186,6 +192,52 @@ boot_validate <- function(bag) {
                   unlist(lapply(nested, function(f) {
                     .chk_any(bag[["boot"]][[f]], paste0("boot$", f))
                   }), use.names = FALSE))
+    # The columns a report reads, checked by name. Presence of the slot was
+    # never enough: boot_bag() filled it with boot_summary() unrenamed, so the
+    # bag said `variable` where every other bag field says `parameter`, and
+    # nothing noticed, because nothing in this package reads the slot at all.
+    #
+    # Three columns rather than the nine .bag_summary() writes. This function
+    # accepts bags from runners, and a runner reporting a frequency table and
+    # nothing else is not malformed. The two constructors agree on all nine
+    # because they share .bag_summary(), not because of this check.
+    s <- bag[["boot"]][["summary"]]
+    if (!is.null(s) && length(s)) {
+      want <- c("parameter", "n", "pct")
+      miss <- setdiff(want, names(s))
+      if (length(miss)) {
+        # The `variable` key is not always a foreign runner's mistake: it is
+        # exactly the shape hvtiRbootstrap 0.9.2's own boot_bag() wrote, so
+        # the hint has to rescue that reader specifically, not just name the
+        # shape. The migration is one line, because the numbers underneath
+        # were never wrong -- nothing in this package reads $boot$summary.
+        hint <- if ("variable" %in% names(s)) {
+          paste0(
+            ". A summary keyed `variable` is boot_summary()'s shape, not a ",
+            "bag's. hvtiRbootstrap 0.9.2's boot_bag() wrote summaries keyed ",
+            "this way; the numbers are fine, only the key is wrong. Fix a ",
+            "saved bag `b` with ",
+            "names(b$boot$summary)[names(b$boot$summary) == \"variable\"] ",
+            "<- \"parameter\", or re-run boot_bag()"
+          )
+        } else {
+          ""
+        }
+        # names(s) is NULL for an unnamed list or vector, and pasting that
+        # collapses to "", so the message would read "found " with nothing
+        # after it. Naming the class found still says something concrete.
+        found <- if (is.null(names(s))) {
+          paste0("an unnamed ", class(s)[1L])
+        } else {
+          paste(names(s), collapse = ", ")
+        }
+        problems <- c(
+          problems,
+          paste0("boot$summary: expected the columns ",
+                 paste(want, collapse = ", "), ", found ", found, hint)
+        )
+      }
+    }
   }
 
   if (length(problems)) {

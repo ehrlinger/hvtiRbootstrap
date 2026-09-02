@@ -8,6 +8,7 @@
 ^\.remember$
 ^_pkgdown\.yml$
 ^docs$
+^dev$
 ^AGENTS\.md$
 ^CLAUDE\.md$
 ^pkgdown-site$

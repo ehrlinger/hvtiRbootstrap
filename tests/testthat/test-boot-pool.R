@@ -88,6 +88,33 @@ test_that("the pooled summary is recomputed, not averaged", {
   expect_equal(sum(s$n[s$parameter == "early.age"]), 4L)
 })
 
+test_that("the pooled summary has the same shape as the bagged one", {
+  # These two built $boot$summary separately: seven columns keyed `variable`
+  # from boot_bag(), nine keyed `parameter` here. A renderer saw the quantile
+  # columns only if the run happened to be chunked.
+  set.seed(1)
+  n <- 200
+  x1 <- rnorm(n)
+  df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, x2 = rnorm(n))
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, seed = 42)
+  bagged <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
+                     manifest = list(sha256 = "abc123"))
+
+  pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+
+  expect_equal(names(pooled$boot$summary), names(bagged$boot$summary))
+})
+
+test_that("pooled summary drops false confidence intervals", {
+  # ci_lower/ci_upper were computed over the NA-dropped replicates, so they
+  # were conditional on selection and were not confidence intervals at all.
+  p <- boot_pool_chunks(list(chunk(1), chunk(2)))
+
+  expect_false("ci_lower" %in% names(p$boot$summary))
+  expect_false("ci_upper" %in% names(p$boot$summary))
+  expect_true(all(c("sel_q025", "sel_q975") %in% names(p$boot$summary)))
+})
+
 test_that("pooling nothing is an error", {
   expect_error(boot_pool_chunks(list()), "no chunks to pool")
 })

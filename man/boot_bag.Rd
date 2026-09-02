@@ -37,6 +37,13 @@ A list carrying the fields \code{\link[=boot_validate]{boot_validate()}} require
 \code{seed}, \code{slentry}, \code{slstay}, \code{base_params}, \code{requested}, \code{usable},
 \code{n_rows}, \code{elapsed_mins}, \code{manifest}, \code{engine}, \code{dropped} when supplied,
 and \code{boot} holding \code{replicates}, \code{summary}, \code{n_success} and \code{n_failed}.
+\code{boot$summary} is keyed \code{parameter} -- as \code{boot$replicates} and
+\code{\link[=boot_health]{boot_health()}} are, and as \code{\link[=boot_pool_chunks]{boot_pool_chunks()}} returns -- rather than
+\code{\link[=boot_summary]{boot_summary()}}'s \code{variable}, and carries \code{sel_q025} and \code{sel_q975}
+alongside the \verb{\%SUMBOOT} statistics. Those two are the spread of the
+coefficient across the replicates that \strong{selected} it, not a confidence
+interval: a term chosen half the time has an interval over half the
+replicates.
 Validated before it is returned, so this function cannot emit a bag that a
 report will refuse three chunks into a render.
 }

@@ -195,20 +195,22 @@ boot_pool_chunks <- function(chunks) {
   }))
   n_boot <- sum(n_each)
 
-  summ <- do.call(rbind, lapply(split(reps, reps$parameter), function(x) {
-    n <- length(unique(x$replicate))
-    data.frame(parameter = x$parameter[1],
-               n         = n,
-               pct       = 100 * n / n_boot,
-               mean      = mean(x$estimate),
-               sd        = stats::sd(x$estimate),
-               min       = min(x$estimate),
-               max       = max(x$estimate),
-               ci_lower  = unname(stats::quantile(x$estimate, 0.025)),
-               ci_upper  = unname(stats::quantile(x$estimate, 0.975)),
-               row.names = NULL, stringsAsFactors = FALSE)
-  }))
-  summ <- summ[order(-summ$pct, summ$parameter), ]
+  # Hoisted ahead of .bag_summary() so that call reads a REAL bag rather than
+  # a hand-built stand-in. .replicate_matrix() reads exactly $boot$replicates
+  # and $n_boot today, so a stub carrying only those two matched it -- but a
+  # stub is not a bag, and the day .replicate_matrix() reads a third field
+  # this call would hand it NULL silently, with its error blaming a bag that
+  # does not exist.
+  out <- chunks[[1]]
+  out$boot$replicates <- reps
+  out$n_boot <- n_boot
+
+  # The same constructor boot_bag() uses, so the pooled and unpooled shapes
+  # cannot drift apart. It also gets the pooling property this block used to
+  # state for itself: `n` and `pct` are recomputed from the pooled replicates
+  # rather than averaged across chunks, because a percentage of a percentage is
+  # not a percentage of the whole and the chunks need not be the same size.
+  summ <- .bag_summary(.replicate_matrix(out))
 
   base_params <- chunks[[1]][["base_params"]]
   free_est <- reps$estimate[reps$parameter == base_params[1]]
@@ -223,12 +225,9 @@ boot_pool_chunks <- function(chunks) {
                    function(k) as.numeric(k[["elapsed_mins"]]),
                    numeric(1))
 
-  out <- chunks[[1]]
-  out$boot$replicates <- reps
   out$boot$summary    <- summ
   out$boot$n_success  <- sum(n_ok)
   out$boot$n_failed   <- sum(n_bad)
-  out$n_boot       <- n_boot
   # NA, not 0, when there is nothing to take an SD of. Zero is a CLAIM -- "the
   # base parameter did not vary" -- and one replicate cannot support it. This
   # matches boot_summary(), which also yields NA for an undefined statistic.
