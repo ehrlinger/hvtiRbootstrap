@@ -68,3 +68,49 @@ boot_summary <- function(x) {
   rownames(out) <- NULL
   out
 }
+
+# The bag-side summary: boot_summary() keyed the way a bag is keyed, plus the
+# spread of each coefficient across the replicates that selected it.
+#
+# WHY ONE CONSTRUCTOR. boot_bag() and boot_pool_chunks() both fill
+# `$boot$summary`, and before this they built it separately -- seven columns
+# keyed `variable` from one, nine keyed `parameter` from the other. A renderer
+# then saw a different shape depending on whether the run happened to be
+# chunked. Nothing inside the package reads that slot, so nothing caught it.
+# Sharing the constructor makes the shapes agree by construction.
+#
+# WHY `parameter` RATHER THAN `variable`. `$boot$replicates`, boot_health(),
+# and boot_validate()'s own documented example all say `parameter`. Only
+# boot_summary() says `variable`, and boot_summary() is the standalone %SUMBOOT
+# port rather than a bag -- it keeps its own key.
+#
+# WHY THESE ARE NOT CALLED ci_lower/ci_upper. They are computed over the
+# replicates in which the term was SELECTED, so for a term chosen half the time
+# the interval is over half the replicates. That is not a confidence interval
+# for the coefficient, and it is perverse in the direction that matters: the
+# weaker the term, the narrower the interval looks. It is a sibling of the
+# mean/sd/min/max above, which are conditional in exactly the same way and
+# always have been. The name says selection, and deliberately does not resemble
+# the interval branch's cll_p95/clu_p95.
+#
+# WHY type = 4. SAS PROC STDIZE runs PCTLDEF=1, which is the weighted average
+# at x_(np) -- R's type 4, not the type 7 default.
+.bag_summary <- function(m) {
+  out <- boot_summary(m)
+  names(out)[names(out) == "variable"] <- "parameter"
+
+  # NA dropped per column rather than na.rm = TRUE, so that a column of
+  # nothing yields NA instead of an error, matching boot_summary()'s own
+  # handling of an undefined statistic.
+  q <- function(col, p) {
+    v <- col[!is.na(col)]
+    if (length(v) == 0L) return(NA_real_)
+    unname(stats::quantile(v, p, type = 4))
+  }
+  j <- match(out$parameter, colnames(m))
+  out$sel_q025 <- vapply(j, function(k) q(m[, k], 0.025), numeric(1))
+  out$sel_q975 <- vapply(j, function(k) q(m[, k], 0.975), numeric(1))
+
+  rownames(out) <- NULL
+  out
+}
