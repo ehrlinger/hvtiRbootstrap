@@ -157,3 +157,29 @@ test_that("boot_validate reads `boot` by exact name, not by prefix", {
   expect_error(boot_validate(bag),
                "boot: expected the results list, found nothing")
 })
+
+test_that("a summary keyed variable rather than parameter is refused", {
+  # This is the defect that shipped: boot_bag() filled the slot with
+  # boot_summary() unrenamed. Nothing in the package reads $boot$summary, so
+  # only a check here can catch the two constructors drifting apart again.
+  bag <- fx_bag()
+  names(bag$boot$summary)[names(bag$boot$summary) == "parameter"] <- "variable"
+
+  expect_error(boot_validate(bag), "boot\\$summary")
+})
+
+test_that("a summary missing a count column is refused", {
+  bag <- fx_bag()
+  bag$boot$summary$n <- NULL
+
+  expect_error(boot_validate(bag), "boot\\$summary")
+})
+
+test_that("the three columns a report reads are enough", {
+  # Deliberately NOT the nine columns .bag_summary() produces. boot_validate()
+  # accepts bags written by runners, and the fixture and this function's own
+  # documented example both carry exactly parameter/n/pct. The nine-column
+  # agreement between boot_bag() and boot_pool_chunks() is guaranteed by their
+  # sharing .bag_summary(), which is stronger than a check here.
+  expect_true(boot_validate(fx_bag()))
+})
