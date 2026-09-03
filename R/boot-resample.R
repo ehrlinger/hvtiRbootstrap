@@ -3,9 +3,12 @@
 # WHY IT IS SHARED. %bootreg and %BNMNR are different macros doing different
 # jobs -- one selects variables, one bands an estimate -- but their resampling
 # loops are the same loop: draw, fit, keep on success, and on failure redraw in
-# place WITHOUT counting the attempt, so RESAMPL= counts valid results rather
-# than draws. Writing it twice would let the two copies drift, and the drift
-# would be invisible because each branch's tests would still pass.
+# place without the failure counting toward n_rep. Both counts are tracked and
+# both are reported: RESAMPL= counts VALID results, while every draw -- failed
+# ones included -- counts toward n_attempts, which is what the macros print as
+# the total number of resamplings. Writing it twice would let the two copies
+# drift, and the drift would be invisible because each branch's tests would
+# still pass.
 #
 # WHY caller/noun/hint RATHER THAN ONE MESSAGE. boot_select() gave up "with 0
 # valid models"; the interval branch gives up with 0 valid replicates. A test
