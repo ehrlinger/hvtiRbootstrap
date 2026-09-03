@@ -26,6 +26,10 @@ replicate.
 \description{
 Fit a linear model for one bootstrap replicate
 }
+\details{
+Under \code{select = "stepwise"}, entry and removal both test the partial F,
+matching \verb{PROC REG SELECTION=STEPWISE}.
+}
 \examples{
 set.seed(1)
 n  <- 200

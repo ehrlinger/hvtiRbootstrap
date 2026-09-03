@@ -252,3 +252,14 @@ evidence the abstraction holds, and there is none yet.
 **Does `max_move` matter here?** `hzr_stepwise()` exposes it and `%bootreg`
 has no equivalent. It is out of scope, but if a real screen turns out to cycle
 between two terms without it, that is the evidence to reopen this.
+
+**Should hierarchy be enforced?** `.pv_remove_p()`'s `"f"` branch uses
+`drop1()`, which respects marginality; the Wald branch (`fit_logistic()`,
+`fit_cox()`) tests every term independently and does not, so the two removal
+paths can disagree on a model carrying an interaction without its main
+effects, and the forward step can admit an interaction before either main
+effect since `scope` is flat term labels. `PROC LOGISTIC`'s default
+`HIERARCHY=SINGLE` would not allow this. Out of scope here - registered as
+D5 in the README instead - because realistic `%bootreg` pools are main
+effects and enforcing it is real work of its own. Revisit if a candidate
+pool with interactions turns out to be common.

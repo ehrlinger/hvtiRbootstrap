@@ -88,6 +88,9 @@
 
 #' Fit a linear model for one bootstrap replicate
 #'
+#' @details
+#' Under `select = "stepwise"`, entry and removal both test the partial F,
+#' matching `PROC REG SELECTION=STEPWISE`.
 #' @param data A data frame - one bootstrap replicate.
 #' @param formula Model formula offering the candidate terms.
 #' @param select List with `method` (`"stepwise"` or `"none"`), `sle`, `sls`,
@@ -120,7 +123,8 @@ fit_linear <- function(data, formula, select) {
   tryCatch(
     suppressWarnings({
       fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
-      .coefs(.maybe_step(fit, select, data, enter = "f", remove = "f"))
+      stepped <- .maybe_step(fit, select, data, enter = "f", remove = "f")
+      if (is.null(stepped)) NULL else .coefs(stepped)
     }),
     error = function(e) NULL
   )
@@ -128,6 +132,9 @@ fit_linear <- function(data, formula, select) {
 
 #' Fit a logistic model for one bootstrap replicate
 #'
+#' @details
+#' Under `select = "stepwise"`, entry tests the score chi-square and removal
+#' tests Wald, matching `PROC LOGISTIC SELECTION=STEPWISE`.
 #' @inheritParams fit_linear
 #' @return Named numeric vector of kept coefficients, or `NULL` if the fit
 #'   errored or did not converge. Warnings - notably "fitted probabilities
@@ -152,9 +159,13 @@ fit_logistic <- function(data, formula, select) {
         quote(stats::glm(formula, data = data, family = stats::binomial())),
         formula, data
       )
-      if (!isTRUE(fit$converged)) NULL
-      else .coefs(.maybe_step(fit, select, data, enter = "rao",
-                              remove = "wald"))
+      if (!isTRUE(fit$converged)) {
+        NULL
+      } else {
+        stepped <- .maybe_step(fit, select, data, enter = "rao",
+                               remove = "wald")
+        if (is.null(stepped)) NULL else .coefs(stepped)
+      }
     }),
     error = function(e) NULL
   )
@@ -195,7 +206,8 @@ fit_cox <- function(data, formula, select) {
     suppressWarnings({
       fit <- .fit_in_env(quote(survival::coxph(formula, data = data)),
                          formula, data)
-      .coefs(.maybe_step(fit, select, data, enter = "lr", remove = "wald"))
+      stepped <- .maybe_step(fit, select, data, enter = "lr", remove = "wald")
+      if (is.null(stepped)) NULL else .coefs(stepped)
     }),
     error = function(e) NULL
   )

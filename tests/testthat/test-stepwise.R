@@ -223,3 +223,48 @@ test_that(".pv_stepwise drives glm and coxph, not only lm", {
   )
   expect_s3_class(cx, "coxph")
 })
+
+test_that("a candidate with a missing value is still reachable", {
+  # Regression test. update(fit, . ~ . + term, data = data) drops rows
+  # missing `term` from the bigger model but not from the base, so anova()
+  # errors with "models were not all fitted to the same size of dataset".
+  # .pv_enter_p() catches that and returns NA, which the driver reads as
+  # "cannot enter" -- and since the screen starts intercept-only, that fires
+  # on the very first forward step and every step after, making the term
+  # unreachable for the whole run. Every other fixture in this file is
+  # complete-case, which is why the rest of the file does not catch this.
+  set.seed(31)
+  n <- 400
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  d <- data.frame(x1 = x1, x2 = x2)
+  d$y <- 3 * x1 + 2 * x2 + rnorm(n)
+  d$x2[1:8] <- NA
+  full <- lm(y ~ x1 + x2, d)
+
+  got <- .pv_stepwise(full, d, sle = 0.05, sls = 0.05, max_steps = 0,
+                      enter = "f", remove = "f")
+
+  expect_true("x2" %in% attr(stats::terms(got), "term.labels"))
+})
+
+test_that("a base that fails to refit returns NULL, not the full model", {
+  # Regression test for the intercept-only fallback. Returning `fit` here
+  # would carry every offered term into the replicate's coefficient row,
+  # indistinguishable from a screen that genuinely selected everything --
+  # inflating every term's selection frequency instead of failing loud.
+  set.seed(32)
+  n <- 30
+  d <- data.frame(x1 = rnorm(n))
+  d$y <- d$x1 + rnorm(n)
+  full <- lm(y ~ x1, d)
+
+  # A `data` with none of the model's own rows left makes the
+  # intercept-only refit fail: nrow(data) == 0 after complete.cases().
+  d_empty <- d[0, , drop = FALSE]
+
+  got <- .pv_stepwise(full, d_empty, sle = 0.05, sls = 0.05, max_steps = 0,
+                      enter = "f", remove = "f")
+
+  expect_null(got)
+})

@@ -43,7 +43,13 @@ Pass \code{fraction = 1} (the default) to match SAS behaviour exactly.}
 \verb{PROC=} - see \code{\link[=fit_linear]{fit_linear()}}, \code{\link[=fit_logistic]{fit_logistic()}} and \code{\link[=fit_cox]{fit_cox()}} - so \code{sle}
 and \code{sls} are exactly what they mean in the job being ported. Model
 fitting is still not parity-tested - see the package's design spec - but
-these two arguments now select rather than only being recorded.}
+these two arguments now select rather than only being recorded.
+\strong{Divergence:} candidates are flat term labels, not a hierarchy, and
+\code{\link[=fit_linear]{fit_linear()}}'s removal test respects marginality while
+\code{\link[=fit_logistic]{fit_logistic()}}'s and \code{\link[=fit_cox]{fit_cox()}}'s Wald removal test does not - so a
+screen can keep an interaction without either main effect on the latter
+two, which \verb{PROC LOGISTIC}'s default \code{HIERARCHY=SINGLE} would not do.
+Not implemented; see D5 in the README's divergence register.}
 
 \item{max_steps}{Maximum selection steps (\verb{\%bootreg} \verb{MAXSTEP=}). \code{0} means
 no restriction, implemented as a budget scaled to the model - ten passes

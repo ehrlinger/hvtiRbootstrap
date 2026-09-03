@@ -20,13 +20,17 @@
   mean what `SLE=` and `SLS=` mean in the job being ported.
 * **The cost curve broke, not just the walltime.** `stats::step()` refits
   every candidate in both directions at every step, which cost roughly the
-  3.72 power of the candidate pool -- measured at 0.13s/fit for 10
-  candidates, up to 8.81s/fit at 172. A p-value stepwise refits only the
-  entering or leaving term, and the measured log-log slope drops to 1.50. At
-  `n_rep = 500` and 172 candidates that is the difference between about 450
-  hours and about 1.2 hours for the same screen. The exponent is the number
-  that matters -- a constant-factor speedup would not have made a
-  172-candidate, 500-replicate screen reachable at all.
+  3.72 power of the candidate pool -- measured at 0.2s/fit for 10 candidates,
+  up to 188.3s/fit at 80. The new driver measures 0.13s/fit at 10 candidates,
+  up to 8.81s/fit at 172, a log-log slope of 1.50. It still refits every
+  remaining candidate at each forward step, the same count `add1()` did --
+  the win is that the search starts from an intercept-only model instead of
+  the full one, and that the backward step for `fit_logistic()` and
+  `fit_cox()` is Wald, which needs no refit at all. At `n_rep = 500` and 172
+  candidates that is the difference between about 450 hours and about 1.2
+  hours for the same screen. The exponent is the number that matters -- a
+  constant-factor speedup would not have made a 172-candidate, 500-replicate
+  screen reachable at all.
 * **The interval branch is built.** `boot_predict_ci()` is the R port of
   `%BNMNR` and `%BNPREV`: it resamples, computes a `statistic` on each
   replicate, and reports percentile bands. It is not variable selection --

@@ -103,13 +103,32 @@
 # correlated one enters, and must be able to leave again. Forward-only is
 # SELECTION=FORWARD, which is a different option.
 .pv_stepwise <- function(fit, data, sle, sls, max_steps, enter, remove) {
+  # PROC drops an observation missing any variable in the MODEL statement, and
+  # every comparison below has to run on one row set or anova() refuses with
+  # "models were not all fitted to the same size of dataset". That error is
+  # caught upstream and becomes NA, which the driver reads as "cannot enter"
+  # -- so before this, a candidate with a single missing value was
+  # unreachable for the whole screen, in every replicate, and surfaced as
+  # n = 0 in boot_summary(). Indistinguishable from a term nothing wanted.
+  # Restricting once, here, means the intercept-only base built just below
+  # and every candidate refit after it all share the same rows.
+  keep <- stats::complete.cases(stats::get_all_vars(stats::terms(fit), data))
+  data <- data[keep, , drop = FALSE]
+
   scope <- attr(stats::terms(fit), "term.labels")
   # `data = data` on every update(), for the reason .pv_enter_p() documents.
+  # This refit of `fit` onto the restricted `data` is the base every
+  # candidate is compared against, so it has to be the one whose row set
+  # matches -- not the original, unrestricted `fit`.
   current <- tryCatch(
     stats::update(fit, stats::as.formula(". ~ 1"), data = data),
     error = function(e) NULL
   )
-  if (is.null(current)) return(fit)
+  # A failed base is a failed replicate (Finding 5): returning `fit` here
+  # would carry every offered term, indistinguishable from a screen that
+  # selected everything, and would inflate every term's selection frequency.
+  # NULL is the fitter contract's own "this replicate failed, redraw it".
+  if (is.null(current)) return(NULL)
   # coxph's model.matrix/model.frame re-derive `data` from the formula's OWN
   # environment rather than the caller's frame, and update() keeps
   # propagating the environment `fit` was originally created in -- not this

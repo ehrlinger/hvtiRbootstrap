@@ -168,6 +168,27 @@ test_that("a strong predictor is selected when sle admits it", {
   expect_gt(s$pct[s$variable == "x1"], 90)
 })
 
+test_that("a candidate with a missing value is selected, not unreachable", {
+  # End-to-end regression test for the same bug .pv_stepwise's own test
+  # covers: a missing value in a strong predictor made it unreachable for
+  # the whole screen because anova() compared models fitted to different
+  # row counts, the error became NA, and NA reads as "cannot enter". Every
+  # existing boot_select() fixture is complete-case, so this is the one
+  # that catches a regression here.
+  set.seed(33)
+  n <- 400
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  df <- data.frame(x1 = x1, x2 = x2)
+  df$y <- 3 * x1 + 2 * x2 + rnorm(n)
+  df$x2[1:8] <- NA
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, seed = 1)
+  s <- boot_summary(fit)
+
+  expect_gt(s$pct[s$variable == "x2"], 90)
+})
+
 test_that("select = 'none' still fits the full model", {
   # Unchanged behaviour, pinned so the rewrite cannot break the branch that
   # does not select at all.

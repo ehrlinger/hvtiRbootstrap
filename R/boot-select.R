@@ -31,6 +31,12 @@
 #'   and `sls` are exactly what they mean in the job being ported. Model
 #'   fitting is still not parity-tested - see the package's design spec - but
 #'   these two arguments now select rather than only being recorded.
+#'   **Divergence:** candidates are flat term labels, not a hierarchy, and
+#'   [fit_linear()]'s removal test respects marginality while
+#'   [fit_logistic()]'s and [fit_cox()]'s Wald removal test does not - so a
+#'   screen can keep an interaction without either main effect on the latter
+#'   two, which `PROC LOGISTIC`'s default `HIERARCHY=SINGLE` would not do.
+#'   Not implemented; see D5 in the README's divergence register.
 #' @param max_steps Maximum selection steps (`%bootreg` `MAXSTEP=`). `0` means
 #'   no restriction, implemented as a budget scaled to the model - ten passes
 #'   over the candidate terms, floored at 1000 - which no realistic model

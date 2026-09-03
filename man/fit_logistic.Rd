@@ -23,6 +23,10 @@ converged fit.
 \description{
 Fit a logistic model for one bootstrap replicate
 }
+\details{
+Under \code{select = "stepwise"}, entry tests the score chi-square and removal
+tests Wald, matching \verb{PROC LOGISTIC SELECTION=STEPWISE}.
+}
 \examples{
 set.seed(1)
 n  <- 200
