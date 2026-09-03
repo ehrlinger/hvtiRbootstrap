@@ -124,9 +124,12 @@ test_that("a fit that selected nothing is not confused with a failed fit", {
 test_that("max_steps = 0 gives a budget no real model reaches", {
   # %bootreg documents MAXSTEP=0 as "no restriction". The budget must scale
   # with the model rather than be a fixed 1000, but it must NOT be enormous:
-  # step() begins with `models <- vector("list", steps)`, allocated up front,
-  # so .Machine$integer.max would request a 2.1-billion-element list on every
-  # stepwise fit. These bounds are the guard against that regression.
+  # nothing in this package pre-allocates a list of that length any more (that
+  # was stats::step()'s behaviour, before this package's own p-value stepwise
+  # driver replaced it) -- the budget instead bounds .pv_stepwise()'s
+  # forward/backward loop directly, so .Machine$integer.max would still mean
+  # an unbounded number of refits on every stepwise fit. These bounds are the
+  # guard against that regression.
   expect_equal(.step_budget(30, 3), 30)      # explicit MAXSTEP= wins
   expect_equal(.step_budget(0, 3), 1000)     # floor for small models
   expect_equal(.step_budget(0, 500), 5000)   # scales with candidate count

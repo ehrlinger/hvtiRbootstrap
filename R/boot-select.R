@@ -34,8 +34,9 @@
 #' @param max_steps Maximum selection steps (`%bootreg` `MAXSTEP=`). `0` means
 #'   no restriction, implemented as a budget scaled to the model - ten passes
 #'   over the candidate terms, floored at 1000 - which no realistic model
-#'   reaches. It is a budget rather than a truly unbounded count because
-#'   [stats::step()] pre-allocates a list of that length.
+#'   reaches. It bounds the p-value stepwise driver's forward/backward loop
+#'   (`.pv_stepwise()` in `R/stepwise.R`) rather than leaving it genuinely
+#'   unbounded.
 #' @param max_attempts Budget of resampling attempts before giving up.
 #'   **Divergence:** `%bootreg` has no such cap - its loop advances only on a
 #'   successful fit, so a model that fails on every replicate never terminates.

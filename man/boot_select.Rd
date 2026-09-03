@@ -48,8 +48,9 @@ these two arguments now select rather than only being recorded.}
 \item{max_steps}{Maximum selection steps (\verb{\%bootreg} \verb{MAXSTEP=}). \code{0} means
 no restriction, implemented as a budget scaled to the model - ten passes
 over the candidate terms, floored at 1000 - which no realistic model
-reaches. It is a budget rather than a truly unbounded count because
-\code{\link[stats:step]{stats::step()}} pre-allocates a list of that length.}
+reaches. It bounds the p-value stepwise driver's forward/backward loop
+(\code{.pv_stepwise()} in \code{R/stepwise.R}) rather than leaving it genuinely
+unbounded.}
 
 \item{max_attempts}{Budget of resampling attempts before giving up.
 \strong{Divergence:} \verb{\%bootreg} has no such cap - its loop advances only on a

@@ -23,17 +23,20 @@
 
 # Fit inside an environment that carries `data` and `formula`.
 #
-# This is not ceremony. stats::step() refits through add1()/drop1(), which
-# re-evaluate the model's stored call in environment(formula(object)) -- the
-# scope where the FORMULA was written, not the frame of whoever called step().
-# A bootstrap replicate lives in a local variable, so that scope has no `data`;
-# R then continues its search and finds utils::data, the function, and the fit
-# dies with the memorable "'data' must be a data.frame, environment, or list".
+# ORIGINAL JUSTIFICATION, NO LONGER TRUE: this wrapper existed because
+# stats::step() refit through add1()/drop1(), which re-evaluate the model's
+# stored call in environment(formula(object)) -- the scope where the FORMULA
+# was written, not the frame of whoever called step(). Nothing in this
+# package calls step() any more; the p-value stepwise driver, .pv_stepwise()
+# in R/stepwise.R, refits with stats::update(fit, ..., data = data), passing
+# `data` explicitly on every call rather than relying on a formula-environment
+# lookup to find it.
 #
-# Rebinding the formula's environment to one holding this replicate's `data`
-# puts the refit's lookups where they belong. Without it, every stepwise
-# replicate fails and boot_select() -- whose default IS stepwise -- returns
-# nothing at all.
+# During the Task 3 review, ablating this rebinding entirely still left
+# fit_linear(), fit_cox() and a full 20-replicate stepwise run all working.
+# That is suggestive, not exhaustive, so the wrapper is kept rather than
+# removed on that evidence alone -- whether it is still needed by anything is
+# an open question worth a dedicated look, not a call to make in passing here.
 .fit_in_env <- function(cl, formula, data) {
   env <- new.env(parent = environment(formula))
   environment(formula) <- env

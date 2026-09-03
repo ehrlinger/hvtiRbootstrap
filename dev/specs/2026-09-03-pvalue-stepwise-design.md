@@ -219,19 +219,19 @@ penalised selection; and harvesting more than a couple of the 471 jobs.
 
 - [ ] `hzr_stepwise()` drives `lm`, `glm` and `coxph` as well as `hazard`,
       through an adapter rather than a widened class check
-- [ ] A partial-F criterion exists and is tested
-- [ ] `fit_logistic()`, `fit_cox()` and `fit_linear()` each pin their PROC's
+- [x] A partial-F criterion exists and is tested
+- [x] `fit_logistic()`, `fit_cox()` and `fit_linear()` each pin their PROC's
       criterion; no `criterion` argument reaches `boot_select()`
-- [ ] `sle`/`sls` demonstrably change the screen, with a test that fails if
+- [x] `sle`/`sls` demonstrably change the screen, with a test that fails if
       they are ignored again
-- [ ] The benchmark records the log-log slope at five pool sizes
+- [x] The benchmark records the log-log slope at five pool sizes
 - [ ] Distributional parity against at least one saved production `%SUMBOOT`
       listing, documented in the study repo, not here
 - [ ] Synthetic in-package fixtures; no cohort data
-- [ ] `NEWS.md` states that selection frequencies change and that bags across
+- [x] `NEWS.md` states that selection frequencies change and that bags across
       the boundary are not comparable
 - [ ] #31 and #32 closed, #9 answered
-- [ ] `devtools::check()` 0/0/0, `lintr::lint_package()` 0
+- [x] `devtools::check()` 0/0/0, `lintr::lint_package()` 0
 
 ## Open questions
 
