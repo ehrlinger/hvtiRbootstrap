@@ -214,7 +214,19 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
-  idx_by_unit <- if (is.null(id)) NULL else split(seq_len(n), data[[id]])
+  # match() against the observed values, NOT the column itself: split() keeps
+  # empty factor levels, so a factor `id` carrying an unused level -- the
+  # ordinary result of subsetting without droplevels() -- would become a
+  # phantom unit with no rows that the draw could still select. A replicate
+  # would then hold fewer real units than requested, and sometimes none at
+  # all, understating exactly the between-unit variance the renumbering
+  # below exists to preserve.
+  idx_by_unit <- if (is.null(id)) {
+    NULL
+  } else {
+    keys <- match(data[[id]], unique(data[[id]]))
+    unname(split(seq_len(n), keys))
+  }
   n_units <- if (is.null(id)) n else length(idx_by_unit)
   n_draw <- max(1L, round(n_units * fraction))
   draw_one <- if (is.null(id)) {

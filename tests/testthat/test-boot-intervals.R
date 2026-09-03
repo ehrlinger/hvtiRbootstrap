@@ -316,3 +316,39 @@ test_that("the control record names the resampling unit", {
   expect_equal(r$control$n_units, 4L)
   expect_equal(r$control$n_rows, 8L)
 })
+
+test_that("a factor id with an unused level is not a phantom unit", {
+  # split() keeps empty factor levels, where unique() drops them. A factor
+  # `id` carrying an unused level -- the ordinary result of subsetting
+  # without droplevels(), common after a SAS/haven import -- must not
+  # become a zero-row unit that the draw could still select.
+  d <- data.frame(
+    pt = factor(c("a", "a", "b", "c", "c", "c"),
+                levels = c("a", "b", "c", "unused")),
+    x = 1:6
+  )
+  probe <- function(dd, ...) {
+    c(rows = nrow(dd), units = length(unique(dd$.boot_unit)))
+  }
+
+  r <- boot_predict_ci(d, probe, n_rep = 20, id = "pt", seed = 5)
+
+  expect_equal(r$control$n_units, 3L)
+  expect_true(all(r$estimates[, "units"] == 3))
+  expect_true(all(r$estimates[, "rows"] > 0))
+})
+
+test_that("a numeric id groups by value, not by character coercion", {
+  # A reviewer suggested split(..., as.character(id)) instead of match().
+  # That also drops empty factor levels, but character coercion can
+  # collide doubles that are not equal (as.character() rounds). Grouping
+  # must follow R's own equality, not a printed representation.
+  collide <- !identical(0.1 + 0.2, 0.3)
+  d <- data.frame(pt = rep(c(0.1 + 0.2, 0.3), each = 2), x = 1:4)
+  seen <- function(dd, ...) c(units = length(unique(dd$.boot_unit)))
+
+  r <- boot_predict_ci(d, seen, n_rep = 10, id = "pt", seed = 7)
+
+  expected_units <- if (collide) 2L else 1L
+  expect_equal(r$control$n_units, expected_units)
+})
