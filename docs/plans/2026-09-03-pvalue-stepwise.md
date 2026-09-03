@@ -216,10 +216,17 @@ Create `R/stepwise.R`:
   # which does not exist in this frame. Without it every stepwise replicate
   # dies with "object 'd' not found". This is the same lookup-scope trap
   # .fit_in_env() documents for step(), reached by a different route.
+  # ERROR ONLY, NEVER warning. A quasi-separated candidate makes glm warn
+  # "fitted probabilities numerically 0 or 1" while converging to perfectly
+  # usable coefficients. Catching the warning here would return NA and refuse
+  # to let that term enter -- discarding precisely the candidates where a
+  # predictor is strong, which is the downward bias AGENTS.md's "WARNINGS DO
+  # NOT DISCARD A REPLICATE" rule exists to prevent. The fitters already wrap
+  # the whole fit in suppressWarnings(); nothing here needs to catch one.
   bigger <- tryCatch(
     stats::update(fit, stats::as.formula(paste(". ~ . +", term)),
                   data = data),
-    error = function(e) NULL, warning = function(w) NULL
+    error = function(e) NULL
   )
   if (is.null(bigger)) return(NA_real_)
   tab <- tryCatch(
@@ -352,18 +359,50 @@ test_that("sle actually gates entry", {
 })
 
 test_that("sls actually gates removal", {
-  # sls = 1 removes everything it can, whatever entered. Pinned separately
-  # from sle so that passing one and ignoring the other is a failure.
+  # sls is the level to STAY: a term leaves when its p-value EXCEEDS it. So
+  # sls = 1 keeps everything and a small sls throws the weak term out. Getting
+  # this backwards would be easy and would still pass a test that only ever
+  # asserted "something was removed".
+  #
+  # sle = 1 admits every candidate, so sls is the only thing that can explain
+  # what is missing at the end. Pinned separately from sle so that honouring
+  # one and ignoring the other is a failure.
   set.seed(13)
   n <- 300
-  d <- data.frame(x1 = rnorm(n))
+  d <- data.frame(x1 = rnorm(n), junk = rnorm(n))
   d$y <- 3 * d$x1 + rnorm(n)
-  full <- lm(y ~ x1, d)
+  full <- lm(y ~ x1 + junk, d)
 
-  got <- .pv_stepwise(full, d, sle = 0.5, sls = 1, max_steps = 0,
+  loose <- .pv_stepwise(full, d, sle = 1, sls = 1, max_steps = 0,
+                        enter = "f", remove = "f")
+  tight <- .pv_stepwise(full, d, sle = 1, sls = 0.001, max_steps = 0,
+                        enter = "f", remove = "f")
+
+  expect_true("junk" %in% attr(stats::terms(loose), "term.labels"))
+  expect_false("junk" %in% attr(stats::terms(tight), "term.labels"))
+  expect_true("x1" %in% attr(stats::terms(tight), "term.labels"))
+})
+
+test_that("a term removed once does not immediately re-enter", {
+  # SAS ends the screen when the term about to enter is the one just removed.
+  # With sle > sls that cycle is not exotic, it is the default outcome: the
+  # term clears the entry threshold, fails the stricter stay threshold, leaves,
+  # and is the best candidate again. Without the guard only the step budget
+  # ends it, and the answer depends on which half of the cycle it stopped on.
+  set.seed(16)
+  n <- 300
+  d <- data.frame(x1 = rnorm(n), junk = rnorm(n))
+  d$y <- 3 * d$x1 + rnorm(n)
+  full <- lm(y ~ x1 + junk, d)
+
+  t0 <- proc.time()[["elapsed"]]
+  got <- .pv_stepwise(full, d, sle = 1, sls = 0.001, max_steps = 0,
                       enter = "f", remove = "f")
+  elapsed <- proc.time()[["elapsed"]] - t0
 
-  expect_length(attr(stats::terms(got), "term.labels"), 0L)
+  # It must settle, not spin to a 1000-step budget.
+  expect_lt(elapsed, 20)
+  expect_equal(attr(stats::terms(got), "term.labels"), "x1")
 })
 
 test_that(".pv_stepwise terminates and honours max_steps", {
@@ -445,6 +484,13 @@ Append to `R/stepwise.R`:
     max(1000L, 10L * length(scope))
   used <- 0L
 
+  # SAS stops when the term about to enter is the one just removed. Without
+  # that guard, any screen with sle > sls oscillates -- a term enters on its
+  # entry p-value, fails the stricter stay threshold, leaves, and is
+  # immediately the best candidate again -- and only the step budget ends it,
+  # leaving whichever half of the cycle the budget happened to stop on.
+  just_removed <- NA_character_
+
   repeat {
     moved <- FALSE
 
@@ -457,6 +503,7 @@ Append to `R/stepwise.R`:
       ok <- which(!is.na(p) & p <= sle)
       if (length(ok)) {
         best <- cand[[ok[[which.min(p[ok])]]]]
+        if (identical(best, just_removed)) break
         nxt <- tryCatch(
           stats::update(current,
                         stats::as.formula(paste(". ~ . +", best)),
@@ -467,6 +514,7 @@ Append to `R/stepwise.R`:
           current <- nxt
           used <- used + 1L
           moved <- TRUE
+          just_removed <- NA_character_
         }
       }
     }
@@ -488,6 +536,7 @@ Append to `R/stepwise.R`:
           current <- nxt
           used <- used + 1L
           moved <- TRUE
+          just_removed <- worst
         }
       }
     }
