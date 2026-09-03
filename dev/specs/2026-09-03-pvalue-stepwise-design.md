@@ -51,53 +51,77 @@ together.
 
 ## What this settles
 
-**The stepwise lives in `TemporalHazard`.** `hzr_stepwise()` already implements
-PROC's vocabulary - `direction`, `criterion`, `slentry`, `slstay`, `max_steps`,
-`max_move`, `force_in`, `force_out` - and has been exercised against production
-hazard screens. It is generalised there rather than reimplemented here, and
-`hvtiRbootstrap` depends on it. That answers #9: **TemporalHazard owns
-selection, `hvtiRbootstrap` owns resampling.** One implementation, and the
-family avoids the drift that made `.boot_resample()` shared in the first place.
+**The stepwise is implemented here, reading `hzr_stepwise()` as prior art.**
+`TemporalHazard` already has a working p-value stepwise in PROC's vocabulary,
+and the first version of this spec put the generalisation there. That was
+revisited on 2026-09-03 and reversed, for reasons that belong on the record:
 
-**The criterion is matched per family and is not a caller's argument.** `SLE=`
-and `SLS=` then mean exactly what they mean in the job being ported, so a
-migrated screen reproduces SAS without anyone choosing anything - the package's
-stated principle that the default behaviour matches SAS.
+- **`TemporalHazard` is a CRAN package, and its `Description` is a contract.**
+  It promises "native R implementations of the multiphase parametric hazard
+  model of Blackstone, Naftel, and Turner (1986) ... parity ... against
+  reference outputs from the original 'C'/'SAS' HAZARD program". Its
+  `AGENTS.md` opens with *"The package exists to reproduce a reference
+  implementation."* Driving `lm`, `glm` and `coxph` is not that, and a
+  partial-F criterion would be carried for models it cannot fit.
+- **Its check budget has to absorb it.** `R CMD check --as-cran` is 3m 33s
+  against CRAN's ~10 minute ceiling - the ceiling that archived
+  ggRandomForests in June 2026 - and its contract says to watch that budget
+  when adding unskipped slow tests. The stepwise already carries 2,248 lines
+  of tests across ten files; a four-family matrix lands on top of those.
+- **It is mid-repair.** Four of the last six commits there are stepwise
+  tests, on `fix/tests-passing-over-degenerate-fits`, with
+  `TemporalHazard#215` open against a stepwise test that passes over a screen
+  that scored nothing. Building on it now means building on a moving target.
 
-## What generalising actually costs
+`hvtiRbootstrap` is internal: no `Description` to widen, no check ceiling, and
+no new dependency imposed on a CRAN package. **No dependency on
+`TemporalHazard` is added.**
 
-⚠️ **An earlier estimate called the coupling thin on the basis of a reference
-count - 16 hazard-specific mentions against 32 generic ones across 271 lines.
-That count was misleading and this section replaces it.** The algorithm is not
-merely gated on the class; it is written around hazard's fit object.
+⚠️ **The "two implementations will drift" objection is weaker than it first
+looks, and the first version of this spec overstated it** by analogy to
+`.boot_resample()`. That was one identical loop written twice. This is not:
+hazard fits carry `theta`, `objective` and shape parameters that `lm`, `glm`
+and `coxph` have no analogue for, and the degrees-of-freedom arithmetic
+subtracts them. Two focused implementations are plausibly less machinery than
+one adapter pretending four model families are the same shape.
 
-- `inherits(fit, "hazard")` is the gate, and the cheap part.
-- `.hzr_refit_blocker(fit)` decides whether a base fit can be refit at all.
-- `.hzr_aic()` and `.hzr_stepwise_shape_count()` are hazard-specific.
-  **Shape parameters have no analogue in `lm`, `glm` or `coxph`**, and the
-  degrees-of-freedom arithmetic subtracts them from the parameter count.
-- It reads `$fit$theta`, `$fit$objective` and `$fit$converged` rather than
-  `coef()`, `logLik()` and a convergence generic.
-- `criterion = "score"` requires a converged base model with fitted values.
+**#9's answer, then:** `hzr_stepwise()` stays where it is and keeps serving
+`hazard`. This package owns selection for its own fitters. Whether a future
+`fit_hazard()` calls `hzr_stepwise()` rather than this one is a question for
+the hazard-fitter spec, not this one - and the answer is probably yes, because
+that is the model family it was written for.
 
-So generalisation means **introducing an adapter over "a fit"**: coefficients,
-log-likelihood, degrees of freedom, a refit, and a convergence flag. `hazard`
-implements it through `theta`/`objective`; `lm`, `glm` and `coxph` through
-`coef()`, `logLik()`, `update()` and `anova()`, all four of which are present
-and were verified. That is a real piece of design work, not a deleted `if`.
+## What to take from `hzr_stepwise()`, and what not to
 
-Two things make it cheaper than it sounds. The algorithm is **already
-decomposed** - `.hzr_stepwise_candidates`, `.hzr_stepwise_drop_candidates`,
+It is the reference for this implementation even though it is not imported.
+Read it before writing anything.
+
+**Take the shape.** It is already decomposed the way this one should be -
+`.hzr_stepwise_candidates`, `.hzr_stepwise_drop_candidates`,
 `.hzr_stepwise_forward_step`, `.hzr_stepwise_forward_step_score`,
-`.hzr_stepwise_backward_step` - so the adapter has seams to attach to. And a
-**stepwise fixture harness already exists** in that package
-(`.hzr_build_stepwise_fixture`, `.hzr_stepwise_fixture_schema`,
-`.hzr_validate_stepwise_fixture`), which the parity plan below reuses rather
-than reinvents.
+`.hzr_stepwise_backward_step` - and that decomposition is what makes a
+forward/backward/both driver testable a step at a time. Its argument names are
+PROC's, and this implementation uses the same ones so a reader moving between
+the two is not learning a second vocabulary.
 
-**A partial-F criterion does not exist and must be added.** `hzr_stepwise`
-offers `score`, `wald` and `aic`. `PROC REG SELECTION=STEPWISE` tests partial
-F, so `fit_linear()` parity requires a fourth criterion.
+**Take the fixture idea.** It carries a stepwise fixture harness
+(`.hzr_build_stepwise_fixture`, `.hzr_stepwise_fixture_schema`,
+`.hzr_validate_stepwise_fixture`): a recorded screen, replayed and validated
+against a schema. That is the right pattern for parity here too, and it is
+worth copying rather than inventing.
+
+**Do not take the fit handling.** This is where the two genuinely part. It
+reads `$fit$theta`, `$fit$objective` and `$fit$converged`, calls
+`.hzr_refit_blocker()` to decide whether a base fit can be refit at all, and
+subtracts `.hzr_stepwise_shape_count()` from the parameter count. None of that
+transfers. Here the equivalents are `coef()`, `logLik()`, `update()` and
+`anova()`, which `lm`, `glm` and `coxph` all provide - verified for `lm` and
+`glm` directly.
+
+**It has no partial-F criterion.** It offers `score`, `wald` and `aic`. `PROC
+REG SELECTION=STEPWISE` tests partial F, so `fit_linear()` parity needs one
+written here. That is now an ordinary piece of this package's work rather than
+a cost imposed on somebody else's CRAN release.
 
 ## The criterion, per family
 
@@ -118,10 +142,12 @@ Exposing it would let the fixed code reproduce the bug on request.
 
 ## What changes in `hvtiRbootstrap`
 
-- The fitters call the generalised stepwise instead of `stats::step()`.
+- The fitters call the new internal stepwise instead of `stats::step()`.
   `.maybe_step()` in `R/fitters.R` is the single site.
 - **`sle` and `sls` become live.** See the next section.
-- `DESCRIPTION` gains `TemporalHazard` in `Imports`.
+- **No new dependency.** `DESCRIPTION` is unchanged; the stepwise is an
+  internal here, built on `stats` generics the three fitters' engines already
+  provide.
 - `max_steps` keeps its meaning. `%bootreg`'s `INCLUDE=` and `FIXED=` map onto
   `force_in`/`force_out`, which `boot_select()` does not currently expose; that
   is recorded, not built.
@@ -178,8 +204,9 @@ number to report: a constant-factor win would not make 172 candidates reachable.
 
 ## Scope
 
-**In:** the fit adapter in `TemporalHazard`; the partial-F criterion; the
-`hazard` gate removed; `hvtiRbootstrap`'s three fitters switched over; `sle`
+**In:** the stepwise itself, as an internal here - candidate enumeration, a
+forward step, a backward step, and a driver over `direction`; the score, Wald
+and partial-F criteria; `hvtiRbootstrap`'s three fitters switched over; `sle`
 and `sls` made live; the benchmark; the parity harness with synthetic
 in-package fixtures and one or two production comparisons in the study repo.
 
@@ -208,23 +235,20 @@ penalised selection; and harvesting more than a couple of the 471 jobs.
 
 ## Open questions
 
-Two, both for the maintainer rather than the implementer.
+None blocking. Three to revisit once it is built.
 
-**Does `TemporalHazard` want this?** The chosen home is another package's
-roadmap, and #9 is filed here rather than there. The generalisation is
-substantial - an adapter layer plus a criterion its own models never use - and
-that package's maintainer has to agree the boundary is right.
+**Does `fit_hazard()`, when it exists, call `hzr_stepwise()` instead?**
+Probably yes: that is the model family it was written for, and the shape
+arithmetic this implementation deliberately does not carry is exactly what a
+hazard screen needs. That would leave the family with two stepwise
+implementations serving two model families, which is the outcome this spec
+accepts rather than regrets. It belongs to the hazard-fitter spec.
 
-**The partial-F criterion is the awkward consequence of that choice.**
-`TemporalHazard` has no linear models, so it would carry a criterion nothing in
-it uses, purely so that `hvtiRbootstrap`'s `fit_linear()` can reproduce
-`PROC REG`. That is a real cost of putting selection there, and it is recorded
-rather than smoothed over. If it proves the deciding objection, the fallback is
-the third option originally weighed: a small package owning nothing but
-PROC-compatible stepwise selection, depended on by both.
+**Should the two converge later?** If this one proves general and the hazard
+one proves reducible to it, a shared package is the obvious end state - the
+third option weighed on 2026-09-03. It is not worth building before there is
+evidence the abstraction holds, and there is none yet.
 
-**A dependency note, not a question.** `TemporalHazard` is not on CRAN. As an
-`Imports`, it forecloses a CRAN release of `hvtiRbootstrap` unless the
-dependency is later moved to `Suggests` with a fallback. This package is
-internal and the two CRAN targets in the family are elsewhere, so the cost is
-accepted - but it should be a decision rather than a discovery.
+**Does `max_move` matter here?** `hzr_stepwise()` exposes it and `%bootreg`
+has no equivalent. It is out of scope, but if a real screen turns out to cycle
+between two terms without it, that is the evidence to reopen this.
