@@ -45,24 +45,21 @@
   eval(cl, env)
 }
 
-# Stepwise both-directions, the closest R analogue to SAS SELECTION=STEPWISE.
-# %bootreg's sle/sls are p-value thresholds; step() works on AIC, so the two
-# cannot agree term for term. This is why fitting is NOT parity-tested: the
-# selection mechanism is the model engine's, and the package's parity claim is
-# scoped to the summariser. See the spec's parity table.
+# WHY FITTING IS STILL NOT PARITY-TESTED, now that the criteria match.
 #
-# No `scope` is passed. With scope missing, step() fixes the addable set to the
-# STARTING model's terms and forces nothing to stay, so a term it drops can be
-# re-admitted later. Started from the full model -- which is what we always do
-# -- that is already both-directions selection. An explicit scope would add
-# nothing and would have to special-case a Surv() response.
+# It used to be because stats::step() selected on AIC while %bootreg's sle/sls
+# are p-value thresholds, so the two could not agree term for term. That reason
+# is gone: .pv_stepwise() in R/stepwise.R applies sle and sls directly, and each
+# fitter below pins the criteria its PROC uses. The claim survives for different
+# reasons. Resampling is stochastic, so R and SAS never see the same replicates.
+# The engines differ underneath -- glm's IRLS and PROC LOGISTIC's are not
+# obliged to agree to the last digit on a near-singular replicate. And fit_cox()
+# enters on the likelihood ratio rather than PHREG's score, because R has no
+# score test for a Cox model; that divergence is registered in its roxygen.
 #
-# `data` is declared and never referenced. It is still load-bearing, and it
-# covers a DIFFERENT lookup path from .fit_in_env(): step() refits with
-# eval.parent(update(object, ..., evaluate = FALSE)), which resolves the call's
-# `data` in the frame of step()'s caller -- this function. .fit_in_env() fixes
-# the add1()/drop1() model-frame path; this argument fixes the refit path.
-# Both are required. Remove either and every stepwise replicate returns NULL.
+# So the package's parity claim stays scoped to the summariser, and the spec's
+# parity table is still right. What changed is that a screen now answers the
+# question the caller asked rather than a different one.
 # The single site where selection happens. `enter` and `remove` are pinned by
 # the caller, never by boot_select()'s user: SLE= and SLS= then mean what they
 # mean in the job being ported. See R/stepwise.R.
