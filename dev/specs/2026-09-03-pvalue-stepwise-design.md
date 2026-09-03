@@ -219,19 +219,19 @@ penalised selection; and harvesting more than a couple of the 471 jobs.
 
 - [ ] `hzr_stepwise()` drives `lm`, `glm` and `coxph` as well as `hazard`,
       through an adapter rather than a widened class check
-- [ ] A partial-F criterion exists and is tested
-- [ ] `fit_logistic()`, `fit_cox()` and `fit_linear()` each pin their PROC's
+- [x] A partial-F criterion exists and is tested
+- [x] `fit_logistic()`, `fit_cox()` and `fit_linear()` each pin their PROC's
       criterion; no `criterion` argument reaches `boot_select()`
-- [ ] `sle`/`sls` demonstrably change the screen, with a test that fails if
+- [x] `sle`/`sls` demonstrably change the screen, with a test that fails if
       they are ignored again
-- [ ] The benchmark records the log-log slope at five pool sizes
+- [x] The benchmark records the log-log slope at five pool sizes
 - [ ] Distributional parity against at least one saved production `%SUMBOOT`
       listing, documented in the study repo, not here
 - [ ] Synthetic in-package fixtures; no cohort data
-- [ ] `NEWS.md` states that selection frequencies change and that bags across
+- [x] `NEWS.md` states that selection frequencies change and that bags across
       the boundary are not comparable
 - [ ] #31 and #32 closed, #9 answered
-- [ ] `devtools::check()` 0/0/0, `lintr::lint_package()` 0
+- [x] `devtools::check()` 0/0/0, `lintr::lint_package()` 0
 
 ## Open questions
 
@@ -252,3 +252,14 @@ evidence the abstraction holds, and there is none yet.
 **Does `max_move` matter here?** `hzr_stepwise()` exposes it and `%bootreg`
 has no equivalent. It is out of scope, but if a real screen turns out to cycle
 between two terms without it, that is the evidence to reopen this.
+
+**Should hierarchy be enforced?** `.pv_remove_p()`'s `"f"` branch uses
+`drop1()`, which respects marginality; the Wald branch (`fit_logistic()`,
+`fit_cox()`) tests every term independently and does not, so the two removal
+paths can disagree on a model carrying an interaction without its main
+effects, and the forward step can admit an interaction before either main
+effect since `scope` is flat term labels. `PROC LOGISTIC`'s default
+`HIERARCHY=SINGLE` would not allow this. Out of scope here - registered as
+D5 in the README instead - because realistic `%bootreg` pools are main
+effects and enforcing it is real work of its own. Revisit if a candidate
+pool with interactions turns out to be common.

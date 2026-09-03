@@ -1,5 +1,36 @@
 # hvtiRbootstrap (unreleased)
 
+* **`sle` and `sls` now select, which they never did.** They were accepted,
+  recorded on `$control`, written into a bag as `slentry`/`slstay` and printed
+  by `boot_provenance()` in every `bl`/`br`/`bc` report -- and never reached
+  the screen, because `stats::step()` selects on AIC. AIC retains a term at
+  p < 0.157 where `sls = 0.05` asks for 1.96 standard errors. **Selection
+  frequencies change, and by a lot**: measured against the SAS run of the same
+  data, the old behaviour sat a median 32.7 points away. A bag produced before
+  this release and one produced after are **not comparable**.
+* **The screen now starts from no candidates and adds**, as
+  `SELECTION=STEPWISE` does. It previously started from the full model and
+  dropped, which is a different algorithm that can settle on a different set.
+* **Each fitter uses its own procedure's criteria.** `fit_linear()` tests
+  partial F, `fit_logistic()` enters on the score chi-square and removes on
+  Wald. **Divergence:** `fit_cox()` enters on the likelihood ratio, because R
+  has no score test for a Cox model -- `anova.coxph()` accepts `test = "Rao"`
+  and silently ignores it. Removal is Wald, matching `PROC PHREG`.
+* No function gained a `criterion` argument, and none will: `sle` and `sls`
+  mean what `SLE=` and `SLS=` mean in the job being ported.
+* **The cost curve broke, not just the walltime.** `stats::step()` refits
+  every candidate in both directions at every step, which cost roughly the
+  3.72 power of the candidate pool -- measured at 0.2s/fit for 10 candidates,
+  up to 188.3s/fit at 80. The new driver measures 0.13s/fit at 10 candidates,
+  up to 8.81s/fit at 172, a log-log slope of 1.50. It still refits every
+  remaining candidate at each forward step, the same count `add1()` did --
+  the win is that the search starts from an intercept-only model instead of
+  the full one, and that the backward step for `fit_logistic()` and
+  `fit_cox()` is Wald, which needs no refit at all. At `n_rep = 500` and 172
+  candidates that is the difference between about 450 hours and about 1.2
+  hours for the same screen. The exponent is the number that matters -- a
+  constant-factor speedup would not have made a 172-candidate, 500-replicate
+  screen reachable at all.
 * **The interval branch is built.** `boot_predict_ci()` is the R port of
   `%BNMNR` and `%BNPREV`: it resamples, computes a `statistic` on each
   replicate, and reports percentile bands. It is not variable selection --

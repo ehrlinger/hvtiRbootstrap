@@ -38,16 +38,25 @@ Pass \code{fraction = 1} (the default) to match SAS behaviour exactly.}
 
 \item{select}{\code{"stepwise"} or \code{"none"} (\verb{\%bootreg} \verb{SELECT=}/\verb{FIXED=}).}
 
-\item{sle, sls}{Entry and retention criteria (\verb{\%bootreg} \verb{SLE=}, \verb{SLS=}).
-Carried for interface fidelity; R's \code{\link[stats:step]{stats::step()}} selects on AIC, so
-these do not reproduce SAS's p-value thresholds term for term. Model
-fitting is not parity-tested - see the package's design spec.}
+\item{sle, sls}{Entry and retention p-value thresholds (\verb{\%bootreg} \verb{SLE=},
+\verb{SLS=}). Each fitter pins its own entry and removal test to match its
+\verb{PROC=} - see \code{\link[=fit_linear]{fit_linear()}}, \code{\link[=fit_logistic]{fit_logistic()}} and \code{\link[=fit_cox]{fit_cox()}} - so \code{sle}
+and \code{sls} are exactly what they mean in the job being ported. Model
+fitting is still not parity-tested - see the package's design spec - but
+these two arguments now select rather than only being recorded.
+\strong{Divergence:} candidates are flat term labels, not a hierarchy, and
+\code{\link[=fit_linear]{fit_linear()}}'s removal test respects marginality while
+\code{\link[=fit_logistic]{fit_logistic()}}'s and \code{\link[=fit_cox]{fit_cox()}}'s Wald removal test does not - so a
+screen can keep an interaction without either main effect on the latter
+two, which \verb{PROC LOGISTIC}'s default \code{HIERARCHY=SINGLE} would not do.
+Not implemented; see D5 in the README's divergence register.}
 
 \item{max_steps}{Maximum selection steps (\verb{\%bootreg} \verb{MAXSTEP=}). \code{0} means
 no restriction, implemented as a budget scaled to the model - ten passes
 over the candidate terms, floored at 1000 - which no realistic model
-reaches. It is a budget rather than a truly unbounded count because
-\code{\link[stats:step]{stats::step()}} pre-allocates a list of that length.}
+reaches. It bounds the p-value stepwise driver's forward/backward loop
+(\code{.pv_stepwise()} in \code{R/stepwise.R}) rather than leaving it genuinely
+unbounded.}
 
 \item{max_attempts}{Budget of resampling attempts before giving up.
 \strong{Divergence:} \verb{\%bootreg} has no such cap - its loop advances only on a

@@ -124,11 +124,82 @@ test_that("a fit that selected nothing is not confused with a failed fit", {
 test_that("max_steps = 0 gives a budget no real model reaches", {
   # %bootreg documents MAXSTEP=0 as "no restriction". The budget must scale
   # with the model rather than be a fixed 1000, but it must NOT be enormous:
-  # step() begins with `models <- vector("list", steps)`, allocated up front,
-  # so .Machine$integer.max would request a 2.1-billion-element list on every
-  # stepwise fit. These bounds are the guard against that regression.
+  # nothing in this package pre-allocates a list of that length any more (that
+  # was stats::step()'s behaviour, before this package's own p-value stepwise
+  # driver replaced it) -- the budget instead bounds .pv_stepwise()'s
+  # forward/backward loop directly, so .Machine$integer.max would still mean
+  # an unbounded number of refits on every stepwise fit. These bounds are the
+  # guard against that regression.
   expect_equal(.step_budget(30, 3), 30)      # explicit MAXSTEP= wins
   expect_equal(.step_budget(0, 3), 1000)     # floor for small models
   expect_equal(.step_budget(0, 500), 5000)   # scales with candidate count
   expect_lt(.step_budget(0, 10000), 1e6)     # never an allocation bomb
+})
+
+test_that("sle reaches the screen, which #32 says it did not", {
+  # The regression test for #32. sle = 0 admits nothing, so every replicate
+  # keeps only the intercept and no candidate can show a selection frequency.
+  set.seed(21)
+  n <- 200
+  df <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  df$y <- 3 * df$x1 + rnorm(n)
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 10, sle = 0,
+                     seed = 1)
+  s <- boot_summary(fit)
+
+  expect_equal(s$n[s$variable == "x1"], 0L)
+  expect_equal(s$n[s$variable == "x2"], 0L)
+})
+
+test_that("a strong predictor is selected when sle admits it", {
+  # The other side of the same test: with an ordinary sle the screen must
+  # still find an overwhelming predictor, or the first test would pass
+  # against an implementation that selects nothing ever.
+  set.seed(22)
+  n <- 200
+  df <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  df$y <- 3 * df$x1 + rnorm(n)
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, sle = 0.10,
+                     sls = 0.05, seed = 2)
+  s <- boot_summary(fit)
+
+  expect_gt(s$pct[s$variable == "x1"], 90)
+})
+
+test_that("a candidate with a missing value is selected, not unreachable", {
+  # End-to-end regression test for the same bug .pv_stepwise's own test
+  # covers: a missing value in a strong predictor made it unreachable for
+  # the whole screen because anova() compared models fitted to different
+  # row counts, the error became NA, and NA reads as "cannot enter". Every
+  # existing boot_select() fixture is complete-case, so this is the one
+  # that catches a regression here.
+  set.seed(33)
+  n <- 400
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  df <- data.frame(x1 = x1, x2 = x2)
+  df$y <- 3 * x1 + 2 * x2 + rnorm(n)
+  df$x2[1:8] <- NA
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, seed = 1)
+  s <- boot_summary(fit)
+
+  expect_gt(s$pct[s$variable == "x2"], 90)
+})
+
+test_that("select = 'none' still fits the full model", {
+  # Unchanged behaviour, pinned so the rewrite cannot break the branch that
+  # does not select at all.
+  set.seed(23)
+  n <- 120
+  df <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  df$y <- df$x1 + rnorm(n)
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 5,
+                     select = "none", seed = 3)
+
+  expect_true(all(c("x1", "x2") %in% colnames(fit$coefficients)))
+  expect_false(anyNA(fit$coefficients))
 })

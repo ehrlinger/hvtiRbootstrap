@@ -23,17 +23,20 @@
 
 # Fit inside an environment that carries `data` and `formula`.
 #
-# This is not ceremony. stats::step() refits through add1()/drop1(), which
-# re-evaluate the model's stored call in environment(formula(object)) -- the
-# scope where the FORMULA was written, not the frame of whoever called step().
-# A bootstrap replicate lives in a local variable, so that scope has no `data`;
-# R then continues its search and finds utils::data, the function, and the fit
-# dies with the memorable "'data' must be a data.frame, environment, or list".
+# ORIGINAL JUSTIFICATION, NO LONGER TRUE: this wrapper existed because
+# stats::step() refit through add1()/drop1(), which re-evaluate the model's
+# stored call in environment(formula(object)) -- the scope where the FORMULA
+# was written, not the frame of whoever called step(). Nothing in this
+# package calls step() any more; the p-value stepwise driver, .pv_stepwise()
+# in R/stepwise.R, refits with stats::update(fit, ..., data = data), passing
+# `data` explicitly on every call rather than relying on a formula-environment
+# lookup to find it.
 #
-# Rebinding the formula's environment to one holding this replicate's `data`
-# puts the refit's lookups where they belong. Without it, every stepwise
-# replicate fails and boot_select() -- whose default IS stepwise -- returns
-# nothing at all.
+# During the Task 3 review, ablating this rebinding entirely still left
+# fit_linear(), fit_cox() and a full 20-replicate stepwise run all working.
+# That is suggestive, not exhaustive, so the wrapper is kept rather than
+# removed on that evidence alone -- whether it is still needed by anything is
+# an open question worth a dedicated look, not a call to make in passing here.
 .fit_in_env <- function(cl, formula, data) {
   env <- new.env(parent = environment(formula))
   environment(formula) <- env
@@ -42,41 +45,28 @@
   eval(cl, env)
 }
 
-# Stepwise both-directions, the closest R analogue to SAS SELECTION=STEPWISE.
-# %bootreg's sle/sls are p-value thresholds; step() works on AIC, so the two
-# cannot agree term for term. This is why fitting is NOT parity-tested: the
-# selection mechanism is the model engine's, and the package's parity claim is
-# scoped to the summariser. See the spec's parity table.
+# WHY FITTING IS STILL NOT PARITY-TESTED, now that the criteria match.
 #
-# No `scope` is passed. With scope missing, step() fixes the addable set to the
-# STARTING model's terms and forces nothing to stay, so a term it drops can be
-# re-admitted later. Started from the full model -- which is what we always do
-# -- that is already both-directions selection. An explicit scope would add
-# nothing and would have to special-case a Surv() response.
+# It used to be because stats::step() selected on AIC while %bootreg's sle/sls
+# are p-value thresholds, so the two could not agree term for term. That reason
+# is gone: .pv_stepwise() in R/stepwise.R applies sle and sls directly, and each
+# fitter below pins the criteria its PROC uses. The claim survives for different
+# reasons. Resampling is stochastic, so R and SAS never see the same replicates.
+# The engines differ underneath -- glm's IRLS and PROC LOGISTIC's are not
+# obliged to agree to the last digit on a near-singular replicate. And fit_cox()
+# enters on the likelihood ratio rather than PHREG's score, because R has no
+# score test for a Cox model; that divergence is registered in its roxygen.
 #
-# `data` is declared and never referenced. It is still load-bearing, and it
-# covers a DIFFERENT lookup path from .fit_in_env(): step() refits with
-# eval.parent(update(object, ..., evaluate = FALSE)), which resolves the call's
-# `data` in the frame of step()'s caller -- this function. .fit_in_env() fixes
-# the add1()/drop1() model-frame path; this argument fixes the refit path.
-# Both are required. Remove either and every stepwise replicate returns NULL.
-# `%bootreg` documents MAXSTEP=0 as "no restriction", so 0 has to mean a budget
-# no real model reaches. It cannot mean an enormous number: step() opens with
-# `models <- vector("list", steps)`, allocated up front and unconditionally, so
-# .Machine$integer.max asks for a 2.1-billion-element list and wedges the
-# session on every fit. Scale to the model instead -- each step adds or drops
-# one term, so ten passes over the candidate set is unreachable in practice
-# while staying a trivial allocation.
-.step_budget <- function(max_steps, n_terms) {
-  if (isTRUE(max_steps > 0)) return(max_steps)
-  max(1000L, 10L * n_terms)
-}
-
-.maybe_step <- function(fit, select, data) {
+# So the package's parity claim stays scoped to the summariser, and the spec's
+# parity table is still right. What changed is that a screen now answers the
+# question the caller asked rather than a different one.
+# The single site where selection happens. `enter` and `remove` are pinned by
+# the caller, never by boot_select()'s user: SLE= and SLS= then mean what they
+# mean in the job being ported. See R/stepwise.R.
+.maybe_step <- function(fit, select, data, enter, remove) {
   if (!identical(select$method, "stepwise")) return(fit)
-  n_terms <- length(attr(stats::terms(fit), "term.labels"))
-  stats::step(fit, direction = "both", trace = 0,
-              steps = .step_budget(select$max_steps, n_terms))
+  .pv_stepwise(fit, data, sle = select$sle, sls = select$sls,
+               max_steps = select$max_steps, enter = enter, remove = remove)
 }
 
 # A zero-length result is NOT a failure. Cox carries no intercept, so a
@@ -98,6 +88,9 @@
 
 #' Fit a linear model for one bootstrap replicate
 #'
+#' @details
+#' Under `select = "stepwise"`, entry and removal both test the partial F,
+#' matching `PROC REG SELECTION=STEPWISE`.
 #' @param data A data frame - one bootstrap replicate.
 #' @param formula Model formula offering the candidate terms.
 #' @param select List with `method` (`"stepwise"` or `"none"`), `sle`, `sls`,
@@ -130,7 +123,8 @@ fit_linear <- function(data, formula, select) {
   tryCatch(
     suppressWarnings({
       fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
-      .coefs(.maybe_step(fit, select, data))
+      stepped <- .maybe_step(fit, select, data, enter = "f", remove = "f")
+      if (is.null(stepped)) NULL else .coefs(stepped)
     }),
     error = function(e) NULL
   )
@@ -138,6 +132,9 @@ fit_linear <- function(data, formula, select) {
 
 #' Fit a logistic model for one bootstrap replicate
 #'
+#' @details
+#' Under `select = "stepwise"`, entry tests the score chi-square and removal
+#' tests Wald, matching `PROC LOGISTIC SELECTION=STEPWISE`.
 #' @inheritParams fit_linear
 #' @return Named numeric vector of kept coefficients, or `NULL` if the fit
 #'   errored or did not converge. Warnings - notably "fitted probabilities
@@ -162,14 +159,28 @@ fit_logistic <- function(data, formula, select) {
         quote(stats::glm(formula, data = data, family = stats::binomial())),
         formula, data
       )
-      if (!isTRUE(fit$converged)) NULL
-      else .coefs(.maybe_step(fit, select, data))
+      if (!isTRUE(fit$converged)) {
+        NULL
+      } else {
+        stepped <- .maybe_step(fit, select, data, enter = "rao",
+                               remove = "wald")
+        if (is.null(stepped)) NULL else .coefs(stepped)
+      }
     }),
     error = function(e) NULL
   )
 }
 
 #' Fit a Cox proportional-hazards model for one bootstrap replicate
+#'
+#' @details
+#' **Divergence:** `PROC PHREG SELECTION=STEPWISE` enters a term on the score
+#' chi-square. R has no score test for a Cox model - `anova.coxph()` accepts
+#' `test = "Rao"` but silently ignores it and always returns the
+#' likelihood-ratio test - so entry here is by likelihood ratio. The two agree
+#' asymptotically and differ only for a term sitting on the entry threshold, so
+#' a screen will usually select the same set and may occasionally differ on a
+#' borderline candidate. Removal is Wald, matching the macro.
 #'
 #' @inheritParams fit_linear
 #' @return Named numeric vector of kept coefficients, or `NULL` if the fit
@@ -195,7 +206,8 @@ fit_cox <- function(data, formula, select) {
     suppressWarnings({
       fit <- .fit_in_env(quote(survival::coxph(formula, data = data)),
                          formula, data)
-      .coefs(.maybe_step(fit, select, data))
+      stepped <- .maybe_step(fit, select, data, enter = "lr", remove = "wald")
+      if (is.null(stepped)) NULL else .coefs(stepped)
     }),
     error = function(e) NULL
   )
