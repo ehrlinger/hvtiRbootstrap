@@ -69,3 +69,35 @@ test_that("an uncomputable test is NA, not an error", {
 
   expect_true(is.na(.pv_enter_p(base, "nonesuch", d, "f")))
 })
+
+test_that(".pv_enter_p returns a p-value on a warning, not NA", {
+  # A quasi-separated candidate converges to usable coefficients while glm
+  # warns "fitted probabilities numerically 0 or 1". Catching that warning
+  # (as a prior version of .pv_enter_p did) returns NA and the stepwise
+  # driver treats NA as "cannot enter" -- refusing entry to exactly the
+  # candidates where a predictor is strong, biasing the whole screen against
+  # the strongest predictors. x2 here separates y almost perfectly, so the
+  # refit warns but converges, and the entry p-value must be a real,
+  # overwhelmingly small number.
+  set.seed(1)
+  n <- 100
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  y <- rbinom(n, 1, stats::plogis(10 * x2))
+  d <- data.frame(y = y, x1 = x1, x2 = x2)
+  base <- glm(y ~ x1, binomial(), d)
+
+  expect_warning(
+    bigger <- stats::update(base, y ~ x1 + x2, data = d),
+    "fitted probabilities numerically 0 or 1"
+  )
+  expect_true(bigger$converged)
+
+  # The warning above already proves the refit warns; .pv_enter_p must not
+  # catch it, so it is expected to surface here too -- suppressed since the
+  # point of this call is the returned p-value, not a second assertion.
+  p <- suppressWarnings(.pv_enter_p(base, "x2", d, "rao"))
+
+  expect_false(is.na(p))
+  expect_lt(p, 1e-6)
+})

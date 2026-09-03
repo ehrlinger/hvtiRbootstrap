@@ -14,10 +14,17 @@
 # The p-value for ADDING one term. NA when the test cannot be computed -- a
 # candidate that will not refit is one the screen skips, not a failed replicate.
 .pv_enter_p <- function(fit, term, data, criterion) {
+  # ERRORS ONLY -- a quasi-separated candidate converges to usable
+  # coefficients while glm warns "fitted probabilities numerically 0 or 1".
+  # Catching that warning would return NA and refuse entry to exactly the
+  # candidates where a predictor is strong, the same downward bias the
+  # fitter contract in R/fitters.R exists to avoid. The fitters already run
+  # the whole fit inside suppressWarnings(), so nothing here needs to catch
+  # one.
   bigger <- tryCatch(
     stats::update(fit, stats::as.formula(paste(". ~ . +", term)),
                   data = data),
-    error = function(e) NULL, warning = function(w) NULL
+    error = function(e) NULL
   )
   if (is.null(bigger)) return(NA_real_)
   tab <- tryCatch(
