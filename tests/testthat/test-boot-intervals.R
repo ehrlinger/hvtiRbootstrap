@@ -220,3 +220,75 @@ test_that("boot_intervals prints its counts and summarises to the bands", {
   expect_output(print(r), "20")
   expect_equal(summary(r), r$intervals)
 })
+
+test_that("id draws whole units, not rows", {
+  # %BNMNR bootstraps PATIENTS from INDAT and then joins INMULT to pull that
+  # patient's repeated records. Drawing rows instead would break the
+  # within-unit correlation the design exists to respect.
+  d <- data.frame(pt = rep(1:5, each = 4), x = 1)
+  seen <- function(dd, ...) c(rows = nrow(dd), units = length(unique(dd$pt)))
+
+  r <- boot_predict_ci(d, seen, n_rep = 10, id = "pt", seed = 1)
+
+  # Five units drawn with replacement, four rows each: always 20 rows, and
+  # never more than 5 distinct original units.
+  expect_true(all(r$estimates[, "rows"] == 20))
+  expect_true(all(r$estimates[, "units"] <= 5))
+  expect_true(any(r$estimates[, "units"] < 5))
+})
+
+test_that("a unit drawn twice becomes two distinct units", {
+  # THE POINT OF RENUMBERING. %BNMNR assigns _PTID=_COUNTER before the join and
+  # then fits random u ~ normal(0,...) subject=_PTID. Without it the two copies
+  # share a random effect and the resample UNDERSTATES between-unit variance --
+  # the quantity a bootstrap exists to estimate.
+  d <- data.frame(pt = rep(1:3, each = 2), x = 1)
+  probe <- function(dd, ...) {
+    c(orig = length(unique(dd$pt)), drawn = length(unique(dd$.boot_unit)))
+  }
+
+  r <- boot_predict_ci(d, probe, n_rep = 30, id = "pt", seed = 3)
+
+  # .boot_unit is always the number of DRAWS; pt can be fewer when a unit was
+  # drawn twice. If they were ever equal by construction the renumbering would
+  # be doing nothing.
+  expect_true(all(r$estimates[, "drawn"] == 3))
+  expect_true(any(r$estimates[, "orig"] < 3))
+})
+
+test_that("fraction applies to units, not rows", {
+  # &SIZE=&DS_SIZE*&FRACTION is computed from the patient-level INDAT.
+  d <- data.frame(pt = rep(1:10, each = 3), x = 1)
+  seen <- function(dd, ...) {
+    c(units = length(unique(dd$.boot_unit)), rows = nrow(dd))
+  }
+
+  r <- boot_predict_ci(d, seen, n_rep = 5, id = "pt", fraction = 0.5, seed = 1)
+
+  expect_true(all(r$estimates[, "units"] == 5))
+  expect_true(all(r$estimates[, "rows"] == 15))
+})
+
+test_that("id must name a column, and .boot_unit must not already exist", {
+  d <- data.frame(pt = rep(1:3, each = 2), x = 1)
+  est <- function(dd, ...) c(m = mean(dd$x))
+
+  expect_error(boot_predict_ci(d, est, n_rep = 2, id = "nope"),
+               "not a column")
+  # Silently overwriting it would change the caller's data underneath their
+  # own statistic.
+  d2 <- cbind(d, .boot_unit = 1L)
+  expect_error(boot_predict_ci(d2, est, n_rep = 2, id = "pt"),
+               "\\.boot_unit")
+})
+
+test_that("the control record names the resampling unit", {
+  d <- data.frame(pt = rep(1:4, each = 2), x = 1)
+  est <- function(dd, ...) c(m = mean(dd$x))
+
+  r <- boot_predict_ci(d, est, n_rep = 5, id = "pt", seed = 1)
+
+  expect_equal(r$control$id, "pt")
+  expect_equal(r$control$n_units, 4L)
+  expect_equal(r$control$n_rows, 8L)
+})

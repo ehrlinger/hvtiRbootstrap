@@ -49,6 +49,32 @@
   out
 }
 
+# Draw whole units with replacement, and renumber them.
+#
+# WHY RENUMBER. %BNMNR sets _PTID=_COUNTER as it draws, BEFORE joining the
+# repeated records, and then fits random u ~ normal(0, ...) subject=_PTID. A
+# patient drawn twice therefore enters the model as two patients. Reusing the
+# original id instead would give the two copies one shared random effect,
+# which understates between-unit variance -- the quantity the bootstrap is
+# there to estimate. The renumbering is the method, not bookkeeping.
+#
+# The new id goes in `.boot_unit` so a statistic can group on it. A data
+# frame that already has that column is refused rather than overwritten: the
+# caller's statistic would otherwise read a column that no longer means what
+# they wrote.
+.draw_units <- function(data, id, n_units) {
+  units <- unique(data[[id]])
+  drawn <- sample(units, size = n_units, replace = TRUE)
+  rows <- lapply(seq_along(drawn), function(k) {
+    d <- data[data[[id]] == drawn[[k]], , drop = FALSE]
+    d[[".boot_unit"]] <- k
+    d
+  })
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+  out
+}
+
 #' Band an estimate by bootstrap resampling
 #'
 #' The R port of `%BNMNR` and `%BNPREV` (`bn.*` in the CORR macro library).
@@ -146,7 +172,16 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
          "`n_rep`, or `Inf`.", call. = FALSE)
   }
   if (!is.null(id)) {
-    stop("`id` is not implemented yet.", call. = FALSE)
+    if (!is.character(id) || length(id) != 1L || !id %in% names(data)) {
+      stop("`id` must name a single column of `data`; `",
+           paste(format(id), collapse = ", "), "` is not a column.",
+           call. = FALSE)
+    }
+    if (".boot_unit" %in% names(data)) {
+      stop("`data` already has a `.boot_unit` column, which is the name ",
+           "this function gives the redrawn unit. Rename it: overwriting ",
+           "it would change what `statistic` reads.", call. = FALSE)
+    }
   }
   # The rationale for having no coverage argument is that a function taking
   # no level cannot be handed 95 where it wanted 0.95. `...` goes to
@@ -166,7 +201,15 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
-  n_draw <- max(1L, round(n * fraction))
+  n_units <- if (is.null(id)) n else length(unique(data[[id]]))
+  n_draw <- max(1L, round(n_units * fraction))
+  draw_one <- if (is.null(id)) {
+    function() {
+      data[sample.int(n, size = n_draw, replace = TRUE), , drop = FALSE]
+    }
+  } else {
+    function() .draw_units(data, id, n_draw)
+  }
   .t0 <- proc.time()[["elapsed"]]
 
   # The first valid replicate fixes the names. A later one disagreeing is
@@ -191,9 +234,7 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   }
 
   drawn <- .boot_resample(
-    draw = function() {
-      data[sample.int(n, size = n_draw, replace = TRUE), , drop = FALSE]
-    },
+    draw = draw_one,
     fit = one, n_rep = n_rep, max_attempts = max_attempts,
     caller = "boot_predict_ci", noun = "replicates",
     hint = paste0("`statistic` returned NULL, a non-finite value, or a ",
@@ -206,7 +247,7 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   control <- list(
     fraction = fraction, id = if (is.null(id)) NA_character_ else id,
     seed = if (is.null(seed)) NA_real_ else as.numeric(seed),
-    n_rows = as.integer(n), n_units = as.integer(n),
+    n_rows = as.integer(n), n_units = as.integer(n_units),
     n_names = ncol(m),
     elapsed_mins = (proc.time()[["elapsed"]] - .t0) / 60,
     package = as.character(utils::packageVersion("hvtiRbootstrap"))
