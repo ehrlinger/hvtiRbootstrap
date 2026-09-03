@@ -799,5 +799,5 @@ Named so that an implementer does not improvise them:
 - **`boot_summary()` is not touched.** It keeps its `variable` key and its seven
   columns. It is held to exact parity with `%SUMBOOT` and is not a bag.
 - **The `bn` parity fixture is not captured here.** It is worth doing before the
-  SAS licence expires on 2026-09-29, but it belongs to the interval branch's
+  SAS licence expires in **2027-09**, but it belongs to the interval branch's
   spec.
