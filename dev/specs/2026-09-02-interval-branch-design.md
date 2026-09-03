@@ -212,18 +212,18 @@ which the selection branch has and this one does not yet need; and any
 
 ## Definition of done
 
-- [ ] `boot_predict_ci()` exported, documented, and in `_pkgdown.yml`'s
+- [x] `boot_predict_ci()` exported, documented, and in `_pkgdown.yml`'s
       reference index - the pkgdown gate fails on an export that is not
-- [ ] `statistic` contract documented as the fitter contract minus `NA`
-- [ ] Unit renumbering tested directly
-- [ ] The five columns, `type = 4`, no coverage argument anywhere
-- [ ] `.boot_resample()` shared, `boot_select()` refactored onto it with its
+- [x] `statistic` contract documented as the fitter contract minus `NA`
+- [x] Unit renumbering tested directly
+- [x] The five columns, `type = 4`, no coverage argument anywhere
+- [x] `.boot_resample()` shared, `boot_select()` refactored onto it with its
       existing tests unchanged and passing
-- [ ] Divergences in the roxygen, marked **Divergence**
-- [ ] README and `AGENTS.md` updated: the interval branch is now built
-- [ ] `NEWS.md` bullets under the standing `(unreleased)` heading. No version
+- [x] Divergences in the roxygen, marked **Divergence**
+- [x] README and `AGENTS.md` updated: the interval branch is now built
+- [x] `NEWS.md` bullets under the standing `(unreleased)` heading. No version
       bump - bump when you tag, not when you merge
-- [ ] `devtools::check()` 0/0/0, `lintr::lint_package()` 0
+- [x] `devtools::check()` 0/0/0, `lintr::lint_package()` 0
 
 ## Open questions
 

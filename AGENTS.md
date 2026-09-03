@@ -87,12 +87,15 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
   around an estimate - the replicates are a distribution, nothing is selected,
   and there is no `NA` semantics at all. Everything shipped today is the
   selection branch. The interval branch (`%BNMNR`, `%BNPREV`, `bl_ord.*`) is
-  specified in `dev/specs/2026-09-02-bootstrap-branches-design.md` and not
-  built. A CI-shaped output computed on the selection branch is the mistake
-  this rule exists to stop: `boot_pool_chunks()` shipped `ci_lower`/`ci_upper`
-  that were quantiles over only the replicates that selected the term, so the
-  weaker the term the narrower its "interval" looked. They are now
-  `sel_q025`/`sel_q975`.
+  built as `boot_predict_ci()` in `R/boot-intervals.R`. A CI-shaped output
+  computed on the selection branch is the mistake this rule exists to stop:
+  `boot_pool_chunks()` shipped `ci_lower`/`ci_upper` that were quantiles over
+  only the replicates that selected the term, so the weaker the term the
+  narrower its "interval" looked. They are now `sel_q025`/`sel_q975`.
+  A fitter returns `NA` for a term the model did not choose; a `statistic`
+  never does, because nothing is being chosen -- a missing estimate there is a
+  broken replicate and the whole replicate is discarded. Do not carry the `NA`
+  rule across the branch line in either direction.
 - **Coverage lives in a column name, never in an argument.** No function in
   this package takes a confidence level. The macro family hardcodes
   `PCTLPTS=2.5 16 50 84 97.5` and returns both the 95% and the 68% band in

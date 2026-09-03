@@ -1,5 +1,26 @@
 # hvtiRbootstrap (unreleased)
 
+* **The interval branch is built.** `boot_predict_ci()` is the R port of
+  `%BNMNR` and `%BNPREV`: it resamples, computes a `statistic` on each
+  replicate, and reports percentile bands. It is not variable selection --
+  nothing is chosen, the replicates are a distribution rather than a vote, and
+  there is no `NA` semantics. `statistic` is the fitter contract with the
+  selection semantics removed: a named numeric vector, or `NULL` when the
+  replicate failed. The names are the quantities banded, so a caller wanting a
+  curve evaluates it on their own grid inside `statistic` -- which is what the
+  macro does too, in a `PROC NLMIXED` block the analyst edits.
+* **`id` draws whole units and renumbers them.** `%BNMNR` bootstraps patients
+  and assigns `_PTID=_COUNTER` before joining their repeated records, so a
+  patient drawn twice enters the model as two patients. Without that the two
+  copies share a random effect and the resample understates between-unit
+  variance. The redrawn unit is in a `.boot_unit` column.
+* **No function in this package takes a coverage level.** `boot_predict_ci()`
+  returns both the 95% and the 68% band in columns named for their coverage --
+  `cll_p95`, `cll_p68`, `median`, `clu_p68`, `clu_p95` -- because that is what
+  every `bn.*` macro returns, and a function that takes no level cannot be
+  handed 95 where it wanted 0.95.
+* The resampling loop `%bootreg` and `%BNMNR` share is now one internal rather
+  than two copies. `boot_select()`'s behaviour is unchanged.
 * The `NEWS.md` version test skips headings that carry no version, so merged
   work can sit under this heading without moving `DESCRIPTION`. The test read
   the first heading in the file and compared it against `DESCRIPTION`, which

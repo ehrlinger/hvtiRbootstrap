@@ -58,7 +58,7 @@ the pooling and reporting layers around them.
 
 **Intervals** - `%BNMNR`, `%BNPREV`, `bl_ord.*` - resample to put a band around
 an estimate. Nothing is selected, so there is no `NA` semantics; the replicates
-are a distribution. That branch is specified and not yet built.
+are a distribution. That branch ships today as `boot_predict_ci()`.
 
 No function here takes a confidence level. The macros do not either: they
 hardcode `PCTLPTS=2.5 16 50 84 97.5` and return both the 95% and the 68% band
