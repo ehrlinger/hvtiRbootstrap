@@ -132,3 +132,50 @@ test_that("max_steps = 0 gives a budget no real model reaches", {
   expect_equal(.step_budget(0, 500), 5000)   # scales with candidate count
   expect_lt(.step_budget(0, 10000), 1e6)     # never an allocation bomb
 })
+
+test_that("sle reaches the screen, which #32 says it did not", {
+  # The regression test for #32. sle = 0 admits nothing, so every replicate
+  # keeps only the intercept and no candidate can show a selection frequency.
+  set.seed(21)
+  n <- 200
+  df <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  df$y <- 3 * df$x1 + rnorm(n)
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 10, sle = 0,
+                     seed = 1)
+  s <- boot_summary(fit)
+
+  expect_equal(s$n[s$variable == "x1"], 0L)
+  expect_equal(s$n[s$variable == "x2"], 0L)
+})
+
+test_that("a strong predictor is selected when sle admits it", {
+  # The other side of the same test: with an ordinary sle the screen must
+  # still find an overwhelming predictor, or the first test would pass
+  # against an implementation that selects nothing ever.
+  set.seed(22)
+  n <- 200
+  df <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  df$y <- 3 * df$x1 + rnorm(n)
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, sle = 0.10,
+                     sls = 0.05, seed = 2)
+  s <- boot_summary(fit)
+
+  expect_gt(s$pct[s$variable == "x1"], 90)
+})
+
+test_that("select = 'none' still fits the full model", {
+  # Unchanged behaviour, pinned so the rewrite cannot break the branch that
+  # does not select at all.
+  set.seed(23)
+  n <- 120
+  df <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  df$y <- df$x1 + rnorm(n)
+
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 5,
+                     select = "none", seed = 3)
+
+  expect_true(all(c("x1", "x2") %in% colnames(fit$coefficients)))
+  expect_false(anyNA(fit$coefficients))
+})

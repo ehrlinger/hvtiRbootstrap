@@ -60,23 +60,13 @@
 # `data` in the frame of step()'s caller -- this function. .fit_in_env() fixes
 # the add1()/drop1() model-frame path; this argument fixes the refit path.
 # Both are required. Remove either and every stepwise replicate returns NULL.
-# `%bootreg` documents MAXSTEP=0 as "no restriction", so 0 has to mean a budget
-# no real model reaches. It cannot mean an enormous number: step() opens with
-# `models <- vector("list", steps)`, allocated up front and unconditionally, so
-# .Machine$integer.max asks for a 2.1-billion-element list and wedges the
-# session on every fit. Scale to the model instead -- each step adds or drops
-# one term, so ten passes over the candidate set is unreachable in practice
-# while staying a trivial allocation.
-.step_budget <- function(max_steps, n_terms) {
-  if (isTRUE(max_steps > 0)) return(max_steps)
-  max(1000L, 10L * n_terms)
-}
-
-.maybe_step <- function(fit, select, data) {
+# The single site where selection happens. `enter` and `remove` are pinned by
+# the caller, never by boot_select()'s user: SLE= and SLS= then mean what they
+# mean in the job being ported. See R/stepwise.R.
+.maybe_step <- function(fit, select, data, enter, remove) {
   if (!identical(select$method, "stepwise")) return(fit)
-  n_terms <- length(attr(stats::terms(fit), "term.labels"))
-  stats::step(fit, direction = "both", trace = 0,
-              steps = .step_budget(select$max_steps, n_terms))
+  .pv_stepwise(fit, data, sle = select$sle, sls = select$sls,
+               max_steps = select$max_steps, enter = enter, remove = remove)
 }
 
 # A zero-length result is NOT a failure. Cox carries no intercept, so a
@@ -130,7 +120,7 @@ fit_linear <- function(data, formula, select) {
   tryCatch(
     suppressWarnings({
       fit <- .fit_in_env(quote(stats::lm(formula, data = data)), formula, data)
-      .coefs(.maybe_step(fit, select, data))
+      .coefs(.maybe_step(fit, select, data, enter = "f", remove = "f"))
     }),
     error = function(e) NULL
   )
@@ -163,13 +153,23 @@ fit_logistic <- function(data, formula, select) {
         formula, data
       )
       if (!isTRUE(fit$converged)) NULL
-      else .coefs(.maybe_step(fit, select, data))
+      else .coefs(.maybe_step(fit, select, data, enter = "rao",
+                              remove = "wald"))
     }),
     error = function(e) NULL
   )
 }
 
 #' Fit a Cox proportional-hazards model for one bootstrap replicate
+#'
+#' @details
+#' **Divergence:** `PROC PHREG SELECTION=STEPWISE` enters a term on the score
+#' chi-square. R has no score test for a Cox model - `anova.coxph()` accepts
+#' `test = "Rao"` but silently ignores it and always returns the
+#' likelihood-ratio test - so entry here is by likelihood ratio. The two agree
+#' asymptotically and differ only for a term sitting on the entry threshold, so
+#' a screen will usually select the same set and may occasionally differ on a
+#' borderline candidate. Removal is Wald, matching the macro.
 #'
 #' @inheritParams fit_linear
 #' @return Named numeric vector of kept coefficients, or `NULL` if the fit
@@ -195,7 +195,7 @@ fit_cox <- function(data, formula, select) {
     suppressWarnings({
       fit <- .fit_in_env(quote(survival::coxph(formula, data = data)),
                          formula, data)
-      .coefs(.maybe_step(fit, select, data))
+      .coefs(.maybe_step(fit, select, data, enter = "lr", remove = "wald"))
     }),
     error = function(e) NULL
   )

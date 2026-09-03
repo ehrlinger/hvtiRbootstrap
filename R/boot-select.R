@@ -25,10 +25,12 @@
 #'   it, and then always draws `ds_size` rows. This implementation applies it.
 #'   Pass `fraction = 1` (the default) to match SAS behaviour exactly.
 #' @param select `"stepwise"` or `"none"` (`%bootreg` `SELECT=`/`FIXED=`).
-#' @param sle,sls Entry and retention criteria (`%bootreg` `SLE=`, `SLS=`).
-#'   Carried for interface fidelity; R's [stats::step()] selects on AIC, so
-#'   these do not reproduce SAS's p-value thresholds term for term. Model
-#'   fitting is not parity-tested - see the package's design spec.
+#' @param sle,sls Entry and retention p-value thresholds (`%bootreg` `SLE=`,
+#'   `SLS=`). Each fitter pins its own entry and removal test to match its
+#'   `PROC=` - see [fit_linear()], [fit_logistic()] and [fit_cox()] - so `sle`
+#'   and `sls` are exactly what they mean in the job being ported. Model
+#'   fitting is still not parity-tested - see the package's design spec - but
+#'   these two arguments now select rather than only being recorded.
 #' @param max_steps Maximum selection steps (`%bootreg` `MAXSTEP=`). `0` means
 #'   no restriction, implemented as a budget scaled to the model - ten passes
 #'   over the candidate terms, floored at 1000 - which no realistic model

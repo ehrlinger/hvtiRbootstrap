@@ -38,10 +38,12 @@ Pass \code{fraction = 1} (the default) to match SAS behaviour exactly.}
 
 \item{select}{\code{"stepwise"} or \code{"none"} (\verb{\%bootreg} \verb{SELECT=}/\verb{FIXED=}).}
 
-\item{sle, sls}{Entry and retention criteria (\verb{\%bootreg} \verb{SLE=}, \verb{SLS=}).
-Carried for interface fidelity; R's \code{\link[stats:step]{stats::step()}} selects on AIC, so
-these do not reproduce SAS's p-value thresholds term for term. Model
-fitting is not parity-tested - see the package's design spec.}
+\item{sle, sls}{Entry and retention p-value thresholds (\verb{\%bootreg} \verb{SLE=},
+\verb{SLS=}). Each fitter pins its own entry and removal test to match its
+\verb{PROC=} - see \code{\link[=fit_linear]{fit_linear()}}, \code{\link[=fit_logistic]{fit_logistic()}} and \code{\link[=fit_cox]{fit_cox()}} - so \code{sle}
+and \code{sls} are exactly what they mean in the job being ported. Model
+fitting is still not parity-tested - see the package's design spec - but
+these two arguments now select rather than only being recorded.}
 
 \item{max_steps}{Maximum selection steps (\verb{\%bootreg} \verb{MAXSTEP=}). \code{0} means
 no restriction, implemented as a budget scaled to the model - ten passes

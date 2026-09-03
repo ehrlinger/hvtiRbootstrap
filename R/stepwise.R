@@ -78,6 +78,17 @@
   stats::setNames(p, labs)
 }
 
+# `%bootreg` documents MAXSTEP=0 as "no restriction", so 0 has to mean a budget
+# no real model reaches. It cannot mean an enormous number: the driver below
+# loops and refits at every step, so an unbounded budget risks the same
+# runaway cost this rewrite exists to avoid. Scale to the model instead --
+# each step adds or drops one term, so ten passes over the candidate set is
+# unreachable in practice while staying a trivial bound.
+.step_budget <- function(max_steps, n_terms) {
+  if (isTRUE(max_steps > 0)) return(max_steps)
+  max(1000L, 10L * n_terms)
+}
+
 # The driver. Alternates a forward step and a backward step from an
 # INTERCEPT-ONLY base until neither moves.
 #
@@ -107,8 +118,7 @@
   # lm/glm re-derive `data` from the call itself and are unaffected.
   environment(current$terms) <- environment()
 
-  budget <- if (isTRUE(max_steps > 0)) as.integer(max_steps) else
-    max(1000L, 10L * length(scope))
+  budget <- .step_budget(max_steps, length(scope))
   used <- 0L
 
   # SAS stops when the term about to enter is the one just removed. Without
