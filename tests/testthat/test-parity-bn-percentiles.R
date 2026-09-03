@@ -21,10 +21,16 @@ fixture_path <- function(f) testthat::test_path("fixtures", f)
 test_that("the fixture input is present and has the shape the oracle needs", {
   # Checked separately from the parity test below so that a missing or damaged
   # INPUT is a failure, while a missing SAS OUTPUT is only a skip. The input is
-  # ours and is committed; the output has to come off a SAS machine.
-  skip_if_not(file.exists(fixture_path("bn-percentile-input.csv")),
-              paste("bn-percentile-input.csv is missing;",
-                    "run dev/sas/make-bn-fixture.R"))
+  # ours, is committed, and ships in the tarball; the output has to come off a
+  # SAS machine.
+  #
+  # A HARD FAILURE, NOT A SKIP. This file is in the repository and in the built
+  # package, so its absence is never "not captured yet" -- it is a deletion, a
+  # broken path, or an .Rbuildignore rule that started excluding it. Skipping
+  # would let all three through in green CI, and the parity test below would
+  # then skip too, so the whole oracle could vanish without a single failure.
+  expect_true(file.exists(fixture_path("bn-percentile-input.csv")),
+              info = "bn-percentile-input.csv is committed and must ship")
   d <- utils::read.csv(fixture_path("bn-percentile-input.csv"),
                        stringsAsFactors = FALSE)
 
@@ -92,7 +98,9 @@ test_that("the type = 7 default would NOT reproduce SAS", {
   # Checked against the fixture INPUT rather than SAS output, so it runs
   # whether or not the SAS half has been captured yet: these are facts about
   # R's own quantile types, and they are what makes the oracle discriminating.
-  skip_if_not(file.exists(fixture_path("bn-percentile-input.csv")))
+  # Hard, for the same reason as above: the input is committed, so a missing
+  # one is a defect rather than a fixture not yet captured.
+  expect_true(file.exists(fixture_path("bn-percentile-input.csv")))
   input <- utils::read.csv(fixture_path("bn-percentile-input.csv"),
                            stringsAsFactors = FALSE)
   p <- c(0.025, 0.16, 0.50, 0.84, 0.975)
