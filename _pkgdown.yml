@@ -100,6 +100,19 @@ reference:
   - fit_logistic
   - fit_cox
 
+- title: "6. Band an estimate — `%BNMNR` and `%BNPREV`"
+  desc: >
+    The other branch. Everything above selects variables: refit on each
+    replicate, count which terms survived, and a term the model did not
+    choose is left missing. This does not select anything — it resamples to
+    put a band around an estimate, so the replicates are a distribution
+    rather than a vote and there is no missingness to read. `statistic` is
+    the `fitter` contract with the selection semantics removed. No argument
+    sets a coverage level, because no macro in the family takes one: both the
+    95% and the 68% band come back, in columns named for their coverage.
+  contents:
+  - boot_predict_ci
+
 - title: "Package overview"
   desc: >
     The shape of the port: three macros and three functions at the core, with
