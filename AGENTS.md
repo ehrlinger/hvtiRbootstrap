@@ -137,8 +137,30 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
   rules on the default branch: no deletion, no force-push, pull-request-only, and an
   **automatic Copilot code review** on every PR. A rejected push comes from the server, not a
   local hook.
-  ⚠️ It currently requires **zero approvals**. `require_code_owner_review` is set but inert
-  because no repository in the family has a `CODEOWNERS` file, so a PR can merge unreviewed.
+  ⚠️ This entry was wrong until 2026-09-03 and is now read from the API rather than from
+  memory. It said the ruleset requires **zero approvals** and that `require_code_owner_review`
+  is set but inert; neither is true. `required_approving_review_count` is **1** and
+  `require_code_owner_review` is **false**, so a PR does *not* merge unreviewed.
+  `require_extra_approval_for_unattributed_changes` is also on.
+  ⚠️ **An approval survives later pushes, and Copilot does not re-review them.**
+  `dismiss_stale_reviews_on_push` and `require_last_push_approval` are both `false`, and the
+  `copilot_code_review` rule sets `review_on_push: false`. So a pull request can be reviewed,
+  then changed, then merged with neither a fresh approval nor a fresh Copilot pass over what
+  actually merged. That is not hypothetical: #34 merged at the commit that predated its own
+  fix push, and the fix had to be re-landed as #36. **Check that the merge commit is the one
+  you meant**, and re-request review by hand after a substantive push.
+  Copilot review is also not perfectly reliable at PR creation -- #35 got none until it was
+  requested by hand, and `review_draft_pull_requests: false` does not explain it, since #35
+  was never a draft. `gh pr edit --add-reviewer` cannot do it: that routes through
+  `requestReviewsByLogin`, which does not resolve bots, and the REST `requested_reviewers`
+  endpoint returns **200 while silently doing nothing**. What works is the GraphQL
+  `requestReviews` mutation with `botIds`, taking the bot's node id from a review it has
+  already left (`.user.node_id` on any Copilot review). Note that the `copilot-swe-agent`
+  actor returned by `suggestedActors` is the *coding* agent, not the reviewer.
+  One bypass actor is configured (`RepositoryRole` 5, mode `always`). Which role that id
+  names could not be determined from the API on a personal account, and it was not tested,
+  because the only test is a push to `main`. Read it off the ruleset UI, which names the
+  role in words, before assuming the protection is absolute.
 - Versions are **straight three digits** (`0.1.0`). Never a `.9000` suffix or a fourth digit.
 - **Patch-digit bumps only.** Minor and major are the maintainer's decision.
 - **Bump when you tag, not when you merge.** `DESCRIPTION` and the top `NEWS.md` heading
