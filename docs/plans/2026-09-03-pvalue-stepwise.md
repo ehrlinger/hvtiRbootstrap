@@ -479,6 +479,13 @@ Append to `R/stepwise.R`:
     error = function(e) NULL
   )
   if (is.null(current)) return(fit)
+  # coxph's model.matrix/model.frame re-derive `data` from the formula's OWN
+  # environment rather than the caller's frame, and update() keeps
+  # propagating the environment `fit` was originally created in -- not this
+  # function's. Repointing it here to .pv_stepwise's own frame is what makes
+  # `data = data` above actually reach a later .pv_remove_p() call for coxph;
+  # lm/glm re-derive `data` from the call itself and are unaffected.
+  environment(current$terms) <- environment()
 
   budget <- if (isTRUE(max_steps > 0)) as.integer(max_steps) else
     max(1000L, 10L * length(scope))
@@ -512,6 +519,7 @@ Append to `R/stepwise.R`:
         )
         if (!is.null(nxt)) {
           current <- nxt
+          environment(current$terms) <- environment()
           used <- used + 1L
           moved <- TRUE
           just_removed <- NA_character_
@@ -534,6 +542,7 @@ Append to `R/stepwise.R`:
         )
         if (!is.null(nxt)) {
           current <- nxt
+          environment(current$terms) <- environment()
           used <- used + 1L
           moved <- TRUE
           just_removed <- worst
