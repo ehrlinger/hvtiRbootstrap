@@ -56,11 +56,11 @@ df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
 fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
                    n_rep = 50, seed = 42)
 boot_summary(fit)
-#>      variable  n pct       mean         sd         min       max
-#> 1 (Intercept) 50 100 -0.0161571 0.06298653 -0.15297676 0.1069145
-#> 2          x1 50 100  2.0116268 0.08923849  1.88008851 2.2223719
-#> 3          x2 15  30  0.1043906 0.01859431  0.08727983 0.1415486
-#> 4       noise 13  26  0.1090360 0.01588121  0.08396326 0.1492700
+#>      variable  n pct        mean          sd        min       max
+#> 1 (Intercept) 50 100 -0.01935105 0.061297809 -0.1529768 0.1033970
+#> 2          x1 50 100  2.01128028 0.090146372  1.8800885 2.2223719
+#> 3       noise  3   6  0.12711552 0.019080164  0.1108547 0.1481200
+#> 4          x2  3   6  0.13669590 0.007207413  0.1284142 0.1415486
 
 # It also takes a bare replicate matrix, which is how the parity fixtures
 # are checked against %SUMBOOT without needing any cohort data.

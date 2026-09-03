@@ -145,6 +145,19 @@ way:
   in named columns; a function that takes no level cannot mislabel one,
   which is the point. Quantiles are `stats::quantile(type = 4)`, SAS’s
   `PCTLDEF=1`, never R’s `type = 7` default.
+- **`sle`/`sls` are live, and each fitter pins its own criteria.**
+  [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)
+  is partial F,
+  [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+  is score-in and Wald-out,
+  [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+  is LR-in and Wald-out. The LR is a registered divergence:
+  `anova.coxph()` accepts `test = "Rao"` and silently ignores it, always
+  returning the likelihood-ratio test, so there is no score test to
+  call. **Do not add a `criterion` argument.** Under AIC, `sle` and
+  `sls` go inert again, which is the defect
+  [\#32](https://github.com/ehrlinger/hvtiRbootstrap/issues/32) was
+  filed for.
 - **The `fraction` divergence is deliberate and defaults to parity.**
   `%bootreg` documents `FRACTION=`, computes `ds_size * fraction`,
   prints it, and then always draws `ds_size`. This implementation

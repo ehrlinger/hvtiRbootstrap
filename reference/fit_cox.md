@@ -31,6 +31,17 @@ Cox models carry no intercept, so none appears in the result - which
 means a replicate where selection kept nothing returns a **zero-length**
 vector, not `NULL`, and counts as a valid replicate.
 
+## Details
+
+**Divergence:** `PROC PHREG SELECTION=STEPWISE` enters a term on the
+score chi-square. R has no score test for a Cox model - `anova.coxph()`
+accepts `test = "Rao"` but silently ignores it and always returns the
+likelihood-ratio test - so entry here is by likelihood ratio. The two
+agree asymptotically and differ only for a term sitting on the entry
+threshold, so a screen will usually select the same set and may
+occasionally differ on a borderline candidate. Removal is Wald, matching
+the macro.
+
 ## See also
 
 [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)

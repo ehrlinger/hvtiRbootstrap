@@ -187,11 +187,21 @@ draws `round(n * fraction)`. Pass `fraction = 1` (the default) to match
 SAS exactly. **A filed result run with `FRACTION` other than 1.0 was not
 subsampled**, so R will disagree with it.
 
-**D2 - stepwise selects on AIC, not p-values.** SAS `SELECTION=STEPWISE`
-uses `SLE=`/`SLS=` as p-value thresholds; R’s
-[`step()`](https://rdrr.io/r/stats/step.html) uses AIC. `sle` and `sls`
-are carried for interface fidelity and do not reproduce SAS’s selection
-term for term. This is why model fitting sits outside the parity claim.
+**D2 - stepwise now selects on p-values, applied per family.** SAS
+`SELECTION=STEPWISE` uses `SLE=`/`SLS=` as p-value thresholds; `sle` and
+`sls` now mean exactly that, tested by
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)’s
+own p-value stepwise (`R/stepwise.R`) rather than by
+[`stats::step()`](https://rdrr.io/r/stats/step.html), which selected on
+AIC and never applied them. The test is pinned per family to match the
+`PROC=` it ports:
+[`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)
+tests partial F to enter and to remove, matching `PROC REG`;
+[`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+enters on the score chi-square and removes on Wald, matching
+`PROC LOGISTIC`.
+[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)’s
+own criteria are D4, below.
 
 **D3 - the retry loop is capped.** `%bootreg` resamples until it has
 `RESAMPL` valid models and never gives up, so a model that fails on
@@ -199,6 +209,38 @@ every replicate spins forever.
 [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
 budgets `max_attempts = 10 * n_rep` and errors with a diagnostic when it
 runs out. Pass `max_attempts = Inf` for the macro’s behaviour.
+
+**D4 -
+[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+enters on the likelihood ratio, not the score test.**
+`PROC PHREG SELECTION=STEPWISE` enters a term on the score chi-square. R
+has no score test for a Cox model - `anova.coxph()` accepts
+`test = "Rao"` but silently ignores it and always returns the
+likelihood-ratio test - so entry in
+[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+is by likelihood ratio instead. The two agree asymptotically and differ
+only for a term sitting on the entry threshold, so a screen will usually
+select the same set and may occasionally differ on a borderline
+candidate. Removal is Wald, matching the macro.
+
+**D5 - the two removal tests can disagree with each other on model
+hierarchy.**
+[`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)’s
+removal test ([`drop1()`](https://rdrr.io/r/stats/add1.html)) respects
+marginality - a main effect under an interaction is not removable. The
+Wald removal test
+[`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+and
+[`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+use tests every term independently, so
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+can return a model with an interaction but neither of its main effects;
+the forward step can likewise admit an interaction before either main
+effect enters, since candidates are flat term labels rather than a
+hierarchy. `PROC LOGISTIC` defaults to `HIERARCHY=SINGLE` and would not
+do this. Realistic `%bootreg` candidate pools are main effects, so the
+case is narrow, but it is not implemented and the two paths do not
+currently agree with each other.
 
 A warning is not a failed fit. `%bootreg` gates on `&regrc`, a return
 code that SAS warnings do not set, and the fitters match that: a

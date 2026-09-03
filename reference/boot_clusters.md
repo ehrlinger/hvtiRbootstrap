@@ -68,5 +68,5 @@ fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
 boot_clusters(fit, list(size = c("x1", "x2"), noise = "noise"))
 #>   cluster n_any pct_any members
 #> 1    size    50     100  x1, x2
-#> 2   noise    13      26   noise
+#> 2   noise     3       6   noise
 ```

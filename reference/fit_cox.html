@@ -74,6 +74,16 @@ which means a replicate where selection kept nothing returns a
 <strong>zero-length</strong> vector, not <code>NULL</code>, and counts as a valid replicate.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><strong>Divergence:</strong> <code>PROC PHREG SELECTION=STEPWISE</code> enters a term on the score
+chi-square. R has no score test for a Cox model - <code>anova.coxph()</code> accepts
+<code>test = "Rao"</code> but silently ignores it and always returns the
+likelihood-ratio test - so entry here is by likelihood ratio. The two agree
+asymptotically and differ only for a term sitting on the entry threshold, so
+a screen will usually select the same set and may occasionally differ on a
+borderline candidate. Removal is Wald, matching the macro.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="fit_linear.html">fit_linear()</a></code> and <code><a href="fit_logistic.html">fit_logistic()</a></code>; <code><a href="boot_select.html">boot_select()</a></code>.</p></div>
     </div>

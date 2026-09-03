@@ -103,18 +103,27 @@ Pass <code>fraction = 1</code> (the default) to match SAS behaviour exactly.</p>
 
 
 <dt id="arg-sle-sls">sle, sls<a class="anchor" aria-label="anchor" href="#arg-sle-sls"></a></dt>
-<dd><p>Entry and retention criteria (<code>%bootreg</code> <code>SLE=</code>, <code>SLS=</code>).
-Carried for interface fidelity; R's <code><a href="https://rdrr.io/r/stats/step.html" class="external-link">stats::step()</a></code> selects on AIC, so
-these do not reproduce SAS's p-value thresholds term for term. Model
-fitting is not parity-tested - see the package's design spec.</p></dd>
+<dd><p>Entry and retention p-value thresholds (<code>%bootreg</code> <code>SLE=</code>,
+<code>SLS=</code>). Each fitter pins its own entry and removal test to match its
+<code>PROC=</code> - see <code><a href="fit_linear.html">fit_linear()</a></code>, <code><a href="fit_logistic.html">fit_logistic()</a></code> and <code><a href="fit_cox.html">fit_cox()</a></code> - so <code>sle</code>
+and <code>sls</code> are exactly what they mean in the job being ported. Model
+fitting is still not parity-tested - see the package's design spec - but
+these two arguments now select rather than only being recorded.
+<strong>Divergence:</strong> candidates are flat term labels, not a hierarchy, and
+<code><a href="fit_linear.html">fit_linear()</a></code>'s removal test respects marginality while
+<code><a href="fit_logistic.html">fit_logistic()</a></code>'s and <code><a href="fit_cox.html">fit_cox()</a></code>'s Wald removal test does not - so a
+screen can keep an interaction without either main effect on the latter
+two, which <code>PROC LOGISTIC</code>'s default <code>HIERARCHY=SINGLE</code> would not do.
+Not implemented; see D5 in the README's divergence register.</p></dd>
 
 
 <dt id="arg-max-steps">max_steps<a class="anchor" aria-label="anchor" href="#arg-max-steps"></a></dt>
 <dd><p>Maximum selection steps (<code>%bootreg</code> <code>MAXSTEP=</code>). <code>0</code> means
 no restriction, implemented as a budget scaled to the model - ten passes
 over the candidate terms, floored at 1000 - which no realistic model
-reaches. It is a budget rather than a truly unbounded count because
-<code><a href="https://rdrr.io/r/stats/step.html" class="external-link">stats::step()</a></code> pre-allocates a list of that length.</p></dd>
+reaches. It bounds the p-value stepwise driver's forward/backward loop
+(<code>.pv_stepwise()</code> in <code>R/stepwise.R</code>) rather than leaving it genuinely
+unbounded.</p></dd>
 
 
 <dt id="arg-max-attempts">max_attempts<a class="anchor" aria-label="anchor" href="#arg-max-attempts"></a></dt>
@@ -179,17 +188,17 @@ not another pipeline.</p>
 <span class="r-in"><span><span class="co"># The replicate table itself, one row per model, NA where a term was not</span></span></span>
 <span class="r-in"><span><span class="co"># selected. This is what %bootreg writes to OUTEST=.</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">coefficients</span>, <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      (Intercept)       x1         x2     noise</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] -0.09140503 2.072650         NA        NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -0.01488408 1.998002         NA        NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,]  0.02101367 1.922324 0.09061786 0.0989286</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      (Intercept)       x1 x2 noise</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] -0.09140503 2.072650 NA    NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -0.01488408 1.998002 NA    NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,]  0.01221866 1.906206 NA    NA</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="boot_summary.html">boot_summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      variable  n pct       mean         sd         min       max</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 (Intercept) 50 100 -0.0161571 0.06298653 -0.15297676 0.1069145</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          x1 50 100  2.0116268 0.08923849  1.88008851 2.2223719</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3          x2 15  30  0.1043906 0.01859431  0.08727983 0.1415486</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4       noise 13  26  0.1090360 0.01588121  0.08396326 0.1492700</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      variable  n pct        mean          sd        min       max</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 (Intercept) 50 100 -0.01935105 0.061297809 -0.1529768 0.1033970</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          x1 50 100  2.01128028 0.090146372  1.8800885 2.2223719</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3       noise  3   6  0.12711552 0.019080164  0.1108547 0.1481200</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          x2  3   6  0.13669590 0.007207413  0.1284142 0.1415486</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

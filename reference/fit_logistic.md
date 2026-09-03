@@ -31,6 +31,11 @@ or did not converge. Warnings - notably "fitted probabilities
 numerically 0 or 1" on a quasi-separated replicate - do not discard a
 converged fit.
 
+## Details
+
+Under `select = "stepwise"`, entry tests the score chi-square and
+removal tests Wald, matching `PROC LOGISTIC SELECTION=STEPWISE`.
+
 ## See also
 
 [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)

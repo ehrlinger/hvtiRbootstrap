@@ -35,6 +35,11 @@ kept, matching the macro, whose `&regrc` is a return code that warnings
 do not set. A zero-length result is likewise not a failure: it means
 selection kept no terms, which is a valid replicate.
 
+## Details
+
+Under `select = "stepwise"`, entry and removal both test the partial F,
+matching `PROC REG SELECTION=STEPWISE`.
+
 ## See also
 
 [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)

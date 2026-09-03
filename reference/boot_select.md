@@ -61,20 +61,36 @@ boot_select(
 
 - sle, sls:
 
-  Entry and retention criteria (`%bootreg` `SLE=`, `SLS=`). Carried for
-  interface fidelity; R's
-  [`stats::step()`](https://rdrr.io/r/stats/step.html) selects on AIC,
-  so these do not reproduce SAS's p-value thresholds term for term.
-  Model fitting is not parity-tested - see the package's design spec.
+  Entry and retention p-value thresholds (`%bootreg` `SLE=`, `SLS=`).
+  Each fitter pins its own entry and removal test to match its `PROC=` -
+  see
+  [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md),
+  [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+  and
+  [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md) -
+  so `sle` and `sls` are exactly what they mean in the job being ported.
+  Model fitting is still not parity-tested - see the package's design
+  spec - but these two arguments now select rather than only being
+  recorded. **Divergence:** candidates are flat term labels, not a
+  hierarchy, and
+  [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)'s
+  removal test respects marginality while
+  [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)'s
+  and
+  [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)'s
+  Wald removal test does not - so a screen can keep an interaction
+  without either main effect on the latter two, which `PROC LOGISTIC`'s
+  default `HIERARCHY=SINGLE` would not do. Not implemented; see D5 in
+  the README's divergence register.
 
 - max_steps:
 
   Maximum selection steps (`%bootreg` `MAXSTEP=`). `0` means no
   restriction, implemented as a budget scaled to the model - ten passes
   over the candidate terms, floored at 1000 - which no realistic model
-  reaches. It is a budget rather than a truly unbounded count because
-  [`stats::step()`](https://rdrr.io/r/stats/step.html) pre-allocates a
-  list of that length.
+  reaches. It bounds the p-value stepwise driver's forward/backward loop
+  (`.pv_stepwise()` in `R/stepwise.R`) rather than leaving it genuinely
+  unbounded.
 
 - max_attempts:
 
@@ -149,15 +165,15 @@ fit
 # The replicate table itself, one row per model, NA where a term was not
 # selected. This is what %bootreg writes to OUTEST=.
 head(fit$coefficients, 3)
-#>      (Intercept)       x1         x2     noise
-#> [1,] -0.09140503 2.072650         NA        NA
-#> [2,] -0.01488408 1.998002         NA        NA
-#> [3,]  0.02101367 1.922324 0.09061786 0.0989286
+#>      (Intercept)       x1 x2 noise
+#> [1,] -0.09140503 2.072650 NA    NA
+#> [2,] -0.01488408 1.998002 NA    NA
+#> [3,]  0.01221866 1.906206 NA    NA
 
 boot_summary(fit)
-#>      variable  n pct       mean         sd         min       max
-#> 1 (Intercept) 50 100 -0.0161571 0.06298653 -0.15297676 0.1069145
-#> 2          x1 50 100  2.0116268 0.08923849  1.88008851 2.2223719
-#> 3          x2 15  30  0.1043906 0.01859431  0.08727983 0.1415486
-#> 4       noise 13  26  0.1090360 0.01588121  0.08396326 0.1492700
+#>      variable  n pct        mean          sd        min       max
+#> 1 (Intercept) 50 100 -0.01935105 0.061297809 -0.1529768 0.1033970
+#> 2          x1 50 100  2.01128028 0.090146372  1.8800885 2.2223719
+#> 3       noise  3   6  0.12711552 0.019080164  0.1108547 0.1481200
+#> 4          x2  3   6  0.13669590 0.007207413  0.1284142 0.1415486
 ```

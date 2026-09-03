@@ -125,6 +125,5 @@ bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2,
                 manifest = list(sha256 = "example"))
 boot_frequencies(bag)
 #>   variable term  n pct mc_error near_threshold retained
-#> 1       x1   x1 10 100  0.00000             NA       NA
-#> 2       x2   x2  3  30 14.49138             NA       NA
+#> 1       x1   x1 10 100        0             NA       NA
 ```
