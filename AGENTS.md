@@ -159,12 +159,28 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
   maintainer's updates to `main`. Bypass governs the **ref update**; the approval
   requirement was enforced separately at **merge** time, which is why a full bypass still
   left `--admin` as the only way through. Adding a bypass actor would have been a no-op.
-  ⚠️ **CI does not gate merges.** There is no `required_status_checks` rule. All nine
-  workflows run on a pull request and none of them blocks it, so a red `R CMD check` is as
-  mergeable as a green one. The approval count was the only gate, and it was the one nobody
-  could satisfy. Adding `required_status_checks` (`lint`, `house-style`, `pkgdown`, the five
-  `R-CMD-check` jobs; not `test-coverage`, which fails on codecov network and token
-  problems) is the change that would actually protect the branch, and it has not been made.
+  **CI gates merges as of 2026-09-03.** Until then there was no `required_status_checks`
+  rule at all: all nine workflows ran on a pull request and none of them blocked it, so a
+  red `R CMD check` was exactly as mergeable as a green one, and the only gate was the
+  approval count nobody could satisfy. Eight contexts are now required -- `lint`,
+  `house-style`, `pkgdown` and the five `R-CMD-check` matrix jobs -- each pinned to the
+  GitHub Actions app (`integration_id` 15368) so nothing else reporting a same-named check
+  can satisfy the gate. `strict_required_status_checks_policy` is `false`, so a branch need
+  not be up to date with `main` before merging.
+  ⚠️ `test-coverage` is deliberately **not** required. It uploads to codecov and fails on
+  network and token problems, which would block merges for reasons that say nothing about
+  the package.
+  ⚠️ **A required check must run on every pull request, or the branch deadlocks.**
+  `R-CMD-check.yaml` and `pkgdown.yaml` used to carry `paths-ignore: ['.claude/**']` on
+  their `pull_request` trigger, to save runner minutes on house-style recomposes. A
+  required check that never runs never reports, and one that never reports can never pass,
+  so a `.claude/**`-only pull request would have been permanently unmergeable -- and that
+  is a real shape here, since `chore: recompose the house style artifact` touches exactly
+  `.claude/house-style.md` and reaches `main` through a pull request. The filter was moved
+  to `push` only. **Do not reinstate it on `pull_request`, and do not require a check that
+  any path filter can skip.**
+  ⚠️ The maintainer's admin bypass means none of this gates *them*: a red check does not
+  block a bypassing actor. It protects the branch from accident and from everyone else.
   ⚠️ **An approval survives later pushes, and Copilot does not re-review them.**
   `dismiss_stale_reviews_on_push` and `require_last_push_approval` are both `false`, and the
   `copilot_code_review` rule sets `review_on_push: false`. So a pull request can be reviewed,
