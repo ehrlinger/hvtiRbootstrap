@@ -77,3 +77,100 @@
   }, numeric(1), USE.NAMES = FALSE)
   stats::setNames(p, labs)
 }
+
+# The driver. Alternates a forward step and a backward step from an
+# INTERCEPT-ONLY base until neither moves.
+#
+# WHY IT STARTS EMPTY. PROC's SELECTION=STEPWISE begins with no explanatory
+# variables and adds. The code this replaces handed stats::step() the FULL
+# model, which begins at the full model and drops -- a different algorithm that
+# can settle on a different set. That was never registered as a divergence
+# because nobody noticed it under the larger AIC one.
+#
+# WHY forward-then-backward, every step. That is the "stepwise" in
+# SELECTION=STEPWISE: a term admitted early can become redundant once a
+# correlated one enters, and must be able to leave again. Forward-only is
+# SELECTION=FORWARD, which is a different option.
+.pv_stepwise <- function(fit, data, sle, sls, max_steps, enter, remove) {
+  scope <- attr(stats::terms(fit), "term.labels")
+  # `data = data` on every update(), for the reason .pv_enter_p() documents.
+  current <- tryCatch(
+    stats::update(fit, stats::as.formula(". ~ 1"), data = data),
+    error = function(e) NULL
+  )
+  if (is.null(current)) return(fit)
+  # coxph's model.matrix/model.frame re-derive `data` from the formula's OWN
+  # environment rather than the caller's frame, and update() keeps
+  # propagating the environment `fit` was originally created in -- not this
+  # function's. Repointing it here to .pv_stepwise's own frame is what makes
+  # `data = data` above actually reach a later .pv_remove_p() call for coxph;
+  # lm/glm re-derive `data` from the call itself and are unaffected.
+  environment(current$terms) <- environment()
+
+  budget <- if (isTRUE(max_steps > 0)) as.integer(max_steps) else
+    max(1000L, 10L * length(scope))
+  used <- 0L
+
+  # SAS stops when the term about to enter is the one just removed. Without
+  # that guard, any screen with sle > sls oscillates -- a term enters on its
+  # entry p-value, fails the stricter stay threshold, leaves, and is
+  # immediately the best candidate again -- and only the step budget ends it,
+  # leaving whichever half of the cycle the budget happened to stop on.
+  just_removed <- NA_character_
+
+  repeat {
+    moved <- FALSE
+
+    # Forward: the most significant candidate enters if it clears sle.
+    inside <- attr(stats::terms(current), "term.labels")
+    cand <- setdiff(scope, inside)
+    if (length(cand) && used < budget) {
+      p <- vapply(cand, function(v) .pv_enter_p(current, v, data, enter),
+                  numeric(1), USE.NAMES = FALSE)
+      ok <- which(!is.na(p) & p <= sle)
+      if (length(ok)) {
+        best <- cand[[ok[[which.min(p[ok])]]]]
+        if (identical(best, just_removed)) break
+        nxt <- tryCatch(
+          stats::update(current,
+                        stats::as.formula(paste(". ~ . +", best)),
+                        data = data),
+          error = function(e) NULL
+        )
+        if (!is.null(nxt)) {
+          current <- nxt
+          environment(current$terms) <- environment()
+          used <- used + 1L
+          moved <- TRUE
+          just_removed <- NA_character_
+        }
+      }
+    }
+
+    # Backward: the least significant term leaves if it fails sls.
+    inside <- attr(stats::terms(current), "term.labels")
+    if (length(inside) && used < budget) {
+      p <- .pv_remove_p(current, remove)
+      ok <- which(!is.na(p) & p > sls)
+      if (length(ok)) {
+        worst <- names(p)[[ok[[which.max(p[ok])]]]]
+        nxt <- tryCatch(
+          stats::update(current,
+                        stats::as.formula(paste(". ~ . -", worst)),
+                        data = data),
+          error = function(e) NULL
+        )
+        if (!is.null(nxt)) {
+          current <- nxt
+          environment(current$terms) <- environment()
+          used <- used + 1L
+          moved <- TRUE
+          just_removed <- worst
+        }
+      }
+    }
+
+    if (!moved || used >= budget) break
+  }
+  current
+}

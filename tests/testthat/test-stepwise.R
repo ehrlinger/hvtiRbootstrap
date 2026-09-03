@@ -101,3 +101,125 @@ test_that(".pv_enter_p returns a p-value on a warning, not NA", {
   expect_false(is.na(p))
   expect_lt(p, 1e-6)
 })
+
+test_that(".pv_stepwise starts empty and adds, as PROC does", {
+  # SELECTION=STEPWISE begins with an intercept and adds. stats::step() began
+  # at the FULL model and dropped, which is a different algorithm that can
+  # settle somewhere else -- a second divergence underneath #32.
+  set.seed(11)
+  n <- 400
+  d <- data.frame(x1 = rnorm(n), x2 = rnorm(n), junk = rnorm(n))
+  d$y <- 2 * d$x1 + rnorm(n)
+  full <- lm(y ~ x1 + x2 + junk, d)
+
+  got <- .pv_stepwise(full, d, sle = 0.05, sls = 0.05, max_steps = 0,
+                      enter = "f", remove = "f")
+
+  kept <- attr(stats::terms(got), "term.labels")
+  expect_true("x1" %in% kept)
+  expect_false("junk" %in% kept)
+})
+
+test_that("sle actually gates entry", {
+  # The test #32 exists for. At sle = 0 nothing can enter, so the result is
+  # the intercept-only base. If sle were ignored the screen would still pick
+  # up x1, which is overwhelming here.
+  set.seed(12)
+  n <- 300
+  d <- data.frame(x1 = rnorm(n))
+  d$y <- 3 * d$x1 + rnorm(n)
+  full <- lm(y ~ x1, d)
+
+  got <- .pv_stepwise(full, d, sle = 0, sls = 0.05, max_steps = 0,
+                      enter = "f", remove = "f")
+
+  expect_length(attr(stats::terms(got), "term.labels"), 0L)
+})
+
+test_that("sls actually gates removal", {
+  # sls is the level to STAY: a term leaves when its p-value EXCEEDS it. So
+  # sls = 1 keeps everything and a small sls throws the weak term out. Getting
+  # this backwards would be easy and would still pass a test that only ever
+  # asserted "something was removed".
+  #
+  # sle = 1 admits every candidate, so sls is the only thing that can explain
+  # what is missing at the end. Pinned separately from sle so that honouring
+  # one and ignoring the other is a failure.
+  set.seed(13)
+  n <- 300
+  d <- data.frame(x1 = rnorm(n), junk = rnorm(n))
+  d$y <- 3 * d$x1 + rnorm(n)
+  full <- lm(y ~ x1 + junk, d)
+
+  loose <- .pv_stepwise(full, d, sle = 1, sls = 1, max_steps = 0,
+                        enter = "f", remove = "f")
+  tight <- .pv_stepwise(full, d, sle = 1, sls = 0.001, max_steps = 0,
+                        enter = "f", remove = "f")
+
+  expect_true("junk" %in% attr(stats::terms(loose), "term.labels"))
+  expect_false("junk" %in% attr(stats::terms(tight), "term.labels"))
+  expect_true("x1" %in% attr(stats::terms(tight), "term.labels"))
+})
+
+test_that("a term removed once does not immediately re-enter", {
+  # SAS ends the screen when the term about to enter is the one just removed.
+  # With sle > sls that cycle is not exotic, it is the default outcome: the
+  # term clears the entry threshold, fails the stricter stay threshold, leaves,
+  # and is the best candidate again. Without the guard only the step budget
+  # ends it, and the answer depends on which half of the cycle it stopped on.
+  set.seed(16)
+  n <- 300
+  d <- data.frame(x1 = rnorm(n), junk = rnorm(n))
+  d$y <- 3 * d$x1 + rnorm(n)
+  full <- lm(y ~ x1 + junk, d)
+
+  t0 <- proc.time()[["elapsed"]]
+  got <- .pv_stepwise(full, d, sle = 1, sls = 0.001, max_steps = 0,
+                      enter = "f", remove = "f")
+  elapsed <- proc.time()[["elapsed"]] - t0
+
+  # It must settle, not spin to a 1000-step budget.
+  expect_lt(elapsed, 20)
+  expect_equal(attr(stats::terms(got), "term.labels"), "x1")
+})
+
+test_that(".pv_stepwise terminates and honours max_steps", {
+  # A budget, as %bootreg's MAXSTEP= is. The loop must also terminate on its
+  # own when nothing enters or leaves, or a screen that oscillates between two
+  # terms would run until the budget rather than settling.
+  set.seed(14)
+  n <- 200
+  d <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  d$y <- d$x1 + d$x2 + rnorm(n)
+  full <- lm(y ~ x1 + x2, d)
+
+  one <- .pv_stepwise(full, d, sle = 0.5, sls = 0.5, max_steps = 1,
+                      enter = "f", remove = "f")
+  expect_lte(length(attr(stats::terms(one), "term.labels")), 1L)
+
+  settled <- .pv_stepwise(full, d, sle = 0.5, sls = 0.5, max_steps = 0,
+                          enter = "f", remove = "f")
+  expect_s3_class(settled, "lm")
+})
+
+test_that(".pv_stepwise drives glm and coxph, not only lm", {
+  # The three fitters each hand it a different model class.
+  set.seed(15)
+  n <- 400
+  d <- data.frame(x1 = rnorm(n), junk = rnorm(n))
+  d$y <- rbinom(n, 1, plogis(1.5 * d$x1))
+  g <- .pv_stepwise(glm(y ~ x1 + junk, binomial(), d), d, 0.05, 0.05, 0,
+                    enter = "rao", remove = "wald")
+
+  expect_s3_class(g, "glm")
+  expect_true("x1" %in% attr(stats::terms(g), "term.labels"))
+
+  skip_if_not_installed("survival")
+  d$t <- rexp(n, exp(0.8 * d$x1))
+  d$s <- rbinom(n, 1, 0.7)
+  cx <- .pv_stepwise(
+    survival::coxph(survival::Surv(t, s) ~ x1 + junk, d), d,
+    0.05, 0.05, 0, enter = "lr", remove = "wald"
+  )
+  expect_s3_class(cx, "coxph")
+})
