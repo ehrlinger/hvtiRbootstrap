@@ -100,7 +100,8 @@ test_that("the type = 7 default would NOT reproduce SAS", {
   # R's own quantile types, and they are what makes the oracle discriminating.
   # Hard, for the same reason as above: the input is committed, so a missing
   # one is a defect rather than a fixture not yet captured.
-  expect_true(file.exists(fixture_path("bn-percentile-input.csv")))
+  expect_true(file.exists(fixture_path("bn-percentile-input.csv")),
+              info = "bn-percentile-input.csv is committed and must ship")
   input <- utils::read.csv(fixture_path("bn-percentile-input.csv"),
                            stringsAsFactors = FALSE)
   p <- c(0.025, 0.16, 0.50, 0.84, 0.975)
