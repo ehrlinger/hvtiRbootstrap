@@ -66,8 +66,8 @@ the fitters, and the pooling and reporting layers around them.
 
 **Intervals** - `%BNMNR`, `%BNPREV`, `bl_ord.*` - resample to put a band
 around an estimate. Nothing is selected, so there is no `NA` semantics;
-the replicates are a distribution. That branch is specified and not yet
-built.
+the replicates are a distribution. That branch ships today as
+[`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md).
 
 No function here takes a confidence level. The macros do not either:
 they hardcode `PCTLPTS=2.5 16 50 84 97.5` and return both the 95% and
@@ -166,10 +166,9 @@ Under development, and at 0.9.0 rather than 1.0.0 deliberately. The
 selection core, chunk pooling and the reporting layer are all in place,
 with logistic, linear and Cox fitters.
 
-The hazard and quantile fitters, the bootstrap-CI family
-(`boot_predict_ci()`) and penalised selection are each deferred to their
-own spec — and the hazard fitter is why this is not 1.0.0. Its
-`_CP_*evnt` and `_tvc` variants encode competing-risks and
+The hazard and quantile fitters, and penalised selection are each
+deferred to their own spec — and the hazard fitter is why this is not
+1.0.0. Its `_CP_*evnt` and `_tvc` variants encode competing-risks and
 time-varying-covariate structures that deserve reading before an API is
 fixed, and a 1.0.0 that then grew a whole new fitter family would be
 making a promise it had not earned.

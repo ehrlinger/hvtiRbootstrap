@@ -1,7 +1,8 @@
 # hvtiRbootstrap
 
-Bootstrap variable selection: the R port of the CORR macro library’s
-`%bootreg`, `%SUMBOOT` and `%cluster`. The core is six exports —
+Bootstrap variable selection and interval estimation: the R port of the
+CORR macro library’s `%bootreg`, `%SUMBOOT`, `%cluster`, `%BNMNR` and
+`%BNPREV`. The **selection** branch’s core is six exports —
 [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md),
 [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md),
 [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md),
@@ -21,6 +22,10 @@ and **reporting**
 [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md),
 [`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md),
 [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)).
+Alongside it is the **interval** branch, one export:
+[`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md),
+the port of `%BNMNR` and `%BNPREV`, which bands an estimate instead of
+selecting variables.
 
 **The parity scope is narrow and deliberate.**
 [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
@@ -28,7 +33,10 @@ and
 [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)
 are held to *exact* parity with `%SUMBOOT` and `%cluster`. Resampling
 and model fitting are **not** parity-tested — they cannot be, since the
-two languages draw different samples. Know which side of that line a
+two languages draw different samples. The interval branch sits on the
+same line: its interval arithmetic is exact against
+`PROC STDIZE PCTLDEF=1`, but its resampling and its `statistic` are not
+parity-tested, for the same reason. Know which side of that line a
 change falls on before claiming it matches SAS.
 
 This file is the operational contract and applies in full. It is tool
@@ -119,14 +127,18 @@ way:
   resample to put a band around an estimate - the replicates are a
   distribution, nothing is selected, and there is no `NA` semantics at
   all. Everything shipped today is the selection branch. The interval
-  branch (`%BNMNR`, `%BNPREV`, `bl_ord.*`) is specified in
-  `dev/specs/2026-09-02-bootstrap-branches-design.md` and not built. A
-  CI-shaped output computed on the selection branch is the mistake this
-  rule exists to stop:
+  branch (`%BNMNR`, `%BNPREV`, `bl_ord.*`) is built as
+  [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
+  in `R/boot-intervals.R`. A CI-shaped output computed on the selection
+  branch is the mistake this rule exists to stop:
   [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
   shipped `ci_lower`/`ci_upper` that were quantiles over only the
   replicates that selected the term, so the weaker the term the narrower
-  its “interval” looked. They are now `sel_q025`/`sel_q975`.
+  its “interval” looked. They are now `sel_q025`/`sel_q975`. A fitter
+  returns `NA` for a term the model did not choose; a `statistic` never
+  does, because nothing is being chosen – a missing estimate there is a
+  broken replicate and the whole replicate is discarded. Do not carry
+  the `NA` rule across the branch line in either direction.
 - **Coverage lives in a column name, never in an argument.** No function
   in this package takes a confidence level. The macro family hardcodes
   `PCTLPTS=2.5 16 50 84 97.5` and returns both the 95% and the 68% band
@@ -153,10 +165,12 @@ way:
   — the variants were judged to deserve reading before an API is fixed,
   so `fit_hazard()` does not exist and should not be improvised. The
   quantile fitter
-  ([\#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)),
-  `boot_predict_ci()` and penalised selection are deferred the same way,
-  each to its own spec. Those four deferrals are why this is 0.9.0 and
-  not 1.0.0.
+  ([\#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)) and
+  penalised selection are deferred the same way, each to its own spec.
+  Those three deferrals are why this is 0.9.0 and not 1.0.0.
+  [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
+  is no longer one of them — it shipped on the interval branch and
+  should not be reimplemented.
 - **Chunking is done, not a gap.** ⚠️ This entry used to say the
   opposite, and an agent reading the old text could reimplement what
   already ships.
@@ -184,10 +198,38 @@ way:
   repositories in the HVTI R package family, and enforces four rules on
   the default branch: no deletion, no force-push, pull-request-only, and
   an **automatic Copilot code review** on every PR. A rejected push
-  comes from the server, not a local hook. ⚠️ It currently requires
-  **zero approvals**. `require_code_owner_review` is set but inert
-  because no repository in the family has a `CODEOWNERS` file, so a PR
-  can merge unreviewed.
+  comes from the server, not a local hook. ⚠️ This entry was wrong until
+  2026-09-03 and is now read from the API rather than from memory. It
+  said the ruleset requires **zero approvals** and that
+  `require_code_owner_review` is set but inert; neither is true.
+  `required_approving_review_count` is **1** and
+  `require_code_owner_review` is **false**, so a PR does *not* merge
+  unreviewed. `require_extra_approval_for_unattributed_changes` is also
+  on. ⚠️ **An approval survives later pushes, and Copilot does not
+  re-review them.** `dismiss_stale_reviews_on_push` and
+  `require_last_push_approval` are both `false`, and the
+  `copilot_code_review` rule sets `review_on_push: false`. So a pull
+  request can be reviewed, then changed, then merged with neither a
+  fresh approval nor a fresh Copilot pass over what actually merged.
+  That is not hypothetical: \#34 merged at the commit that predated its
+  own fix push, and the fix had to be re-landed as \#36. **Check that
+  the merge commit is the one you meant**, and re-request review by hand
+  after a substantive push. Copilot review is also not perfectly
+  reliable at PR creation – \#35 got none until it was requested by
+  hand, and `review_draft_pull_requests: false` does not explain it,
+  since \#35 was never a draft. `gh pr edit --add-reviewer` cannot do
+  it: that routes through `requestReviewsByLogin`, which does not
+  resolve bots, and the REST `requested_reviewers` endpoint returns
+  **200 while silently doing nothing**. What works is the GraphQL
+  `requestReviews` mutation with `botIds`, taking the bot’s node id from
+  a review it has already left (`.user.node_id` on any Copilot review).
+  Note that the `copilot-swe-agent` actor returned by `suggestedActors`
+  is the *coding* agent, not the reviewer. One bypass actor is
+  configured (`RepositoryRole` 5, mode `always`). Which role that id
+  names could not be determined from the API on a personal account, and
+  it was not tested, because the only test is a push to `main`. Read it
+  off the ruleset UI, which names the role in words, before assuming the
+  protection is absolute.
 - Versions are **straight three digits** (`0.1.0`). Never a `.9000`
   suffix or a fourth digit.
 - **Patch-digit bumps only.** Minor and major are the maintainer’s

@@ -106,6 +106,22 @@ replicate should be redrawn.
 - [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
   : Fit a Cox proportional-hazards model for one bootstrap replicate
 
+## 
+
+Band an estimate — `%BNMNR` and `%BNPREV`
+
+The other branch. Everything above selects variables: refit on each
+replicate, count which terms survived, and a term the model did not
+choose is left missing. This does not select anything — it resamples to
+put a band around an estimate, so the replicates are a distribution
+rather than a vote and there is no missingness to read. `statistic` is
+the `fitter` contract with the selection semantics removed. No argument
+sets a coverage level, because no macro in the family takes one: both
+the 95% and the 68% band come back, in columns named for their coverage.
+
+- [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
+  : Band an estimate by bootstrap resampling
+
 ## Package overview
 
 The shape of the port: three macros and three functions at the core,

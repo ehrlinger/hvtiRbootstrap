@@ -157,7 +157,7 @@
 </h2>
 <p>Bootstrapping here does one of two jobs, and they are not the same job.</p>
 <p><strong>Selection</strong> - <code>%bootreg</code>, <code>%SUMBOOT</code>, <code>%cluster</code> - refits on every replicate and counts which terms survived. The replicates are a vote, and a term the model did not select is <code>NA</code>. That is the whole of what this package ships today: <code><a href="reference/boot_select.html">boot_select()</a></code>, <code><a href="reference/boot_summary.html">boot_summary()</a></code>, <code><a href="reference/boot_clusters.html">boot_clusters()</a></code>, the fitters, and the pooling and reporting layers around them.</p>
-<p><strong>Intervals</strong> - <code>%BNMNR</code>, <code>%BNPREV</code>, <code>bl_ord.*</code> - resample to put a band around an estimate. Nothing is selected, so there is no <code>NA</code> semantics; the replicates are a distribution. That branch is specified and not yet built.</p>
+<p><strong>Intervals</strong> - <code>%BNMNR</code>, <code>%BNPREV</code>, <code>bl_ord.*</code> - resample to put a band around an estimate. Nothing is selected, so there is no <code>NA</code> semantics; the replicates are a distribution. That branch ships today as <code><a href="reference/boot_predict_ci.html">boot_predict_ci()</a></code>.</p>
 <p>No function here takes a confidence level. The macros do not either: they hardcode <code>PCTLPTS=2.5 16 50 84 97.5</code> and return both the 95% and the 68% band in columns named for their coverage, so there is no level to mislabel.</p>
 </div>
 <div class="section level2">
@@ -300,7 +300,7 @@
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
 <p>Under development, and at 0.9.0 rather than 1.0.0 deliberately. The selection core, chunk pooling and the reporting layer are all in place, with logistic, linear and Cox fitters.</p>
-<p>The hazard and quantile fitters, the bootstrap-CI family (<code>boot_predict_ci()</code>) and penalised selection are each deferred to their own spec — and the hazard fitter is why this is not 1.0.0. Its <code>_CP_*evnt</code> and <code>_tvc</code> variants encode competing-risks and time-varying-covariate structures that deserve reading before an API is fixed, and a 1.0.0 that then grew a whole new fitter family would be making a promise it had not earned.</p>
+<p>The hazard and quantile fitters, and penalised selection are each deferred to their own spec — and the hazard fitter is why this is not 1.0.0. Its <code>_CP_*evnt</code> and <code>_tvc</code> variants encode competing-risks and time-varying-covariate structures that deserve reading before an API is fixed, and a 1.0.0 that then grew a whole new fitter family would be making a promise it had not earned.</p>
 </div>
 <div class="section level2">
 <h2 id="divergence-from-the-sas-macros">Divergence from the SAS macros<a class="anchor" aria-label="anchor" href="#divergence-from-the-sas-macros"></a>

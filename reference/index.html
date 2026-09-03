@@ -211,6 +211,24 @@
         </dt>
         <dd>Fit a Cox proportional-hazards model for one bootstrap replicate</dd>
       </dl></div><div class="section level2">
+      <h2 id="-band-an-estimate-bnmnr-and-bnprev-"></h2><li>Band an estimate — <code>%BNMNR</code> and <code>%BNPREV</code>
+</li>
+
+
+      <div class="section-desc"><p>The other branch. Everything above selects variables: refit on each replicate, count which terms survived, and a term the model did not choose is left missing. This does not select anything — it resamples to put a band around an estimate, so the replicates are a distribution rather than a vote and there is no missingness to read. <code>statistic</code> is the <code>fitter</code> contract with the selection semantics removed. No argument sets a coverage level, because no macro in the family takes one: both the 95% and the 68% band come back, in columns named for their coverage.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="boot_predict_ci.html">boot_predict_ci()</a></code>
+
+        </dt>
+        <dd>Band an estimate by bootstrap resampling</dd>
+      </dl></div><div class="section level2">
       <h2 id="package-overview">Package overview<a class="anchor" aria-label="anchor" href="#package-overview"></a></h2>
 
       <div class="section-desc"><p>The shape of the port: three macros and three functions at the core, with the pooling and reporting layers that grew around them.</p></div>
