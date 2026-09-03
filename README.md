@@ -153,9 +153,9 @@ Under development, and at 0.9.0 rather than 1.0.0 deliberately. The selection
 core, chunk pooling and the reporting layer are all in place, with logistic,
 linear and Cox fitters.
 
-The hazard and quantile fitters, the bootstrap-CI family (`boot_predict_ci()`)
-and penalised selection are each deferred to their own spec — and the hazard
-fitter is why this is not 1.0.0. Its `_CP_*evnt` and `_tvc` variants encode
+The hazard and quantile fitters, and penalised selection are each deferred to
+their own spec — and the hazard fitter is why this is not 1.0.0. Its
+`_CP_*evnt` and `_tvc` variants encode
 competing-risks and time-varying-covariate structures that deserve reading
 before an API is fixed, and a 1.0.0 that then grew a whole new fitter family
 would be making a promise it had not earned.

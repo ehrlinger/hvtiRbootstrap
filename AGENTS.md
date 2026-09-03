@@ -1,18 +1,24 @@
 # hvtiRbootstrap
 
-Bootstrap variable selection: the R port of the CORR macro library's `%bootreg`,
-`%SUMBOOT` and `%cluster`. The core is six exports — `boot_select()`,
+Bootstrap variable selection and interval estimation: the R port of the CORR
+macro library's `%bootreg`, `%SUMBOOT`, `%cluster`, `%BNMNR` and `%BNPREV`.
+The **selection** branch's core is six exports — `boot_select()`,
 `boot_summary()`, `boot_clusters()`, and the three fitters `fit_logistic()`,
 `fit_linear()`, `fit_cox()` — with two layers around it that have no macro behind
 them: **pooling** (`boot_pool_chunks()`, `boot_chunk_files()`, `boot_shortfall()`)
 and **reporting** (`boot_validate()`, `boot_provenance()`, `boot_seeds()`,
 `boot_frequencies()`, `boot_dropped()`, `boot_concepts()`, `boot_health()`).
+Alongside it is the **interval** branch, one export: `boot_predict_ci()`, the
+port of `%BNMNR` and `%BNPREV`, which bands an estimate instead of selecting
+variables.
 
 **The parity scope is narrow and deliberate.** `boot_summary()` and `boot_clusters()`
 are held to *exact* parity with `%SUMBOOT` and `%cluster`. Resampling and model fitting
 are **not** parity-tested — they cannot be, since the two languages draw different
-samples. Know which side of that line a change falls
-on before claiming it matches SAS.
+samples. The interval branch sits on the same line: its interval arithmetic is
+exact against `PROC STDIZE PCTLDEF=1`, but its resampling and its `statistic`
+are not parity-tested, for the same reason. Know which side of that line a
+change falls on before claiming it matches SAS.
 
 This file is the operational contract and applies in full. It is tool neutral, so Codex and
 any other agent read the same rules. Claude Code affordances live in `CLAUDE.md`, which
@@ -117,10 +123,10 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
 - The package is **0.x**. The **hazard fitter is deliberately deferred** — the variants
   were judged to deserve reading before an API is fixed, so `fit_hazard()` does not exist
   and should not be improvised. The quantile fitter
-  ([#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)),
-  `boot_predict_ci()` and
-  penalised selection are deferred the same way, each to its own spec. Those four
-  deferrals are why this is 0.9.0 and not 1.0.0.
+  ([#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)) and
+  penalised selection are deferred the same way, each to its own spec. Those three
+  deferrals are why this is 0.9.0 and not 1.0.0. `boot_predict_ci()` is no longer
+  one of them — it shipped on the interval branch and should not be reimplemented.
 - **Chunking is done, not a gap.** ⚠️ This entry used to say the opposite, and an agent
   reading the old text could reimplement what already ships. `boot_pool_chunks()`,
   `boot_chunk_files()` and `boot_shortfall()` arrived in 0.1.1. The rule that entry

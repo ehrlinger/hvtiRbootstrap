@@ -110,7 +110,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
-  draw <- max(1L, round(n * fraction))
+  n_draw <- max(1L, round(n * fraction))
   ctrl <- list(method = select, sle = sle, sls = sls, max_steps = max_steps)
   # Candidate columns must be the DUMMY-CODED names the fitters will return,
   # not the formula's term labels. A factor `sex` yields a "sexM" coefficient,
@@ -133,7 +133,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # attempt budget is ours rather than the macro's -- live there now.
   drawn <- .boot_resample(
     draw = function() {
-      data[sample.int(n, size = draw, replace = TRUE), , drop = FALSE]
+      data[sample.int(n, size = n_draw, replace = TRUE), , drop = FALSE]
     },
     fit  = function(d) fitter(d, formula, ctrl),
     n_rep = n_rep, max_attempts = max_attempts,

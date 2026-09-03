@@ -108,8 +108,9 @@
 #' `PCTLPTS=2.5 16 50 84 97.5` and return both bands in columns named for
 #' their coverage. Percentiles use [stats::quantile()] `type = 4`, which is
 #' SAS's `PCTLDEF=1`. A coverage-shaped name passed through `...` (`conf`,
-#' `level`, `alpha`, `probs`, `conf.level`) is refused with an error rather
-#' than silently forwarded to `statistic` and ignored.
+#' `level`, `alpha`, `probs`, `conf.level`, `coverage`, `ci`, `confidence`,
+#' `conf_level`) is refused with an error rather than silently forwarded to
+#' `statistic` and ignored.
 #'
 #' @param data A data frame.
 #' @param statistic Function of `(data, ...)` returning a named numeric vector
@@ -203,7 +204,8 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   # does. Silently ignoring a caller's requested coverage is the failure the
   # design is supposed to make impossible, so it is refused by name.
   reserved <- intersect(names(list(...)),
-                        c("conf", "level", "alpha", "probs", "conf.level"))
+                        c("conf", "level", "alpha", "probs", "conf.level",
+                          "coverage", "ci", "confidence", "conf_level"))
   if (length(reserved)) {
     stop("`boot_predict_ci()` has no coverage argument, and `", reserved[[1L]],
          "` would have been passed to `statistic` and ignored. Coverage is ",
@@ -248,9 +250,19 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
     if (is.null(v)) return(NULL)
     # is.finite() is already FALSE for NA, NaN, Inf and -Inf, so there is no
     # separate anyNA() check to make here -- do not restore one.
-    if (!is.numeric(v) || is.null(names(v)) || !all(is.finite(v))) {
+    # length(v) == 0 is checked explicitly: a length-0 named numeric such as
+    # c(a = 1)[0] is numeric with names() == character(0), which is not NULL,
+    # so it would otherwise pass every check here, burn the whole n_rep
+    # budget, and only fail at the very end inside .interval_table().
+    if (!is.numeric(v) || is.null(names(v)) || length(v) == 0L ||
+          !all(is.finite(v))) {
       return(NULL)
     }
+    # Duplicate names are rejected here too: two rows of $intervals sharing a
+    # name are indistinguishable downstream, so a statistic that returns
+    # c(a = 1, a = 2) is treated as a failed replicate like any other
+    # contract violation.
+    if (anyDuplicated(names(v)) > 0L) return(NULL)
     if (is.null(names_seen)) {
       names_seen <<- names(v)
     } else if (!identical(names(v), names_seen)) {
@@ -263,8 +275,9 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
     draw = draw_one,
     fit = one, n_rep = n_rep, max_attempts = max_attempts,
     caller = "boot_predict_ci", noun = "replicates",
-    hint = paste0("`statistic` returned NULL, a non-finite value, or a ",
-                  "different set of names on most replicates.")
+    hint = paste0("`statistic` returned NULL, a non-finite, zero-length or ",
+                  "duplicate-named value, or a different set of names, on ",
+                  "most replicates.")
   )
 
   m <- do.call(rbind, drawn$results)

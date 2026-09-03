@@ -27,7 +27,14 @@
            call. = FALSE)
     }
     attempts <- attempts + 1L
-    r <- fit(draw())
+    # Assigned rather than inlined as fit(draw()): inlining passes draw() to
+    # fit as a lazy PROMISE, so a fitter whose NULL path never touches its
+    # argument would never force it, the RNG would never advance for that
+    # attempt, and the same seed would then yield different replicates than
+    # this loop drew before the refactor. Assignment forces the draw up
+    # front, every attempt, regardless of what fit() does with it.
+    d <- draw()
+    r <- fit(d)
     if (is.null(r)) next
     n_kept <- n_kept + 1L
     kept[[n_kept]] <- r

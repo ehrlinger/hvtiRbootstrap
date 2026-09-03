@@ -156,6 +156,47 @@ test_that("a statistic whose names change is a failed replicate", {
   expect_equal(r$n_rep, 6L)
 })
 
+test_that("a zero-length named result is a failed replicate", {
+  # c(a = 1)[0] is numeric with names() == character(0), not NULL, so it
+  # would otherwise pass every check in `one()`, burn the whole n_rep budget,
+  # and fail only at the very end inside .interval_table() with a confusing
+  # "must have column names" error. It must be caught here instead.
+  df <- data.frame(x = 1:50)
+  i <- 0L
+  sometimes_empty <- function(d, ...) {
+    i <<- i + 1L
+    if (i %% 2L == 0L) c(mean = 1)[0] else c(mean = mean(d$x))
+  }
+
+  r <- boot_predict_ci(df, sometimes_empty, n_rep = 5, seed = 1)
+
+  expect_equal(r$n_rep, 5L)
+  expect_equal(colnames(r$estimates), "mean")
+  expect_gt(r$n_attempts, 5L)
+})
+
+test_that("a duplicate-named result is a failed replicate", {
+  # c(a = mean(x), a = sd(x)) would produce two $intervals rows both labelled
+  # "a", which a renderer cannot tell apart. Treated as a contract violation
+  # like any other, not stored.
+  df <- data.frame(x = 1:50)
+  i <- 0L
+  sometimes_dup <- function(d, ...) {
+    i <<- i + 1L
+    if (i %% 2L == 0L) {
+      c(a = mean(d$x), a = stats::sd(d$x))
+    } else {
+      c(a = mean(d$x))
+    }
+  }
+
+  r <- boot_predict_ci(df, sometimes_dup, n_rep = 5, seed = 1)
+
+  expect_equal(r$n_rep, 5L)
+  expect_equal(colnames(r$estimates), "a")
+  expect_gt(r$n_attempts, 5L)
+})
+
 test_that("boot_predict_ci is reproducible and restores the caller's stream", {
   # Seeding is a global side effect. boot_select() puts the caller's stream
   # back and so must this, or a script that seeds once at the top loses
@@ -209,6 +250,17 @@ test_that("boot_predict_ci guards its inputs", {
   # absorbed by any statistic declaring `...` -- which fx_statistic itself
   # does, and it is refused by name before that can happen.
   expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, conf = 0.95),
+               "no coverage argument")
+  # coverage is the word the package's own documentation uses ("Coverage
+  # lives in a column name"), so it is refused by name too -- along with the
+  # other spellings a reader might reach for.
+  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, coverage = 0.95),
+               "no coverage argument")
+  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, ci = 0.95),
+               "no coverage argument")
+  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, confidence = 0.95),
+               "no coverage argument")
+  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, conf_level = 0.95),
                "no coverage argument")
 })
 

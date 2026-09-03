@@ -179,7 +179,7 @@ is meaningless here.
 
 | Component | Standard |
 |---|---|
-| Interval arithmetic | **Exact.** `quantile(type = 4)` at 2.5, 16, 50, 84, 97.5 must reproduce `PROC STDIZE PCTLMTD=ORD_STAT PCTLDEF=1 PCTLPTS=2.5 16 50 84 97.5`. The oracle is `tests/testthat/fixtures/bn-percentile-*.csv`. |
+| Interval arithmetic | **Exact, against a SAS-derived oracle that has not landed yet.** `quantile(type = 4)` at 2.5, 16, 50, 84, 97.5 must reproduce `PROC STDIZE PCTLMTD=ORD_STAT PCTLDEF=1 PCTLPTS=2.5 16 50 84 97.5`. That oracle, `tests/testthat/fixtures/bn-percentile-*.csv`, arrives with the separate `feat/bn-parity-fixture` change (PR #34) and does not exist on this branch. What this branch tests instead is the property that `quantile(type = 4)` on `1..100` returns the requested percentile exactly - a sound proxy for `PCTLDEF=1`, but not a SAS-derived fixture. |
 | Resampling | **Not parity-tested.** Stochastic, on both branches. |
 | The statistic | **Not parity-tested.** It is the caller's model, not ours. |
 | Unit renumbering | **Behavioural, not parity.** Tested directly: a unit drawn twice must yield two distinct `.boot_unit` values. |
@@ -216,7 +216,9 @@ which the selection branch has and this one does not yet need; and any
       reference index - the pkgdown gate fails on an export that is not
 - [x] `statistic` contract documented as the fitter contract minus `NA`
 - [x] Unit renumbering tested directly
-- [x] The five columns, `type = 4`, no coverage argument anywhere
+- [x] The five columns, `type = 4`, no coverage argument anywhere. Pinned by
+      the `1..100` proxy property, not by a SAS-derived fixture - that oracle
+      is `feat/bn-parity-fixture` (PR #34), a separate change
 - [x] `.boot_resample()` shared, `boot_select()` refactored onto it with its
       existing tests unchanged and passing
 - [x] Divergences in the roxygen, marked **Divergence**

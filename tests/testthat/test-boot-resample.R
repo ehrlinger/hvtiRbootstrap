@@ -44,6 +44,29 @@ test_that(".boot_resample's message carries the caller's own wording", {
   )
 })
 
+test_that(".boot_resample forces draw() even when fit() never touches it", {
+  # fit(draw()) would pass draw() to fit as a promise: a fit whose NULL path
+  # never forces its argument would leave draw() uncalled, and the RNG (or,
+  # as here, any side effect draw() has) would not advance for that attempt.
+  # The draw must be assigned before the fit so this cannot happen.
+  n_calls <- 0L
+  draw <- function() {
+    n_calls <<- n_calls + 1L
+    n_calls
+  }
+  # Returns NULL on every second call WITHOUT forcing `d`.
+  i <- 0L
+  fit <- function(d) {
+    i <<- i + 1L
+    if (i %% 2L == 0L) NULL else d
+  }
+
+  r <- .boot_resample(draw, fit, n_rep = 4L, max_attempts = 100L,
+                      caller = "x", noun = "results", hint = "")
+
+  expect_equal(n_calls, r$n_attempts)
+})
+
 test_that(".boot_resample with max_attempts = Inf does not cap", {
   # The documented way back to the macro's uncapped behaviour.
   i <- 0L
