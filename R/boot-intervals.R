@@ -74,7 +74,9 @@
 #' macros do not take one either: they hardcode
 #' `PCTLPTS=2.5 16 50 84 97.5` and return both bands in columns named for
 #' their coverage. Percentiles use [stats::quantile()] `type = 4`, which is
-#' SAS's `PCTLDEF=1`.
+#' SAS's `PCTLDEF=1`. A coverage-shaped name passed through `...` (`conf`,
+#' `level`, `alpha`, `probs`, `conf.level`) is refused with an error rather
+#' than silently forwarded to `statistic` and ignored.
 #'
 #' @param data A data frame.
 #' @param statistic Function of `(data, ...)` returning a named numeric vector
@@ -146,6 +148,21 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   if (!is.null(id)) {
     stop("`id` is not implemented yet.", call. = FALSE)
   }
+  # The rationale for having no coverage argument is that a function taking
+  # no level cannot be handed 95 where it wanted 0.95. `...` goes to
+  # `statistic`, so without this a `conf =` would be swallowed silently by
+  # any statistic that declares `...` -- which the example in this very file
+  # does. Silently ignoring a caller's requested coverage is the failure the
+  # design is supposed to make impossible, so it is refused by name.
+  reserved <- intersect(names(list(...)),
+                        c("conf", "level", "alpha", "probs", "conf.level"))
+  if (length(reserved)) {
+    stop("`boot_predict_ci()` has no coverage argument, and `", reserved[[1L]],
+         "` would have been passed to `statistic` and ignored. Coverage is ",
+         "fixed: every replicate yields both the 95% and the 68% band, in ",
+         "the `cll_p95`, `cll_p68`, `clu_p68` and `clu_p95` columns.",
+         call. = FALSE)
+  }
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
@@ -160,8 +177,9 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   one <- function(d) {
     v <- statistic(d, ...)
     if (is.null(v)) return(NULL)
-    if (!is.numeric(v) || is.null(names(v)) || anyNA(v) ||
-          !all(is.finite(v))) {
+    # is.finite() is already FALSE for NA, NaN, Inf and -Inf, so there is no
+    # separate anyNA() check to make here -- do not restore one.
+    if (!is.numeric(v) || is.null(names(v)) || !all(is.finite(v))) {
       return(NULL)
     }
     if (is.null(names_seen)) {

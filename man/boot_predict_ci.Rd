@@ -77,7 +77,9 @@ No argument sets a coverage level, here or anywhere in this package. The
 macros do not take one either: they hardcode
 \verb{PCTLPTS=2.5 16 50 84 97.5} and return both bands in columns named for
 their coverage. Percentiles use \code{\link[stats:quantile]{stats::quantile()}} \code{type = 4}, which is
-SAS's \code{PCTLDEF=1}.
+SAS's \code{PCTLDEF=1}. A coverage-shaped name passed through \code{...} (\code{conf},
+\code{level}, \code{alpha}, \code{probs}, \code{conf.level}) is refused with an error rather
+than silently forwarded to \code{statistic} and ignored.
 }
 \examples{
 # The names of the returned vector are the quantities banded. Here, two

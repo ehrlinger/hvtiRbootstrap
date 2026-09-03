@@ -116,6 +116,28 @@ test_that("a statistic returning NA is a failed replicate, not a gap", {
   expect_gt(r$n_attempts, 5L)
 })
 
+test_that("NaN, Inf and -Inf are each a failed replicate too", {
+  # The guard in `one()` drops non-finite values via is.finite() alone, with
+  # no separate anyNA() clause -- confirm all four non-finite kinds still get
+  # redrawn rather than stored, one bad value at a time.
+  df <- data.frame(x = 1:50)
+  bad_values <- c(NaN, Inf, -Inf)
+
+  for (bad in bad_values) {
+    i <- 0L
+    sometimes_bad <- function(d, ...) {
+      i <<- i + 1L
+      c(mean = if (i %% 2L == 0L) bad else mean(d$x))
+    }
+
+    r <- boot_predict_ci(df, sometimes_bad, n_rep = 5, seed = 1)
+
+    expect_equal(r$n_rep, 5L)
+    expect_true(all(is.finite(r$estimates)))
+    expect_gt(r$n_attempts, 5L)
+  }
+})
+
 test_that("a statistic whose names change is a failed replicate", {
   # %BNMNR compares the bootstrap fit's PARAMETER COUNT against the reference
   # and resamples when they differ. Names are stricter than a count: a count
@@ -182,12 +204,12 @@ test_that("boot_predict_ci guards its inputs", {
                "must be a function")
   expect_error(boot_predict_ci(data.frame(), fx_statistic, n_rep = 5),
                "at least one row")
-  # No coverage argument exists anywhere in this package, by design. Unlike
-  # fx_statistic, this one takes no `...`, so `conf` is not silently absorbed
-  # and passing it raises R's own "unused argument" error.
-  strict_statistic <- function(d) c(mean = mean(d$x))
-  expect_error(boot_predict_ci(df, strict_statistic, n_rep = 5, conf = 0.95),
-               "unused argument")
+  # No coverage argument exists anywhere in this package, by design. `...` is
+  # forwarded to `statistic`, so a `conf =` would otherwise be silently
+  # absorbed by any statistic declaring `...` -- which fx_statistic itself
+  # does, and it is refused by name before that can happen.
+  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, conf = 0.95),
+               "no coverage argument")
 })
 
 test_that("boot_intervals prints its counts and summarises to the bands", {
