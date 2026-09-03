@@ -200,35 +200,53 @@ way:
   an **automatic Copilot code review** on every PR. A rejected push
   comes from the server, not a local hook. ⚠️ This entry was wrong until
   2026-09-03 and is now read from the API rather than from memory. It
-  said the ruleset requires **zero approvals** and that
-  `require_code_owner_review` is set but inert; neither is true.
-  `required_approving_review_count` is **1** and
-  `require_code_owner_review` is **false**, so a PR does *not* merge
-  unreviewed. `require_extra_approval_for_unattributed_changes` is also
-  on. ⚠️ **An approval survives later pushes, and Copilot does not
-  re-review them.** `dismiss_stale_reviews_on_push` and
-  `require_last_push_approval` are both `false`, and the
-  `copilot_code_review` rule sets `review_on_push: false`. So a pull
-  request can be reviewed, then changed, then merged with neither a
-  fresh approval nor a fresh Copilot pass over what actually merged.
-  That is not hypothetical: \#34 merged at the commit that predated its
-  own fix push, and the fix had to be re-landed as \#36. **Check that
-  the merge commit is the one you meant**, and re-request review by hand
-  after a substantive push. Copilot review is also not perfectly
-  reliable at PR creation – \#35 got none until it was requested by
-  hand, and `review_draft_pull_requests: false` does not explain it,
-  since \#35 was never a draft. `gh pr edit --add-reviewer` cannot do
-  it: that routes through `requestReviewsByLogin`, which does not
-  resolve bots, and the REST `requested_reviewers` endpoint returns
-  **200 while silently doing nothing**. What works is the GraphQL
-  `requestReviews` mutation with `botIds`, taking the bot’s node id from
-  a review it has already left (`.user.node_id` on any Copilot review).
-  Note that the `copilot-swe-agent` actor returned by `suggestedActors`
-  is the *coding* agent, not the reviewer. One bypass actor is
-  configured (`RepositoryRole` 5, mode `always`). Which role that id
-  names could not be determined from the API on a personal account, and
-  it was not tested, because the only test is a push to `main`. Read it
-  off the ruleset UI, which names the role in words, before assuming the
+  had said **zero approvals**; the ruleset in fact required **1**, which
+  on a single-maintainer repo nobody can satisfy – GitHub forbids
+  self-approval, and Copilot only ever leaves `COMMENTED`, never
+  `APPROVED`. Every merge was therefore an `--admin` override.
+  `required_approving_review_count` was set to **0** on 2026-09-03 so
+  that `gh pr merge` works normally. `require_code_owner_review` is
+  `false` (and there is still no `CODEOWNERS` file), while
+  `require_extra_approval_for_unattributed_changes` is `true`. ⚠️ **The
+  maintainer already bypasses this ruleset completely.** The single
+  bypass actor is `RepositoryRole` 5 – admin – at mode `always`, and
+  `GET /repos/:o/:r/rulesets/rule-suites` shows `result=bypass` for
+  every one of the maintainer’s updates to `main`. Bypass governs the
+  **ref update**; the approval requirement was enforced separately at
+  **merge** time, which is why a full bypass still left `--admin` as the
+  only way through. Adding a bypass actor would have been a no-op. ⚠️
+  **CI does not gate merges.** There is no `required_status_checks`
+  rule. All nine workflows run on a pull request and none of them blocks
+  it, so a red `R CMD check` is as mergeable as a green one. The
+  approval count was the only gate, and it was the one nobody could
+  satisfy. Adding `required_status_checks` (`lint`, `house-style`,
+  `pkgdown`, the five `R-CMD-check` jobs; not `test-coverage`, which
+  fails on codecov network and token problems) is the change that would
+  actually protect the branch, and it has not been made. ⚠️ **An
+  approval survives later pushes, and Copilot does not re-review them.**
+  `dismiss_stale_reviews_on_push` and `require_last_push_approval` are
+  both `false`, and the `copilot_code_review` rule sets
+  `review_on_push: false`. So a pull request can be reviewed, then
+  changed, then merged with neither a fresh approval nor a fresh Copilot
+  pass over what actually merged. That is not hypothetical: \#34 merged
+  at the commit that predated its own fix push, and the fix had to be
+  re-landed as \#36. **Check that the merge commit is the one you
+  meant**, and re-request review by hand after a substantive push.
+  Copilot review is also not perfectly reliable at PR creation – \#35
+  got none until it was requested by hand, and
+  `review_draft_pull_requests: false` does not explain it, since \#35
+  was never a draft. `gh pr edit --add-reviewer` cannot do it: that
+  routes through `requestReviewsByLogin`, which does not resolve bots,
+  and the REST `requested_reviewers` endpoint returns **200 while
+  silently doing nothing**. What works is the GraphQL `requestReviews`
+  mutation with `botIds`, taking the bot’s node id from a review it has
+  already left (`.user.node_id` on any Copilot review). Note that the
+  `copilot-swe-agent` actor returned by `suggestedActors` is the
+  *coding* agent, not the reviewer. One bypass actor is configured
+  (`RepositoryRole` 5, mode `always`). Which role that id names could
+  not be determined from the API on a personal account, and it was not
+  tested, because the only test is a push to `main`. Read it off the
+  ruleset UI, which names the role in words, before assuming the
   protection is absolute.
 - Versions are **straight three digits** (`0.1.0`). Never a `.9000`
   suffix or a fourth digit.
