@@ -210,8 +210,15 @@ Create `R/stepwise.R`:
 # The p-value for ADDING one term. NA when the test cannot be computed -- a
 # candidate that will not refit is one the screen skips, not a failed replicate.
 .pv_enter_p <- function(fit, term, data, criterion) {
+  # `data = data` is REQUIRED, not tidiness. update.default() evaluates the
+  # reconstructed call in parent.frame(), and the fit's stored call names the
+  # caller's own data symbol -- `d`, or whatever the replicate was called --
+  # which does not exist in this frame. Without it every stepwise replicate
+  # dies with "object 'd' not found". This is the same lookup-scope trap
+  # .fit_in_env() documents for step(), reached by a different route.
   bigger <- tryCatch(
-    stats::update(fit, stats::as.formula(paste(". ~ . +", term))),
+    stats::update(fit, stats::as.formula(paste(". ~ . +", term)),
+                  data = data),
     error = function(e) NULL, warning = function(w) NULL
   )
   if (is.null(bigger)) return(NA_real_)
@@ -427,8 +434,9 @@ Append to `R/stepwise.R`:
 # SELECTION=FORWARD, which is a different option.
 .pv_stepwise <- function(fit, data, sle, sls, max_steps, enter, remove) {
   scope <- attr(stats::terms(fit), "term.labels")
+  # `data = data` on every update(), for the reason .pv_enter_p() documents.
   current <- tryCatch(
-    stats::update(fit, stats::as.formula(". ~ 1")),
+    stats::update(fit, stats::as.formula(". ~ 1"), data = data),
     error = function(e) NULL
   )
   if (is.null(current)) return(fit)
@@ -451,7 +459,8 @@ Append to `R/stepwise.R`:
         best <- cand[[ok[[which.min(p[ok])]]]]
         nxt <- tryCatch(
           stats::update(current,
-                        stats::as.formula(paste(". ~ . +", best))),
+                        stats::as.formula(paste(". ~ . +", best)),
+                        data = data),
           error = function(e) NULL
         )
         if (!is.null(nxt)) {
@@ -471,7 +480,8 @@ Append to `R/stepwise.R`:
         worst <- names(p)[[ok[[which.max(p[ok])]]]]
         nxt <- tryCatch(
           stats::update(current,
-                        stats::as.formula(paste(". ~ . -", worst))),
+                        stats::as.formula(paste(". ~ . -", worst)),
+                        data = data),
           error = function(e) NULL
         )
         if (!is.null(nxt)) {
