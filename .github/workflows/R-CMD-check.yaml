@@ -4,15 +4,20 @@ on:
   # A commit that only touches the generated house-style artifact cannot change
   # the package: .claude is in .Rbuildignore, so it is excluded from the built
   # package, and no step in this workflow reads it from the checkout. Running
-  # this on such a commit burns runner minutes and queues ahead of checks that
-  # can actually fail.
+  # this on such a commit burns runner minutes, so pushes still skip it.
+  #
+  # PULL REQUESTS DO NOT SKIP IT, AND MUST NOT. These jobs are required status
+  # checks on the default branch. A required check that never runs never
+  # reports, and a check that never reports can never pass -- so a pull request
+  # touching only .claude/** would be permanently unmergeable. That is not a
+  # hypothetical shape: `chore: recompose the house style artifact` commits
+  # touch exactly that one file and reach main through a pull request. The
+  # runner minutes are the price of the gate.
   push:
     paths-ignore:
       - '.claude/**'
     branches: [main, master]
   pull_request:
-    paths-ignore:
-      - '.claude/**'
 
 name: R-CMD-check.yaml
 

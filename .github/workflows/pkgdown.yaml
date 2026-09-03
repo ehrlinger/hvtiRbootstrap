@@ -3,15 +3,18 @@
 on:
   # A commit that only touches the generated house-style artifact cannot change
   # the package: .claude is in .Rbuildignore, so it never reaches the build.
-  # Running this on such a commit burns runner minutes and queues ahead of
-  # checks that can actually fail.
+  # Running this on such a commit burns runner minutes, so pushes still skip
+  # it.
+  #
+  # PULL REQUESTS DO NOT SKIP IT, AND MUST NOT, for the reason spelled out in
+  # R-CMD-check.yaml: this is a required status check, and a required check that
+  # never runs can never pass, so a .claude/**-only pull request would be
+  # permanently unmergeable.
   push:
     paths-ignore:
       - '.claude/**'
     branches: [main, master]
   pull_request:
-    paths-ignore:
-      - '.claude/**'
   release:
     types: [published]
   workflow_dispatch:
