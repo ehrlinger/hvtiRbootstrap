@@ -147,10 +147,24 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
   **automatic Copilot code review** on every PR. A rejected push comes from the server, not a
   local hook.
   ⚠️ This entry was wrong until 2026-09-03 and is now read from the API rather than from
-  memory. It said the ruleset requires **zero approvals** and that `require_code_owner_review`
-  is set but inert; neither is true. `required_approving_review_count` is **1** and
-  `require_code_owner_review` is **false**, so a PR does *not* merge unreviewed.
-  `require_extra_approval_for_unattributed_changes` is also on.
+  memory. It had said **zero approvals**; the ruleset in fact required **1**, which on a
+  single-maintainer repo nobody can satisfy -- GitHub forbids self-approval, and Copilot
+  only ever leaves `COMMENTED`, never `APPROVED`. Every merge was therefore an `--admin`
+  override. `required_approving_review_count` was set to **0** on 2026-09-03 so that
+  `gh pr merge` works normally. `require_code_owner_review` is `false` (and there is still
+  no `CODEOWNERS` file), while `require_extra_approval_for_unattributed_changes` is `true`.
+  ⚠️ **The maintainer already bypasses this ruleset completely.** The single bypass actor is
+  `RepositoryRole` 5 -- admin -- at mode `always`, and
+  `GET /repos/:o/:r/rulesets/rule-suites` shows `result=bypass` for every one of the
+  maintainer's updates to `main`. Bypass governs the **ref update**; the approval
+  requirement was enforced separately at **merge** time, which is why a full bypass still
+  left `--admin` as the only way through. Adding a bypass actor would have been a no-op.
+  ⚠️ **CI does not gate merges.** There is no `required_status_checks` rule. All nine
+  workflows run on a pull request and none of them blocks it, so a red `R CMD check` is as
+  mergeable as a green one. The approval count was the only gate, and it was the one nobody
+  could satisfy. Adding `required_status_checks` (`lint`, `house-style`, `pkgdown`, the five
+  `R-CMD-check` jobs; not `test-coverage`, which fails on codecov network and token
+  problems) is the change that would actually protect the branch, and it has not been made.
   ⚠️ **An approval survives later pushes, and Copilot does not re-review them.**
   `dismiss_stale_reviews_on_push` and `require_last_push_approval` are both `false`, and the
   `copilot_code_review` rule sets `review_on_push: false`. So a pull request can be reviewed,
