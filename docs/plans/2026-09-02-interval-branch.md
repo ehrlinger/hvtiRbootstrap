@@ -116,7 +116,8 @@ test_that(".boot_resample keeps n_rep results and counts every attempt", {
 
   expect_length(r$results, 4L)
   expect_equal(unlist(r$results), c(1, 2, 4, 5))
-  expect_equal(r$n_attempts, 6L)
+  # Draws 1, 2, 3 (fails), 4, 5 -- four kept in five attempts.
+  expect_equal(r$n_attempts, 5L)
 })
 
 test_that(".boot_resample stops at max_attempts and says what it managed", {
