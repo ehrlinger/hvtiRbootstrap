@@ -110,7 +110,7 @@ the two is not learning a second vocabulary.
 against a schema. That is the right pattern for parity here too, and it is
 worth copying rather than inventing.
 
-**Do not take the fit handling.** This is where the two genuinely part. It
+**Do not take the fit handling.** This is where the two genuinely part ways. It
 reads `$fit$theta`, `$fit$objective` and `$fit$converged`, calls
 `.hzr_refit_blocker()` to decide whether a base fit can be refit at all, and
 subtracts `.hzr_stepwise_shape_count()` from the parameter count. None of that
