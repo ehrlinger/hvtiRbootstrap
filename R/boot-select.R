@@ -127,31 +127,22 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     attr(stats::terms(formula, data = data), "term.labels")
   })
 
-  fits <- vector("list", n_rep)
-  kept <- 0L
-  attempts <- 0L
   .t0 <- proc.time()[["elapsed"]]
-  # %bootreg's loop: keep resampling until n_rep VALID models exist. A failed
-  # fit is redrawn in place and does not count toward n_rep, only toward
-  # attempts -- the macro reports both.
-  #
-  # D3: the budget is ours, not the macro's. %bootreg would spin here forever
-  # when no replicate ever fits; that is a hang with no diagnostic under
-  # R CMD check, so we stop and say what we managed. max_attempts = Inf is the
-  # documented way back to the macro's behaviour.
-  while (kept < n_rep) {
-    if (attempts >= max_attempts)
-      stop("`boot_select()` gave up after ", attempts, " attempts with ",
-           kept, " valid models of ", n_rep, " requested. The model could not ",
-           "be fitted on most replicates; check the formula and the data, or ",
-           "raise `max_attempts`.", call. = FALSE)
-    attempts <- attempts + 1L
-    idx <- sample.int(n, size = draw, replace = TRUE)
-    cf <- fitter(data[idx, , drop = FALSE], formula, ctrl)
-    if (is.null(cf)) next
-    kept <- kept + 1L
-    fits[[kept]] <- cf
-  }
+  # The loop moved to .boot_resample(), which %BNMNR shares. The comments that
+  # were here -- why a failed fit is redrawn without counting, and why the
+  # attempt budget is ours rather than the macro's -- live there now.
+  drawn <- .boot_resample(
+    draw = function() {
+      data[sample.int(n, size = draw, replace = TRUE), , drop = FALSE]
+    },
+    fit  = function(d) fitter(d, formula, ctrl),
+    n_rep = n_rep, max_attempts = max_attempts,
+    caller = "boot_select", noun = "models",
+    hint = paste0("The model could not be fitted on most replicates; check ",
+                  "the formula and the data, or raise `max_attempts`.")
+  )
+  fits <- drawn$results
+  attempts <- drawn$n_attempts
 
   # Columns are the offered terms plus whatever the fitters actually returned.
   # "(Intercept)" is NOT hardcoded: Cox models have none, and manufacturing one
