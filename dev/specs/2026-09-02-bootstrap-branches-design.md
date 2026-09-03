@@ -303,7 +303,8 @@ Extends the 2026-08-14 table; the existing rows are unchanged.
 The last row is testable now, before the branch exists, and needs no cohort
 data: a checked-in matrix of replicate estimates and the five percentiles SAS
 returns for it is the whole oracle. That fixture should be captured while the
-SAS licence is live - it expires **2026-09-29**.
+SAS licence is live - it expires **2027-09**, not the 2026-09-29 this file
+originally carried from the 2026-08-14 spec.
 
 ## Downstream
 

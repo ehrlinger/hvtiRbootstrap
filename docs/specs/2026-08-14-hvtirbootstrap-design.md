@@ -11,7 +11,8 @@ The CORR bootstrap macros do model building by resampling: fit a model on each
 of ~1000 bootstrap replicates, record which variables survive selection, and
 report how often each appeared. Thirty-one files in `~/Documents/macro.library`
 implement this. There is no R equivalent, and the institutional SAS licence
-expires **2026-09-29**.
+expires **2027-09** (corrected 2026-09-03; this file
+originally said 2026-09-29, which was wrong).
 
 This package is their destination. This spec says what it should be; it does not
 port anything.
