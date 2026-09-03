@@ -62,15 +62,22 @@
 # frame that already has that column is refused rather than overwritten: the
 # caller's statistic would otherwise read a column that no longer means what
 # they wrote.
-.draw_units <- function(data, id, n_units) {
-  units <- unique(data[[id]])
-  drawn <- sample(units, size = n_units, replace = TRUE)
-  rows <- lapply(seq_along(drawn), function(k) {
-    d <- data[data[[id]] == drawn[[k]], , drop = FALSE]
-    d[[".boot_unit"]] <- k
-    d
-  })
-  out <- do.call(rbind, rows)
+#
+# `idx_by_unit` is the row indices for each unit, precomputed once by the
+# caller with split(). Drawing sample.int() POSITIONS rather than
+# sample()-ing the id values themselves means a single unit can never be
+# misread as a range -- sample(7, ..., replace = TRUE) on one numeric id >= 1
+# draws from 1:7, not "7" repeated, which is exactly the crash this avoids.
+# Subsetting `data` once with the concatenated indices, instead of once per
+# drawn unit, is what keeps this linear in the resample size rather than
+# quadratic.
+.draw_units <- function(data, idx_by_unit, n_units) {
+  drawn <- idx_by_unit[sample.int(length(idx_by_unit), size = n_units,
+                                  replace = TRUE)]
+  out <- data[unlist(drawn, use.names = FALSE), , drop = FALSE]
+  # rep() over the drawn units' sizes gives each DRAW its own id, so a unit
+  # drawn twice becomes two units.
+  out[[".boot_unit"]] <- rep(seq_along(drawn), lengths(drawn))
   rownames(out) <- NULL
   out
 }
@@ -182,6 +189,12 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
            "this function gives the redrawn unit. Rename it: overwriting ",
            "it would change what `statistic` reads.", call. = FALSE)
     }
+    if (anyNA(data[[id]])) {
+      stop("`id` column `", id, "` contains NA. A unit with no identity ",
+           "cannot be resampled, and split() drops those rows silently -- ",
+           "they would vanish from every replicate without a word.",
+           call. = FALSE)
+    }
   }
   # The rationale for having no coverage argument is that a function taking
   # no level cannot be handed 95 where it wanted 0.95. `...` goes to
@@ -201,14 +214,15 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
-  n_units <- if (is.null(id)) n else length(unique(data[[id]]))
+  idx_by_unit <- if (is.null(id)) NULL else split(seq_len(n), data[[id]])
+  n_units <- if (is.null(id)) n else length(idx_by_unit)
   n_draw <- max(1L, round(n_units * fraction))
   draw_one <- if (is.null(id)) {
     function() {
       data[sample.int(n, size = n_draw, replace = TRUE), , drop = FALSE]
     }
   } else {
-    function() .draw_units(data, id, n_draw)
+    function() .draw_units(data, idx_by_unit, n_draw)
   }
   .t0 <- proc.time()[["elapsed"]]
 

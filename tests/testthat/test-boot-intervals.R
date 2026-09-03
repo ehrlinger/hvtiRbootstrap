@@ -282,6 +282,30 @@ test_that("id must name a column, and .boot_unit must not already exist", {
                "\\.boot_unit")
 })
 
+test_that("a single unit, numeric id >= 1, avoids sample()'s footgun", {
+  # sample(units, ...) misreads a length-1 numeric id >= 1 as sample(1:id,
+  # ...): a single patient coded 7 would draw from 1:7 and match no rows.
+  # sample.int() over positions, not values, cannot make that mistake.
+  d <- data.frame(pt = rep(7, 4), x = 1:4)
+  est <- function(dd, ...) c(m = mean(dd$x))
+
+  r <- boot_predict_ci(d, est, n_rep = 5, id = "pt", seed = 1)
+
+  expect_equal(r$n_rep, 5L)
+  expect_false(anyNA(r$estimates))
+  expect_equal(r$control$n_units, 1L)
+})
+
+test_that("an id column containing NA is refused", {
+  # split() drops NA-grouped rows silently. An id-less unit is meaningless
+  # either way, but silently dropping rows from a resample is worse than
+  # refusing outright.
+  d <- data.frame(pt = c(1, 2, NA, 2), x = 1:4)
+  est <- function(dd, ...) c(m = mean(dd$x))
+
+  expect_error(boot_predict_ci(d, est, n_rep = 2, id = "pt"), "NA")
+})
+
 test_that("the control record names the resampling unit", {
   d <- data.frame(pt = rep(1:4, each = 2), x = 1)
   est <- function(dd, ...) c(m = mean(dd$x))
