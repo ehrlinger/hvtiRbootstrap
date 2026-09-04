@@ -1,6 +1,14 @@
 # P-value stepwise implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **STATUS: SHIPPED in 0.9.3. This plan is a historical record, not work to do.** Every
+> step below is ticked because the work landed; the checkboxes are kept so the plan
+> reads as it was executed. Do not reimplement any of it -- read `NEWS.md` under
+> `# hvtiRbootstrap 0.9.3` for what actually shipped, and the source for how.
+
+> **For agentic workers -- SPENT, see the STATUS banner above.** This plan was executed
+> with superpowers:subagent-driven-development and every step below is ticked. The
+> original instruction is kept as a record of how the work was run, not as an
+> instruction to run it again. Do not execute this plan.
 
 **Goal:** Replace `stats::step()` in the three fitters with a p-value stepwise
 that matches `SELECTION=STEPWISE`, so that `sle`/`sls` actually select and a
@@ -105,7 +113,7 @@ takes the caller's formula as the scope.
 - Both return `NA_real_` for a term whose test cannot be computed, and never
   error on a singular fit. Task 2 and Task 3 call them.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/testthat/test-stepwise.R`:
 
@@ -183,13 +191,13 @@ test_that("an uncomputable test is NA, not an error", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "stepwise")'`
 
 Expected: FAIL with `could not find function ".pv_enter_p"`.
 
-- [ ] **Step 3: Write the dispatchers**
+- [x] **Step 3: Write the dispatchers**
 
 Create `R/stepwise.R`:
 
@@ -281,7 +289,7 @@ Create `R/stepwise.R`:
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "stepwise")'`
 
@@ -289,7 +297,7 @@ Expected: PASS. Then lint: the code above was checked with
 `lintr::lint()` before this plan was written and is clean, so any lint you see
 is something you introduced.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/stepwise.R tests/testthat/test-stepwise.R
@@ -319,7 +327,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   `"rao"` or `"lr"` and `remove` is `"f"` or `"wald"`. Returns a fitted model.
   Task 3 calls it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-stepwise.R`:
 
@@ -447,13 +455,13 @@ test_that(".pv_stepwise drives glm and coxph, not only lm", {
 })
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "stepwise")'`
 
 Expected: FAIL, `could not find function ".pv_stepwise"`.
 
-- [ ] **Step 3: Write the driver**
+- [x] **Step 3: Write the driver**
 
 Append to `R/stepwise.R`:
 
@@ -547,12 +555,12 @@ Append to `R/stepwise.R`:
 }
 ```
 
-- [ ] **Step 4: Run to verify they pass, then the whole suite**
+- [x] **Step 4: Run to verify they pass, then the whole suite**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "stepwise")'`
 Then: `Rscript -e 'devtools::test()'` - 0 failures.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/stepwise.R tests/testthat/test-stepwise.R
@@ -580,7 +588,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - `.maybe_step(fit, select, data, enter, remove)` gains the two criterion
   arguments. Each fitter passes its own and nothing else changes about them.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-fitters.R`:
 
@@ -633,14 +641,14 @@ test_that("select = 'none' still fits the full model", {
 })
 ```
 
-- [ ] **Step 2: Run to verify the first test fails**
+- [x] **Step 2: Run to verify the first test fails**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "fitters")'`
 
 Expected: the `sle = 0` test FAILS - today `sle` is ignored, so `x1` is
 selected in every replicate.
 
-- [ ] **Step 3: Rewrite `.maybe_step()`**
+- [x] **Step 3: Rewrite `.maybe_step()`**
 
 In `R/fitters.R`, replace `.maybe_step()` entirely:
 
@@ -661,7 +669,7 @@ that arithmetic. Do not leave it in `R/fitters.R` unreferenced; `lintr` will
 not complain but a dead internal is exactly the drift this package's comments
 warn about. Keep its explanatory comment wherever the rule ends up.
 
-- [ ] **Step 4: Pin each fitter's criterion**
+- [x] **Step 4: Pin each fitter's criterion**
 
 Three one-line changes in `R/fitters.R`:
 
@@ -677,7 +685,7 @@ Three one-line changes in `R/fitters.R`:
       .coefs(.maybe_step(fit, select, data, enter = "lr", remove = "wald"))
 ```
 
-- [ ] **Step 5: Register the Cox divergence in roxygen**
+- [x] **Step 5: Register the Cox divergence in roxygen**
 
 In `fit_cox()`'s roxygen, add to `@details`:
 
@@ -696,7 +704,7 @@ longer say the criteria are "carried for interface fidelity" and that
 `stats::step()` selects on AIC. They now select. Read the existing text and
 replace only the sentences that are now false.
 
-- [ ] **Step 6: Run everything**
+- [x] **Step 6: Run everything**
 
 ```
 Rscript -e 'devtools::load_all("."); devtools::test(filter = "fitters")'
@@ -713,7 +721,7 @@ in your report. Where one breaks because the shape changed, stop and report.
 zero-length-selection case in `.coefs()`, and the `select = "none"` path must
 all behave exactly as before.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add R/fitters.R R/stepwise.R R/boot-select.R man/ tests/
@@ -745,7 +753,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 #31 is a performance claim, and it is closed by a measurement or not at all.
 
-- [ ] **Step 1: Write the benchmark**
+- [x] **Step 1: Write the benchmark**
 
 Create `dev/bench/2026-09-03-stepwise-scaling.R`:
 
@@ -782,7 +790,7 @@ cat(sprintf("implied at n_rep = 500, 172 candidates: %.1f hours\n",
             500 * secs[length(secs)] / 3600))
 ```
 
-- [ ] **Step 2: Run it and record the result**
+- [x] **Step 2: Run it and record the result**
 
 Run: `Rscript dev/bench/2026-09-03-stepwise-scaling.R`
 
@@ -791,7 +799,7 @@ slope is not materially below 3.72, stop and report it** - the plan has not
 achieved its goal and the driver needs looking at rather than the number
 massaging.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add dev/bench/2026-09-03-stepwise-scaling.R
@@ -812,7 +820,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Modify: `NEWS.md`, `AGENTS.md`
 - Modify: `dev/specs/2026-09-03-pvalue-stepwise-design.md` (its checklist)
 
-- [ ] **Step 1: `NEWS.md`**
+- [x] **Step 1: `NEWS.md`**
 
 Under the standing `# hvtiRbootstrap (unreleased)` heading, matching the
 narrative voice of the bullets already there. It must say all four of these:
@@ -840,7 +848,7 @@ boundary are not comparable; and the Cox entry divergence.
   mean what `SLE=` and `SLS=` mean in the job being ported.
 ```
 
-- [ ] **Step 2: `AGENTS.md`**
+- [x] **Step 2: `AGENTS.md`**
 
 Read the "Rules for this repo" list, then add one bullet in its voice:
 
@@ -856,11 +864,11 @@ Read the "Rules for this repo" list, then add one bullet in its voice:
   filed for.
 ```
 
-- [ ] **Step 3: Tick the spec's checklist** in
+- [x] **Step 3: Tick the spec's checklist** in
 `dev/specs/2026-09-03-pvalue-stepwise-design.md` for what Tasks 1-4 delivered.
 Leave the parity items unticked - the production harvest is not in this plan.
 
-- [ ] **Step 4: Full release gate**
+- [x] **Step 4: Full release gate**
 
 ```
 Rscript -e 'devtools::document()'
@@ -877,7 +885,7 @@ cd "$D" && R CMD build pkg && R CMD check --no-manual hvtiRbootstrap_*.tar.gz
 
 Expected 0 errors / 0 warnings / 0 notes.
 
-- [ ] **Step 5: Commit and stop**
+- [x] **Step 5: Commit and stop**
 
 ```bash
 git add NEWS.md AGENTS.md dev/specs/2026-09-03-pvalue-stepwise-design.md man/

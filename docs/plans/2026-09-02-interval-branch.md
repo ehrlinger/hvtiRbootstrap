@@ -1,6 +1,14 @@
 # Interval branch implementation plan - `boot_predict_ci()`
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **STATUS: SHIPPED in 0.9.3. This plan is a historical record, not work to do.** Every
+> step below is ticked because the work landed; the checkboxes are kept so the plan
+> reads as it was executed. Do not reimplement any of it -- read `NEWS.md` under
+> `# hvtiRbootstrap 0.9.3` for what actually shipped, and the source for how.
+
+> **For agentic workers -- SPENT, see the STATUS banner above.** This plan was executed
+> with superpowers:subagent-driven-development and every step below is ticked. The
+> original instruction is kept as a record of how the work was run, not as an
+> instruction to run it again. Do not execute this plan.
 
 **Goal:** Build the interval branch — `boot_predict_ci()` — as the R port of
 `%BNMNR` / `%BNPREV`, alongside the existing selection branch, sharing one
@@ -94,7 +102,7 @@ so the shared loop must reproduce `boot_select()`'s message verbatim, while
 `boot_predict_ci()` needs its own wording. Hence `caller`, `noun` and `hint`
 rather than a hardcoded string.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/testthat/test-boot-resample.R`:
 
@@ -158,13 +166,13 @@ test_that(".boot_resample with max_attempts = Inf does not cap", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-resample")'`
 
 Expected: FAIL with `could not find function ".boot_resample"`.
 
-- [ ] **Step 3: Write `.boot_resample()`**
+- [x] **Step 3: Write `.boot_resample()`**
 
 Create `R/boot-resample.R`:
 
@@ -207,13 +215,13 @@ Create `R/boot-resample.R`:
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-resample")'`
 
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Refactor `boot_select()` onto it**
+- [x] **Step 5: Refactor `boot_select()` onto it**
 
 In `R/boot-select.R`, replace this block:
 
@@ -268,7 +276,7 @@ the closure reads it — but **read the surrounding function before editing** an
 confirm nothing else in `boot_select()` referred to `kept` after the loop. If it
 did, use `n_rep` there: the loop cannot exit with `kept != n_rep`.
 
-- [ ] **Step 6: Confirm `boot_select()` is unchanged in behaviour**
+- [x] **Step 6: Confirm `boot_select()` is unchanged in behaviour**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-select")'`
 
@@ -282,7 +290,7 @@ Then run the whole suite: `Rscript -e 'devtools::test()'` — must be 0 failures
 If any `boot_select()` test fails, the refactor changed behaviour. Fix the
 refactor, never the test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add R/boot-resample.R R/boot-select.R tests/testthat/test-boot-resample.R
@@ -312,7 +320,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   `clu_p95`, one row per column of `m`, in `colnames(m)` order,
   `row.names = NULL`. Task 3 calls it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/testthat/test-boot-intervals.R`:
 
@@ -380,13 +388,13 @@ test_that(".interval_table needs column names, one per quantity", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-intervals")'`
 
 Expected: FAIL with `could not find function ".interval_table"`.
 
-- [ ] **Step 3: Write `.interval_table()`**
+- [x] **Step 3: Write `.interval_table()`**
 
 Create `R/boot-intervals.R` beginning with this. (Task 3 appends
 `boot_predict_ci()` and `.draw_units()` to the same file.)
@@ -445,13 +453,13 @@ Create `R/boot-intervals.R` beginning with this. (Task 3 appends
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-intervals")'`
 
 Expected: PASS, 5 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-intervals.R tests/testthat/test-boot-intervals.R
@@ -484,7 +492,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Produces: `new_boot_intervals()`, `print.boot_intervals()`,
   `summary.boot_intervals()`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-boot-intervals.R`:
 
@@ -626,13 +634,13 @@ test_that("boot_intervals prints its counts and summarises to the bands", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-intervals")'`
 
 Expected: FAIL with `could not find function "boot_predict_ci"`.
 
-- [ ] **Step 3: Write the class**
+- [x] **Step 3: Write the class**
 
 Create `R/boot-intervals-class.R`:
 
@@ -665,7 +673,7 @@ print.boot_intervals <- function(x, ...) {
 summary.boot_intervals <- function(object, ...) object$intervals
 ```
 
-- [ ] **Step 4: Write `boot_predict_ci()`**
+- [x] **Step 4: Write `boot_predict_ci()`**
 
 Append to `R/boot-intervals.R`. Write the roxygen to the house contract: name
 the macro it ports and the parameter it replaces, and mark every divergence
@@ -821,7 +829,7 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-intervals")'`
 
@@ -831,7 +839,7 @@ means the test's `"unused argument|conf"` alternative did not match. In that
 case the statistic errors on the unexpected argument; adjust the test to assert
 the error it actually raises, and **do not** add a `conf` argument.
 
-- [ ] **Step 6: Document and register the export**
+- [x] **Step 6: Document and register the export**
 
 Run: `Rscript -e 'devtools::document()'`
 
@@ -857,13 +865,13 @@ the reference index. Insert this section immediately **after** the
   - boot_predict_ci
 ```
 
-- [ ] **Step 7: Run the whole suite and lint**
+- [x] **Step 7: Run the whole suite and lint**
 
 Run: `Rscript -e 'devtools::test()'` — 0 failures.
 
 Run: `Rscript -e 'l <- lintr::lint_package(); cat("TOTAL LINTS:", length(l), "\n"); print(l)'` — must be 0. Re-install first if you see `object_usage_linter` warnings.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add R/boot-intervals.R R/boot-intervals-class.R NAMESPACE man/ _pkgdown.yml tests/testthat/test-boot-intervals.R
@@ -893,7 +901,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Produces: `.draw_units(data, id, n_units)` — internal. Returns one resampled
   frame with a `.boot_unit` integer column.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-boot-intervals.R`:
 
@@ -970,13 +978,13 @@ test_that("the control record names the resampling unit", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-intervals")'`
 
 Expected: FAIL — `id` is not implemented yet.
 
-- [ ] **Step 3: Write `.draw_units()`**
+- [x] **Step 3: Write `.draw_units()`**
 
 Add to `R/boot-intervals.R`, before `boot_predict_ci()`:
 
@@ -1007,7 +1015,7 @@ Add to `R/boot-intervals.R`, before `boot_predict_ci()`:
 }
 ```
 
-- [ ] **Step 4: Wire it into `boot_predict_ci()`**
+- [x] **Step 4: Wire it into `boot_predict_ci()`**
 
 Replace this guard:
 
@@ -1052,14 +1060,14 @@ frame when `id` is given:
 and pass `draw = draw_one` to `.boot_resample()`. In `control`, set
 `n_units = as.integer(n_units)`.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-intervals")'`
 
 Expected: PASS, including every Task 3 test — the `id = NULL` path must be
 unchanged.
 
-- [ ] **Step 6: Whole suite, lint, commit**
+- [x] **Step 6: Whole suite, lint, commit**
 
 Run: `Rscript -e 'devtools::test()'` and
 `Rscript -e 'l <- lintr::lint_package(); cat("TOTAL LINTS:", length(l), "\n")'`.
@@ -1085,14 +1093,14 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Modify: `README.md`, `AGENTS.md`, `NEWS.md`
 - Modify: `dev/specs/2026-09-02-interval-branch-design.md` (its checklist)
 
-- [ ] **Step 1: Update `README.md`**
+- [x] **Step 1: Update `README.md`**
 
 The README's "Two branches, one resampling loop" section currently ends by
 saying the interval branch is specified and not yet built. Read it, then replace
 that sentence so it describes what now ships, naming `boot_predict_ci()` and
 keeping the section's existing voice. Do not restructure the section.
 
-- [ ] **Step 2: Update `AGENTS.md`**
+- [x] **Step 2: Update `AGENTS.md`**
 
 Its branch-split bullet says the interval branch "is specified ... and not
 built". Read the bullet, then correct that clause to name `boot_predict_ci()`
@@ -1105,7 +1113,7 @@ and `R/boot-intervals.R`. Add one sentence to the same bullet:
   rule across the branch line in either direction.
 ```
 
-- [ ] **Step 3: Add the `NEWS.md` bullets**
+- [x] **Step 3: Add the `NEWS.md` bullets**
 
 Under the standing `# hvtiRbootstrap (unreleased)` heading, matching the
 narrative voice of the bullets already there:
@@ -1134,12 +1142,12 @@ narrative voice of the bullets already there:
   than two copies. `boot_select()`'s behaviour is unchanged.
 ```
 
-- [ ] **Step 4: Tick the spec's checklist**
+- [x] **Step 4: Tick the spec's checklist**
 
 In `dev/specs/2026-09-02-interval-branch-design.md`, tick the "Definition of
 done" items that Tasks 1-4 delivered.
 
-- [ ] **Step 5: Run the full release gate**
+- [x] **Step 5: Run the full release gate**
 
 ```
 Rscript -e 'devtools::document()'
@@ -1165,7 +1173,7 @@ Rscript -e 'pkgdown::build_site(devel = FALSE, preview = FALSE)'
 
 Expected: no error about a topic missing from the index.
 
-- [ ] **Step 6: Commit and stop**
+- [x] **Step 6: Commit and stop**
 
 ```bash
 git add README.md AGENTS.md NEWS.md dev/specs/2026-09-02-interval-branch-design.md man/

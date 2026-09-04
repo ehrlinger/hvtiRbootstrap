@@ -94,14 +94,23 @@ three `%bootreg` already covers and which need no external engine beyond
 
 **Deferred, each its own spec:**
 
-- The hazard fitter. Needs `TemporalHazard`, and the `_CP_*evnt` /`_tvc`
-  variants encode competing-risks and time-varying-covariate structures that
-  deserve reading before an API is fixed.
-- The quantile fitter (`quantreg`).
-- `boot_predict_ci()` and the 11-file CI family. A separate core with a separate
-  API; folding it into v1 would force one of the two into the wrong shape.
-- `logitlasso.sas`. Penalised selection is a different selection mechanism, not
-  a fitter.
+- The hazard fitter (hvtiRbootstrap#9, hvtiRbootstrap#2). Needs
+  `TemporalHazard`, and the `_CP_*evnt` /`_tvc` variants encode
+  competing-risks and time-varying-covariate structures that deserve reading
+  before an API is fixed.
+- The quantile fitter (`quantreg`) (hvtiRbootstrap#16).
+- `logitlasso.sas` (hvtiRbootstrap#48). Penalised selection is a different
+  selection mechanism, not a fitter: `%logitlasso` runs one `PROC HPGENSELECT`
+  `BY replicate` rather than fitting per replicate, carries its own
+  standardization and imputation, and has no entry or removal p-value, so
+  `sle`/`sls` would go inert on that path.
+
+**No longer deferred:** `boot_predict_ci()` and the CI family **shipped in
+0.9.3** on the interval branch, in `R/boot-intervals.R`. It was deferred here
+because a separate core with a separate API would have forced one of the two
+into the wrong shape - that reasoning held, and the answer was a second branch
+rather than a second package. The parity table above already reflects this.
+Do not reimplement it.
 
 ## Testing
 

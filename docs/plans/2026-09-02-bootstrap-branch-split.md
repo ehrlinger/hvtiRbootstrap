@@ -1,6 +1,14 @@
 # Bootstrap branch split - selection-side changes
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **STATUS: SHIPPED in 0.9.3. This plan is a historical record, not work to do.** Every
+> step below is ticked because the work landed; the checkboxes are kept so the plan
+> reads as it was executed. Do not reimplement any of it -- read `NEWS.md` under
+> `# hvtiRbootstrap 0.9.3` for what actually shipped, and the source for how.
+
+> **For agentic workers -- SPENT, see the STATUS banner above.** This plan was executed
+> with superpowers:subagent-driven-development and every step below is ticked. The
+> original instruction is kept as a record of how the work was run, not as an
+> instruction to run it again. Do not execute this plan.
 
 **Goal:** Rename the pooled summary's mislabelled interval columns, make
 `boot_bag()` and `boot_pool_chunks()` build `$boot$summary` through one
@@ -97,7 +105,7 @@ heading. `DESCRIPTION` stays `0.9.2`.
   `min`, `max`, `sel_q025`, `sel_q975`, in that order, `row.names = NULL`.
   Tasks 2 and 3 both call it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-boot-summary.R`:
 
@@ -152,13 +160,13 @@ test_that(".bag_summary yields NA, not an error, for a term never selected", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-summary")'`
 
 Expected: FAIL, with `could not find function ".bag_summary"`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Append to `R/boot-summary.R`:
 
@@ -210,14 +218,14 @@ Append to `R/boot-summary.R`:
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-summary")'`
 
 Expected: PASS, all tests in the file, including the pre-existing
 `boot_summary()` tests which must be unaffected.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-summary.R tests/testthat/test-boot-summary.R
@@ -246,7 +254,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Produces: a bag whose `$boot$summary` has those nine columns. Task 3 asserts
   the pooled shape equals this one.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/testthat/test-boot-bag.R`:
 
@@ -272,14 +280,14 @@ test_that("the bag's summary is keyed parameter and carries the quantiles", {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-bag")'`
 
 Expected: FAIL on the `names()` comparison - the actual value is
 `c("variable", "n", "pct", "mean", "sd", "min", "max")`.
 
-- [ ] **Step 3: Change the one line that builds it**
+- [x] **Step 3: Change the one line that builds it**
 
 In `R/boot-bag.R`, inside the `bag <- list(...)` call, change:
 
@@ -296,7 +304,7 @@ to:
 `m` is already in scope - it is `x$coefficients`, assigned earlier in the
 function.
 
-- [ ] **Step 4: Update the `@return` roxygen**
+- [x] **Step 4: Update the `@return` roxygen**
 
 In `R/boot-bag.R`, replace the whole `@return` block with exactly this. The
 existing sentences about `dropped` and about validation are preserved; the
@@ -318,21 +326,21 @@ summary-shape sentences are what is new.
 #'   report will refuse three chunks into a render.
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-bag")'`
 
 Expected: PASS. The pre-existing `boot_bag()` tests must also still pass -
 none of them reads `$boot$summary` by column name.
 
-- [ ] **Step 6: Regenerate the documentation**
+- [x] **Step 6: Regenerate the documentation**
 
 Run: `Rscript -e 'devtools::document()'`
 
 Expected: `man/boot_bag.Rd` is rewritten. `NAMESPACE` must be unchanged - this
 task adds no export.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add R/boot-bag.R man/boot_bag.Rd tests/testthat/test-boot-bag.R
@@ -362,7 +370,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Produces: a pooled bag whose `$boot$summary` has the same nine columns as
   Task 2's bagged one.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-boot-pool.R`:
 
@@ -399,7 +407,7 @@ test_that("the pooled summary no longer claims to carry a confidence interval", 
 `tests/testthat/test-boot-pool.R`; read it before writing these tests and use
 it exactly as the existing tests in that file do.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-pool")'`
 
@@ -407,7 +415,7 @@ Expected: FAIL - the pooled names are
 `c("parameter", "n", "pct", "mean", "sd", "min", "max", "ci_lower", "ci_upper")`
 against the bagged nine, and `ci_lower` is present.
 
-- [ ] **Step 3: Replace the hand-rolled summary with the shared constructor**
+- [x] **Step 3: Replace the hand-rolled summary with the shared constructor**
 
 In `R/boot-pool.R`, delete this block entirely:
 
@@ -445,7 +453,7 @@ and put this in its place:
 fixed across the pooled table that is the same order as the deleted
 `order(-summ$pct, summ$parameter)`.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-pool")'`
 
@@ -453,14 +461,14 @@ Expected: PASS, including the pre-existing test "the pooled summary is
 recomputed, not averaged", which asserts `pct` and `n` by `parameter` and must
 be unaffected.
 
-- [ ] **Step 5: Run the whole suite**
+- [x] **Step 5: Run the whole suite**
 
 Run: `Rscript -e 'devtools::test()'`
 
 Expected: PASS. `boot_frequencies()` rebuilds from `$boot$replicates` and never
 reads `$boot$summary`, so nothing else in the package depends on either shape.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add R/boot-pool.R tests/testthat/test-boot-pool.R
@@ -489,7 +497,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   looser than `.bag_summary()`'s output - see Refinement 1 above.
 - Produces: no new function. `boot_validate()` gains one failure mode.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/testthat/test-boot-validate.R`:
 
@@ -521,14 +529,14 @@ test_that("the three columns a report reads are enough", {
 })
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-validate")'`
 
 Expected: the first two FAIL - no error is raised, because the current check
 only asks whether the `summary` slot is present.
 
-- [ ] **Step 3: Add the check**
+- [x] **Step 3: Add the check**
 
 In `R/boot-validate.R`, in the `else` branch that currently reads:
 
@@ -582,7 +590,7 @@ replace it with:
 
 Keep every line at or under 80 characters.
 
-- [ ] **Step 4: Update the `@details` roxygen**
+- [x] **Step 4: Update the `@details` roxygen**
 
 In `R/boot-validate.R`, in the `@details` block that describes the `boot`
 element, add this sentence after the existing description of the four nested
@@ -596,13 +604,13 @@ fields:
 #' than a bag's, and is refused by name.
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `Rscript -e 'devtools::load_all("."); devtools::test(filter = "boot-validate")'`
 
 Expected: PASS.
 
-- [ ] **Step 6: Run the whole suite**
+- [x] **Step 6: Run the whole suite**
 
 Run: `Rscript -e 'devtools::test()'`
 
@@ -613,7 +621,7 @@ bag - in `test-boot-frequencies.R`, `test-boot-health.R`,
 any of them fails, the check is too strict: re-read Refinement 1 rather than
 editing the fixture.
 
-- [ ] **Step 7: Regenerate the documentation and commit**
+- [x] **Step 7: Regenerate the documentation and commit**
 
 Run: `Rscript -e 'devtools::document()'`
 
@@ -642,7 +650,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: the behaviour delivered by Tasks 1-4.
 - Produces: nothing further tasks depend on. This is the last task.
 
-- [ ] **Step 1: Add the branch-split rule to `AGENTS.md`**
+- [x] **Step 1: Add the branch-split rule to `AGENTS.md`**
 
 In `AGENTS.md`, under "Rules for this repo", add this bullet after the
 `boot_clusters()` `n_any` bullet:
@@ -668,7 +676,7 @@ In `AGENTS.md`, under "Rules for this repo", add this bullet after the
   never R's `type = 7` default.
 ```
 
-- [ ] **Step 2: Add the branch split to `README.md`**
+- [x] **Step 2: Add the branch split to `README.md`**
 
 Read `README.md` first and match its existing section structure. Add a short
 section after whatever section introduces the six exports, worded for the CORR
@@ -694,7 +702,7 @@ hardcode `PCTLPTS=2.5 16 50 84 97.5` and return both the 95% and the 68% band
 in columns named for their coverage, so there is no level to mislabel.
 ```
 
-- [ ] **Step 3: Add the `NEWS.md` bullets**
+- [x] **Step 3: Add the `NEWS.md` bullets**
 
 In `NEWS.md`, under the existing `# hvtiRbootstrap (unreleased)` heading, add:
 
@@ -726,13 +734,13 @@ In `NEWS.md`, under the existing `# hvtiRbootstrap (unreleased)` heading, add:
 Do **not** change `DESCRIPTION`'s `Version:`, and do not add a new version
 heading. See Refinement 2.
 
-- [ ] **Step 4: Correct the spec's checklist**
+- [x] **Step 4: Correct the spec's checklist**
 
 In `dev/specs/2026-09-02-bootstrap-branches-design.md`, in the "Definition of
 done" section, tick the items Tasks 1-4 delivered and replace the final line:
 
 ```markdown
-- [ ] Patch bump and `NEWS.md` bullets under the current heading
+- [x] Patch bump and `NEWS.md` bullets under the current heading
 ```
 
 with:
@@ -749,7 +757,7 @@ Also add, under "Two refinements", a note that `boot_validate()` checks three
 columns rather than nine, matching Refinement 1 in
 `docs/plans/2026-09-02-bootstrap-branch-split.md`.
 
-- [ ] **Step 5: Run the full release gate**
+- [x] **Step 5: Run the full release gate**
 
 Run: `Rscript -e 'devtools::document()'`
 
@@ -767,7 +775,7 @@ Then: `Rscript -e 'lintr::lint_package()'`
 
 Expected: no output. Remember the 80-character limit - there is no `.lintr`.
 
-- [ ] **Step 6: Commit and open the PR**
+- [x] **Step 6: Commit and open the PR**
 
 ```bash
 git add AGENTS.md README.md NEWS.md dev/specs/2026-09-02-bootstrap-branches-design.md man/
