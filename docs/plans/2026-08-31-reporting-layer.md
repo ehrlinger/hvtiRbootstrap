@@ -5,7 +5,10 @@
 > reads as it was executed. Do not reimplement any of it -- read `NEWS.md` under
 > `# hvtiRbootstrap 0.9.0` for what actually shipped, and the source for how.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers -- SPENT, see the STATUS banner above.** This plan was executed
+> with superpowers:subagent-driven-development and every step below is ticked. The
+> original instruction is kept as a record of how the work was run, not as an
+> instruction to run it again. Do not execute this plan.
 
 **Goal:** Move the model-agnostic reporting computation out of
 `hvtiRtemplates`' `bh` template and into this package, so `bl`, `br` and `bc`
