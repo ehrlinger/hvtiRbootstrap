@@ -1,5 +1,162 @@
 # Changelog
 
+## hvtiRbootstrap 0.9.3
+
+- **`sle` and `sls` now select, which they never did.** They were
+  accepted, recorded on `$control`, written into a bag as
+  `slentry`/`slstay` and printed by
+  [`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md)
+  in every `bl`/`br`/`bc` report – and never reached the screen, because
+  [`stats::step()`](https://rdrr.io/r/stats/step.html) selects on AIC.
+  AIC retains a term at p \< 0.157 where `sls = 0.05` asks for 1.96
+  standard errors. **Selection frequencies change, and by a lot**:
+  measured against the SAS run of the same data, the old behaviour sat a
+  median 32.7 points away. A bag produced before this release and one
+  produced after are **not comparable**.
+
+- **The screen now starts from no candidates and adds**, as
+  `SELECTION=STEPWISE` does. It previously started from the full model
+  and dropped, which is a different algorithm that can settle on a
+  different set.
+
+- **Each fitter uses its own procedure’s criteria.**
+  [`fit_linear()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_linear.md)
+  tests partial F,
+  [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+  enters on the score chi-square and removes on Wald. **Divergence:**
+  [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+  enters on the likelihood ratio, because R has no score test for a Cox
+  model – `anova.coxph()` accepts `test = "Rao"` and silently ignores
+  it. Removal is Wald, matching `PROC PHREG`.
+
+- No function gained a `criterion` argument, and none will: `sle` and
+  `sls` mean what `SLE=` and `SLS=` mean in the job being ported.
+
+- **The cost curve broke, not just the walltime.**
+  [`stats::step()`](https://rdrr.io/r/stats/step.html) refits every
+  candidate in both directions at every step, which cost roughly the
+  3.72 power of the candidate pool – measured at 0.2s/fit for 10
+  candidates, up to 188.3s/fit at 80. The new driver measures 0.13s/fit
+  at 10 candidates, up to 8.81s/fit at 172, a log-log slope of 1.50. It
+  still refits every remaining candidate at each forward step, the same
+  count [`add1()`](https://rdrr.io/r/stats/add1.html) did – the win is
+  that the search starts from an intercept-only model instead of the
+  full one, and that the backward step for
+  [`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md)
+  and
+  [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
+  is Wald, which needs no refit at all. At `n_rep = 500` and 172
+  candidates that is the difference between about 450 hours and about
+  1.2 hours for the same screen. The exponent is the number that matters
+  – a constant-factor speedup would not have made a 172-candidate,
+  500-replicate screen reachable at all.
+
+- **The interval branch is built.**
+  [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
+  is the R port of `%BNMNR` and `%BNPREV`: it resamples, computes a
+  `statistic` on each replicate, and reports percentile bands. It is not
+  variable selection – nothing is chosen, the replicates are a
+  distribution rather than a vote, and there is no `NA` semantics.
+  `statistic` is the fitter contract with the selection semantics
+  removed: a named numeric vector, or `NULL` when the replicate failed.
+  The names are the quantities banded, so a caller wanting a curve
+  evaluates it on their own grid inside `statistic` – which is what the
+  macro does too, in a `PROC NLMIXED` block the analyst edits.
+
+- **`id` draws whole units and renumbers them.** `%BNMNR` bootstraps
+  patients and assigns `_PTID=_COUNTER` before joining their repeated
+  records, so a patient drawn twice enters the model as two patients.
+  Without that the two copies share a random effect and the resample
+  understates between-unit variance. The redrawn unit is in a
+  `.boot_unit` column.
+
+- **No function in this package takes a coverage level.**
+  [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
+  returns both the 95% and the 68% band in columns named for their
+  coverage – `cll_p95`, `cll_p68`, `median`, `clu_p68`, `clu_p95` –
+  because that is what every `bn.*` macro returns, and a function that
+  takes no level cannot be handed 95 where it wanted 0.95.
+
+- The resampling loop `%bootreg` and `%BNMNR` share is now one internal
+  rather than two copies.
+  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)’s
+  behaviour is unchanged.
+
+- The `NEWS.md` version test skips headings that carry no version, so
+  merged work can sit under this heading without moving `DESCRIPTION`.
+  The test read the first heading in the file and compared it against
+  `DESCRIPTION`, which fails as soon as an unreleased heading is on top.
+  It also reads only level-one headings, matching the family convention
+  settled on 2026-09-01, and no longer accepts `#hvtiRbootstrap`, which
+  CommonMark does not treat as a heading at all.
+
+- **[`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+  no longer reports a confidence interval it never computed.**
+  `ci_lower` and `ci_upper` were quantiles taken over the replicates in
+  which the term was *selected*, because
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  writes `$boot$replicates` with `NA` dropped. For a term chosen in 30%
+  of replicates that was an interval over 30% of them, and the weaker
+  the term, the narrower its interval looked. They are now `sel_q025`
+  and `sel_q975`, named for what they are: a sibling of `mean`, `sd`,
+  `min` and `max`, which are conditional on selection in exactly the
+  same way.
+
+- **[`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  and
+  [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+  now build `$boot$summary` through one constructor**, so the two cannot
+  disagree. They had been building it separately, in two shapes with two
+  different key columns – `variable` from the bag, `parameter` from the
+  pool – so a renderer saw a different shape depending on whether the
+  run happened to be chunked, and
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  contradicted the key that
+  [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)’s
+  own documented example uses. Both now key on `parameter`.
+  [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
+  is unchanged and keeps `variable`: it is the standalone `%SUMBOOT`
+  port, not a bag.
+
+- **[`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+  checks `$boot$summary`’s columns**, not merely that the slot is
+  filled. Nothing in the package reads that slot –
+  [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md)
+  rebuilds from `$boot$replicates` – so without this the two
+  constructors could drift apart indefinitely without a test failing.
+
+- **A bag saved by hvtiRbootstrap 0.9.2 is now refused by the whole
+  reporting layer.**
+  [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)’s
+  new column check requires the key `parameter`, and 0.9.2’s
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  wrote `$boot$summary` keyed `variable` – so
+  [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md),
+  [`boot_dropped()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_dropped.md),
+  [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md),
+  [`boot_provenance()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_provenance.md),
+  [`boot_seeds()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_seeds.md)
+  and
+  [`boot_concepts()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_concepts.md),
+  which all gate on
+  [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+  first, now refuse a bag that release wrote. The numbers in it were
+  never wrong: nothing in the package reads `$boot$summary`, and
+  [`boot_frequencies()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_frequencies.md)
+  rebuilds its table from `$boot$replicates` instead. Fix a saved bag
+  `b` with
+
+  ``` R
+  names(b$boot$summary)[names(b$boot$summary) == "variable"] <- "parameter"
+  ```
+
+  or re-run
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md).
+
+- Quantiles on the selection branch use `stats::quantile(type = 4)`,
+  which is SAS `PROC STDIZE`’s `PCTLDEF=1`, rather than R’s `type = 7`
+  default.
+
 ## hvtiRbootstrap 0.9.2
 
 Finishes 0.9.1’s sweep. That release made every *optional* bag field

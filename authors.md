@@ -10,13 +10,13 @@ Source:
 [`DESCRIPTION`](https://github.com/ehrlinger/hvtiRbootstrap/blob/main/DESCRIPTION)
 
 Ehrlinger J (2026). *hvtiRbootstrap: Bootstrap Model Building for the
-HVTI CORR Group*. R package version 0.9.2,
+HVTI CORR Group*. R package version 0.9.3,
 <https://github.com/ehrlinger/hvtiRbootstrap>.
 
     @Manual{,
       title = {hvtiRbootstrap: Bootstrap Model Building for the HVTI CORR Group},
       author = {John Ehrlinger},
       year = {2026},
-      note = {R package version 0.9.2},
+      note = {R package version 0.9.3},
       url = {https://github.com/ehrlinger/hvtiRbootstrap},
     }
