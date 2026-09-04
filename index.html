@@ -60,8 +60,14 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="hvtirbootstrap">hvtiRbootstrap<a class="anchor" aria-label="anchor" href="#hvtirbootstrap"></a>
 </h1></div>
+<!-- badges: start -->
+
+<p><a href="https://github.com/ehrlinger/hvtiRbootstrap" class="external-link"><img src="https://img.shields.io/github/r-package/v/ehrlinger/hvtiRbootstrap" alt="R package version"></a></p>
+<p><a href="https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/lint.yaml" class="external-link"><img src="https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/lint.yaml/badge.svg" alt="lint"></a> <!-- badges: end --></p>
 <p>Bootstrap model building for the HVTI CORR group - the R port of the SAS <code>%bootreg</code> / <code>%SUMBOOT</code> / <code>%cluster</code> macros.</p>
 <p>Fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared.</p>
+<p><strong>Status: both branches shipped, three extensions deferred.</strong> The selection branch is complete — <code><a href="reference/boot_select.html">boot_select()</a></code>, <code><a href="reference/boot_summary.html">boot_summary()</a></code>, <code><a href="reference/boot_clusters.html">boot_clusters()</a></code> and the three fitters <code><a href="reference/fit_logistic.html">fit_logistic()</a></code>, <code><a href="reference/fit_linear.html">fit_linear()</a></code> and <code><a href="reference/fit_cox.html">fit_cox()</a></code>, with the pooling and reporting layers around them. The interval branch is <code><a href="reference/boot_predict_ci.html">boot_predict_ci()</a></code>, the port of <code>%BNMNR</code> and <code>%BNPREV</code>. What is deferred, and why this is still 0.x: the hazard fitter, the quantile fitter (<a href="https://github.com/ehrlinger/hvtiRbootstrap/issues/16" class="external-link">#16</a>) and penalised selection, each held back for a design pass rather than improvised.</p>
+<p>Know the parity scope before comparing against SAS. <code><a href="reference/boot_summary.html">boot_summary()</a></code> and <code><a href="reference/boot_clusters.html">boot_clusters()</a></code> are specified to match <code>%SUMBOOT</code> and <code>%cluster</code> exactly, and the interval arithmetic is checked against <code>PROC STDIZE PCTLDEF=1</code> by a fixture test. Resampling and model fitting are not parity-tested and cannot be — the two languages draw different samples.</p>
 <p>Destination for 31 macro-library files, assigned by the allocation map in <code>hvtiRtemplates:specs/2026-08-14-macro-allocation-design.md</code>. Design and scope: <code>docs/specs/2026-08-14-hvtirbootstrap-design.md</code>.</p>
 <div class="section level2">
 <h2 id="install">Install<a class="anchor" aria-label="anchor" href="#install"></a>
