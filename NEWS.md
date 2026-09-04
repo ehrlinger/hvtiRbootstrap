@@ -1,4 +1,4 @@
-# hvtiRbootstrap (unreleased)
+# hvtiRbootstrap 0.9.3
 
 * **`sle` and `sls` now select, which they never did.** They were accepted,
   recorded on `$control`, written into a bag as `slentry`/`slstay` and printed
