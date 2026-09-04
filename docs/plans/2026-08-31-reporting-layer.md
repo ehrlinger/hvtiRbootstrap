@@ -1,5 +1,10 @@
 # Bootstrap Reporting Layer Implementation Plan
 
+> **STATUS: SHIPPED in 0.9.0. This plan is a historical record, not work to do.** Every
+> step below is ticked because the work landed; the checkboxes are kept so the plan
+> reads as it was executed. Do not reimplement any of it -- read `NEWS.md` under
+> `# hvtiRbootstrap 0.9.0` for what actually shipped, and the source for how.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Move the model-agnostic reporting computation out of
@@ -100,7 +105,7 @@ defects in this template family share that shape — a field read out of an
 artifact produced by another package — and this function is the one piece of
 this extraction that would have prevented the one that motivated it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```r
 test_that("boot_validate accepts a well-formed bag", {
@@ -158,14 +163,14 @@ every field the contract names: `n_boot`, `seed`, `slentry`, `slstay`,
 `requested` and `usable` scalar values by default so the per-phase test is
 visibly the variation.
 
-- [ ] **Step 2: Run them and watch them fail**
+- [x] **Step 2: Run them and watch them fail**
 
 ```
 Rscript -e 'devtools::test(filter = "boot-validate")'
 ```
 Expected: every test errors with "could not find function `boot_validate`".
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 The specification, in full:
 
@@ -183,14 +188,14 @@ The specification, in full:
   `"n_boot: expected a single value, found length 2"` — because the error a
   study author sees is the only documentation they will read.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```
 Rscript -e 'devtools::test(filter = "boot-validate")'
 ```
 Expected: `FAIL 0`, all tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add R/boot-validate.R tests/testthat/test-boot-validate.R tests/testthat/helper-fixtures.R
@@ -226,12 +231,12 @@ unnamed vector — and assert the returned data frame has the same number of row
 in every case. That last assertion is the one that would have caught the
 original defect.
 
-- [ ] **Step 1: Write the failing tests** (the four shapes above, plus that
+- [x] **Step 1: Write the failing tests** (the four shapes above, plus that
   `boot_provenance()` calls `boot_validate()` and propagates its error)
-- [ ] **Step 2: Run them and watch them fail**
-- [ ] **Step 3: Implement, lifting from the named chunks**
-- [ ] **Step 4: Run the tests**
-- [ ] **Step 5: Commit** — `feat: boot_provenance() and boot_seeds()`
+- [x] **Step 2: Run them and watch them fail**
+- [x] **Step 3: Implement, lifting from the named chunks**
+- [x] **Step 4: Run the tests**
+- [x] **Step 5: Commit** — `feat: boot_provenance() and boot_seeds()`
 
 ---
 
@@ -261,13 +266,13 @@ reimplement it.** What this function adds is `mc_error`, `near_threshold` and
 the optional phase grouping. Reimplementing the frequency count would create a
 second implementation of the one thing this package is parity-tested on.
 
-- [ ] **Step 1: Write the failing tests** — including one asserting
+- [x] **Step 1: Write the failing tests** — including one asserting
   `boot_frequencies(bag)` and `boot_summary(bag$boot$replicates)` agree on `n`
   and `pct` for every term, which pins the no-second-implementation rule
-- [ ] **Step 2: Run them and watch them fail**
-- [ ] **Step 3: Implement**
-- [ ] **Step 4: Run the tests**
-- [ ] **Step 5: Commit** — `feat: boot_frequencies() and boot_dropped()`
+- [x] **Step 2: Run them and watch them fail**
+- [x] **Step 3: Implement**
+- [x] **Step 4: Run the tests**
+- [x] **Step 5: Commit** — `feat: boot_frequencies() and boot_dropped()`
 
 ---
 
@@ -293,12 +298,12 @@ include a replicate selecting two forms of one concept.
 ⚠️ `concept_map` is the study's own vocabulary and stays an `EDIT:` marker in
 the template. This function **receives** it; it must not infer one.
 
-- [ ] **Step 1: Write the failing tests**, including the two-forms-one-replicate
+- [x] **Step 1: Write the failing tests**, including the two-forms-one-replicate
   case above
-- [ ] **Step 2: Run them and watch them fail**
-- [ ] **Step 3: Implement**
-- [ ] **Step 4: Run the tests**
-- [ ] **Step 5: Commit** — `feat: boot_concepts()`
+- [x] **Step 2: Run them and watch them fail**
+- [x] **Step 3: Implement**
+- [x] **Step 4: Run the tests**
+- [x] **Step 5: Commit** — `feat: boot_concepts()`
 
 ---
 
@@ -318,12 +323,12 @@ the chunk was written for, and the test suite must assert it.
 template decides how to present them. But an empty selection must be
 unmistakable in the returned frame, not merely absent from it.
 
-- [ ] **Step 1: Write the failing tests**, including a bag where no replicate
+- [x] **Step 1: Write the failing tests**, including a bag where no replicate
   selected any term
-- [ ] **Step 2: Run them and watch them fail**
-- [ ] **Step 3: Implement**
-- [ ] **Step 4: Run the tests**
-- [ ] **Step 5: Commit** — `feat: boot_health()`
+- [x] **Step 2: Run them and watch them fail**
+- [x] **Step 3: Implement**
+- [x] **Step 4: Run the tests**
+- [x] **Step 5: Commit** — `feat: boot_health()`
 
 ---
 
@@ -332,7 +337,7 @@ unmistakable in the returned frame, not merely absent from it.
 **Files:**
 - Modify: `_pkgdown.yml`, `DESCRIPTION`, `NEWS.md`
 
-- [ ] **Step 1: Add a reference section to `_pkgdown.yml`**
+- [x] **Step 1: Add a reference section to `_pkgdown.yml`**
 
 The existing index is organised by the SAS macro each group ports, with a
 `desc:` explaining when to reach for it. Follow that shape — a new section
@@ -344,7 +349,7 @@ after the summarise group, listing `boot_validate`, `boot_provenance`,
 gate working. Do not add a `destination:` — the workflow passes
 `dest_dir = "pkgdown-site"` explicitly, and `docs/` holds these plans.
 
-- [ ] **Step 2: Run `document()` and check the site builds**
+- [x] **Step 2: Run `document()` and check the site builds**
 
 ```
 Rscript -e 'devtools::document()'
@@ -352,13 +357,13 @@ Rscript -e 'pkgdown::build_site(dest_dir = "pkgdown-site")'
 ```
 Expected: no "topic missing from index" error.
 
-- [ ] **Step 3: Bump the version and write NEWS**
+- [x] **Step 3: Bump the version and write NEWS**
 
 Patch digit only. `DESCRIPTION` has **no `Date:`** — do not add one. One entry
 covering the whole plan, naming what each function replaces in the template and
 why the extraction happened.
 
-- [ ] **Step 4: The full gate**
+- [x] **Step 4: The full gate**
 
 ```
 Rscript -e 'lintr::lint_package()'
@@ -368,7 +373,7 @@ Rscript -e 'devtools::check()'
 Expected: no lints (**80 characters**); `FAIL 0`; `0 errors | 0 warnings |
 0 notes`.
 
-- [ ] **Step 5: Commit, push, open the PR against `main`**
+- [x] **Step 5: Commit, push, open the PR against `main`**
 
 Not stacked. Then confirm scope with
 `gh api repos/ehrlinger/hvtiRbootstrap/compare/main...<branch> --jq '{ahead:.ahead_by, files:[.files[].filename]}'`

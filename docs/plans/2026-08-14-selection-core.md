@@ -1,5 +1,10 @@
 # hvtiRbootstrap v1 - Selection Core Implementation Plan
 
+> **STATUS: SHIPPED in 0.1.0. This plan is a historical record, not work to do.** Every
+> step below is ticked because the work landed; the checkboxes are kept so the plan
+> reads as it was executed. Do not reimplement any of it -- read `NEWS.md` under
+> `# hvtiRbootstrap 0.1.0` for what actually shipped, and the source for how.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Port `%bootreg`, `%SUMBOOT` and `%cluster` into an R package whose selection results can be checked against the SAS originals.
