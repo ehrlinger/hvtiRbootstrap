@@ -1,10 +1,36 @@
 # hvtiRbootstrap
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/ehrlinger/hvtiRbootstrap/graph/badge.svg)](https://app.codecov.io/gh/ehrlinger/hvtiRbootstrap)
+[![active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/badges/latest/active.svg)
+[![pkgdown](https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/pkgdown.yaml)
+
+[![R package version](https://img.shields.io/github/r-package/v/ehrlinger/hvtiRbootstrap)](https://github.com/ehrlinger/hvtiRbootstrap)
+
+[![lint](https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/lint.yaml/badge.svg)](https://github.com/ehrlinger/hvtiRbootstrap/actions/workflows/lint.yaml)
+<!-- badges: end -->
+
 Bootstrap model building for the HVTI CORR group - the R port of the SAS
 `%bootreg` / `%SUMBOOT` / `%cluster` macros.
 
 Fit a model on each of many bootstrap replicates, record which variables
 survive selection, and report how often each appeared.
+
+**Status: both branches shipped, three extensions deferred.** The selection
+branch is complete — `boot_select()`, `boot_summary()`, `boot_clusters()` and
+the three fitters `fit_logistic()`, `fit_linear()` and `fit_cox()`, with the
+pooling and reporting layers around them. The interval branch is
+`boot_predict_ci()`, the port of `%BNMNR` and `%BNPREV`. What is deferred, and
+why this is still 0.x: the hazard fitter, the quantile fitter
+([#16](https://github.com/ehrlinger/hvtiRbootstrap/issues/16)) and penalised
+selection, each held back for a design pass rather than improvised.
+
+Know the parity scope before comparing against SAS. `boot_summary()` and
+`boot_clusters()` are specified to match `%SUMBOOT` and `%cluster` exactly, and
+the interval arithmetic is checked against `PROC STDIZE PCTLDEF=1` by a fixture
+test. Resampling and model fitting are not parity-tested and cannot be — the
+two languages draw different samples.
 
 Destination for 31 macro-library files, assigned by the allocation map in
 `hvtiRtemplates:specs/2026-08-14-macro-allocation-design.md`. Design and scope:
