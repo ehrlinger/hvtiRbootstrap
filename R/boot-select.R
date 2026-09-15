@@ -56,7 +56,7 @@
 #'   the term was not selected. `$control` records the run's own settings --
 #'   `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`, `n_rows`,
 #'   `n_terms`, `elapsed_mins` and the `package` version -- so that a bag
-#'   builder (`boot_bag()`, not yet written) can take a provenance record from
+#'   builder [boot_bag()] can take a provenance record from
 #'   the run rather than from what a caller retypes. `$call` cannot serve
 #'   that purpose: `match.call()` omits every argument left at its default.
 #' @seealso [boot_summary()] for the per-variable selection frequencies, and

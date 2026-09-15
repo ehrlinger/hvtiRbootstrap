@@ -142,6 +142,7 @@ of compute — a run that dies at 90% yields nothing.
 
 | function | does |
 |---|---|
+| `boot_bag()` | assembles one completed selection run with its provenance, replicate table and summary |
 | `boot_pool_chunks()` | folds chunk files into one object of the same shape, refusing chunks that disagree on the data or the screen |
 | `boot_chunk_files()` | finds them, in a deterministic order |
 | `boot_shortfall()` | whether what you pooled is the run you launched — which nothing inside a chunk can know |
@@ -175,7 +176,7 @@ data and no PHI enters this repo.
 
 ## Status
 
-Under development, and at 0.9.0 rather than 1.0.0 deliberately. The selection
+Under development, and at 0.9.4 rather than 1.0.0 deliberately. The selection
 core, chunk pooling and the reporting layer are all in place, with logistic,
 linear and Cox fitters.
 
