@@ -1,4 +1,4 @@
-# hvtiRbootstrap (unreleased)
+# hvtiRbootstrap 0.9.4
 
 * The `boot_select()` help page now describes the shipped `boot_bag()` builder
   instead of saying it has not been written. The README function reference and
