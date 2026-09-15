@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -215,6 +215,10 @@
 </tr></thead>
 <tbody>
 <tr>
+<td><code><a href="reference/boot_bag.html">boot_bag()</a></code></td>
+<td>assembles one completed selection run with its provenance, replicate table and summary</td>
+</tr>
+<tr>
 <td><code><a href="reference/boot_pool_chunks.html">boot_pool_chunks()</a></code></td>
 <td>folds chunk files into one object of the same shape, refusing chunks that disagree on the data or the screen</td>
 </tr>
@@ -305,7 +309,7 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Under development, and at 0.9.0 rather than 1.0.0 deliberately. The selection core, chunk pooling and the reporting layer are all in place, with logistic, linear and Cox fitters.</p>
+<p>Under development, and at 0.9.4 rather than 1.0.0 deliberately. The selection core, chunk pooling and the reporting layer are all in place, with logistic, linear and Cox fitters.</p>
 <p>The hazard and quantile fitters, and penalised selection are each deferred to their own spec — and the hazard fitter is why this is not 1.0.0. Its <code>_CP_*evnt</code> and <code>_tvc</code> variants encode competing-risks and time-varying-covariate structures that deserve reading before an API is fixed, and a 1.0.0 that then grew a whole new fitter family would be making a promise it had not earned.</p>
 </div>
 <div class="section level2">

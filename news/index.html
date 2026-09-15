@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,10 @@
       <small>Source: <a href="https://github.com/ehrlinger/hvtiRbootstrap/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.4" id="hvtirbootstrap-094">hvtiRbootstrap 0.9.4<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-094"></a></h2>
+<ul><li>The <code><a href="../reference/boot_select.html">boot_select()</a></code> help page now describes the shipped <code><a href="../reference/boot_bag.html">boot_bag()</a></code> builder instead of saying it has not been written. The README function reference and displayed development version now agree with the package.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.3" id="hvtirbootstrap-093">hvtiRbootstrap 0.9.3<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-093"></a></h2>
 <ul><li><p><strong><code>sle</code> and <code>sls</code> now select, which they never did.</strong> They were accepted, recorded on <code>$control</code>, written into a bag as <code>slentry</code>/<code>slstay</code> and printed by <code><a href="../reference/boot_provenance.html">boot_provenance()</a></code> in every <code>bl</code>/<code>br</code>/<code>bc</code> report – and never reached the screen, because <code><a href="https://rdrr.io/r/stats/step.html" class="external-link">stats::step()</a></code> selects on AIC. AIC retains a term at p &lt; 0.157 where <code>sls = 0.05</code> asks for 1.96 standard errors. <strong>Selection frequencies change, and by a lot</strong>: measured against the SAS run of the same data, the old behaviour sat a median 32.7 points away. A bag produced before this release and one produced after are <strong>not comparable</strong>.</p></li>

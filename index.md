@@ -161,6 +161,7 @@ screen can be days of compute — a run that dies at 90% yields nothing.
 
 | function | does |
 |----|----|
+| [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md) | assembles one completed selection run with its provenance, replicate table and summary |
 | [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md) | folds chunk files into one object of the same shape, refusing chunks that disagree on the data or the screen |
 | [`boot_chunk_files()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_chunk_files.md) | finds them, in a deterministic order |
 | [`boot_shortfall()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_shortfall.md) | whether what you pooled is the run you launched — which nothing inside a chunk can know |
@@ -195,7 +196,7 @@ cohort data and no PHI enters this repo.
 
 ## Status
 
-Under development, and at 0.9.0 rather than 1.0.0 deliberately. The
+Under development, and at 0.9.4 rather than 1.0.0 deliberately. The
 selection core, chunk pooling and the reporting layer are all in place,
 with logistic, linear and Cox fitters.
 

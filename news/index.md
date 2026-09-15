@@ -1,5 +1,15 @@
 # Changelog
 
+## hvtiRbootstrap 0.9.4
+
+- The
+  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+  help page now describes the shipped
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  builder instead of saying it has not been written. The README function
+  reference and displayed development version now agree with the
+  package.
+
 ## hvtiRbootstrap 0.9.3
 
 - **`sle` and `sls` now select, which they never did.** They were
