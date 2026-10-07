@@ -11,6 +11,9 @@
   already required 4.4.0, so on an older R the install failed whatever this
   package declared.
 
+* `DESCRIPTION` now declares the Quarto command line tool in
+  `SystemRequirements`, which the new vignette needs to build.
+
 # hvtiRbootstrap 0.9.4
 
 * The `boot_select()` help page now describes the shipped `boot_bag()` builder
