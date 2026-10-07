@@ -42,4 +42,7 @@
 #' macros. Resampling is stochastic and model fitting belongs to `glm`, `lm` and
 #' `coxph`, so neither is parity-tested; where R and SAS diverge on purpose, the
 #' README's divergence section and the function's own help say so.
+#'
+#' The Overview vignette, `vignette("hvtiRbootstrap")`, walks the
+#' workflow end to end.
 "_PACKAGE"

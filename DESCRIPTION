@@ -18,8 +18,13 @@ Imports:
     stats,
     withr
 Suggests:
+    knitr,
+    quarto (>= 1.4),
     survival,
     testthat (>= 3.0.0)
+VignetteBuilder: quarto
+SystemRequirements: Quarto command line tool
+    (<https://github.com/quarto-dev/quarto-cli>)
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.0

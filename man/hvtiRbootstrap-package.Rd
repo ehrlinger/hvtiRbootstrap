@@ -51,6 +51,9 @@ port keeps it.
 macros. Resampling is stochastic and model fitting belongs to \code{glm}, \code{lm} and
 \code{coxph}, so neither is parity-tested; where R and SAS diverge on purpose, the
 README's divergence section and the function's own help say so.
+
+The Overview vignette, \code{vignette("hvtiRbootstrap")}, walks the
+workflow end to end.
 }
 \seealso{
 Useful links:
