@@ -281,3 +281,12 @@ code that SAS warnings do not set, and the fitters match that: a
 converged model that merely warned - “fitted probabilities numerically 0
 or 1” on a quasi-separated replicate, say - is kept. Errors and
 non-convergence still cause a redraw.
+
+## Documentation
+
+- [Overview](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.html),
+  [`vignette("hvtiRbootstrap")`](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.md),
+  runs one small simulated screen from
+  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+  through the reporting layer to prediction intervals, naming the macro
+  each step ports.

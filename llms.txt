@@ -282,6 +282,15 @@ converged model that merely warned - “fitted probabilities numerically 0
 or 1” on a quasi-separated replicate, say - is kept. Errors and
 non-convergence still cause a redraw.
 
+## Documentation
+
+- [Overview](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.html),
+  [`vignette("hvtiRbootstrap")`](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.md),
+  runs one small simulated screen from
+  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+  through the reporting layer to prediction intervals, naming the macro
+  each step ports.
+
 # Package index
 
 ## 
@@ -415,3 +424,13 @@ with the pooling and reporting layers that grew around them.
   [`hvtiRbootstrap-package`](https://ehrlinger.github.io/hvtiRbootstrap/reference/hvtiRbootstrap-package.md)
   : hvtiRbootstrap: Bootstrap Model Building for the HVTI CORR Group
 
+# Articles
+
+### Overview
+
+Start here. One small screen run end to end on simulated data, from
+[`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+through the reporting layer, with the interval branch alongside it.
+
+- [Getting Started with
+  hvtiRbootstrap](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.md):

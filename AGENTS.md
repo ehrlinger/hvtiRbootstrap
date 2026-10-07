@@ -212,8 +212,8 @@ way:
   the whole and the chunks need not be the same size.
 - `DESCRIPTION` has no `Date:` field, so there is nothing to refresh on
   a version bump.
-- There are no vignettes, so `R CMD check` is fast here. That is not
-  evidence of coverage.
+- There is one vignette, a small overview, so `R CMD check` is fast
+  here. That is not evidence of coverage.
 
 ## Git and versioning
 

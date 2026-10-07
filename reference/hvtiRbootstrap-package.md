@@ -75,6 +75,10 @@ and model fitting belongs to `glm`, `lm` and `coxph`, so neither is
 parity-tested; where R and SAS diverge on purpose, the README's
 divergence section and the function's own help say so.
 
+The Overview vignette,
+[`vignette("hvtiRbootstrap")`](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.md),
+walks the workflow end to end.
+
 ## See also
 
 Useful links:

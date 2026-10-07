@@ -12,7 +12,8 @@
 <link href="deps/Fira_Code-0.4.10/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Bootstrap Model Building for the HVTI CORR Group">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="Bootstrap Model Building for the HVTI CORR Group">
 <meta name="description" content="Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR groups SAS macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the bootreg, SUMBOOT and cluster' macros.">
 <meta property="og:description" content="Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR groups SAS macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the bootreg, SUMBOOT and cluster' macros.">
 </head>
@@ -33,7 +34,9 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="articles/hvtiRbootstrap.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item"><a class="nav-link" href="articles/index.html">Articles</a></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -322,6 +325,14 @@
 <p><strong>D4 - <code><a href="reference/fit_cox.html">fit_cox()</a></code> enters on the likelihood ratio, not the score test.</strong> <code>PROC PHREG SELECTION=STEPWISE</code> enters a term on the score chi-square. R has no score test for a Cox model - <code>anova.coxph()</code> accepts <code>test = "Rao"</code> but silently ignores it and always returns the likelihood-ratio test - so entry in <code><a href="reference/fit_cox.html">fit_cox()</a></code> is by likelihood ratio instead. The two agree asymptotically and differ only for a term sitting on the entry threshold, so a screen will usually select the same set and may occasionally differ on a borderline candidate. Removal is Wald, matching the macro.</p>
 <p><strong>D5 - the two removal tests can disagree with each other on model hierarchy.</strong> <code><a href="reference/fit_linear.html">fit_linear()</a></code>’s removal test (<code><a href="https://rdrr.io/r/stats/add1.html" class="external-link">drop1()</a></code>) respects marginality - a main effect under an interaction is not removable. The Wald removal test <code><a href="reference/fit_logistic.html">fit_logistic()</a></code> and <code><a href="reference/fit_cox.html">fit_cox()</a></code> use tests every term independently, so <code><a href="reference/boot_select.html">boot_select()</a></code> can return a model with an interaction but neither of its main effects; the forward step can likewise admit an interaction before either main effect enters, since candidates are flat term labels rather than a hierarchy. <code>PROC LOGISTIC</code> defaults to <code>HIERARCHY=SINGLE</code> and would not do this. Realistic <code>%bootreg</code> candidate pools are main effects, so the case is narrow, but it is not implemented and the two paths do not currently agree with each other.</p>
 <p>A warning is not a failed fit. <code>%bootreg</code> gates on <code>&amp;regrc</code>, a return code that SAS warnings do not set, and the fitters match that: a converged model that merely warned - “fitted probabilities numerically 0 or 1” on a quasi-separated replicate, say - is kept. Errors and non-convergence still cause a redraw.</p>
+</div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<ul>
+<li>
+<a href="https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.html">Overview</a>, <code><a href="articles/hvtiRbootstrap.html">vignette("hvtiRbootstrap")</a></code>, runs one small simulated screen from <code><a href="reference/boot_select.html">boot_select()</a></code> through the reporting layer to prediction intervals, naming the macro each step ports.</li>
+</ul>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="package-badges">
