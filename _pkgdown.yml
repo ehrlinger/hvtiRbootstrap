@@ -27,7 +27,7 @@ home:
 
 navbar:
   structure:
-    left: [reference, news]
+    left: [intro, reference, articles, news]
     right: [search, github, my_linkedin, lightswitch]
   components:
     my_linkedin:
@@ -119,6 +119,15 @@ reference:
     the pooling and reporting layers that grew around them.
   contents:
   - hvtiRbootstrap-package
+
+articles:
+- title: "Overview"
+  desc: >
+    Start here. One small screen run end to end on simulated data, from
+    `boot_select()` through the reporting layer, with the interval branch
+    alongside it.
+  contents:
+  - hvtiRbootstrap
 
 footer:
   structure:

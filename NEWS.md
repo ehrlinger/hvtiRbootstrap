@@ -1,5 +1,11 @@
 # hvtiRbootstrap (unreleased)
 
+* New overview vignette, `vignette("hvtiRbootstrap")`: one small simulated
+  screen run from `boot_select()` through `boot_summary()`, `boot_clusters()`
+  and the reporting layer, with `boot_predict_ci()` alongside. Vignettes put
+  the table of contents on the left and use the full window width, as the
+  rest of the HVTI family does.
+
 * Now requires R 4.4.0 or newer, up from 4.1.0, to match the rest of the
   HVTI family. `hvtiR::install()` installs the members together, and several
   already required 4.4.0, so on an older R the install failed whatever this

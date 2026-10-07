@@ -12,3 +12,6 @@
 ^AGENTS\.md$
 ^CLAUDE\.md$
 ^pkgdown-site$
+^pkgdown$
+^vignettes/\.quarto$
+^vignettes/.*_files$
