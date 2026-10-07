@@ -238,3 +238,7 @@ A warning is not a failed fit. `%bootreg` gates on `&regrc`, a return code that
 SAS warnings do not set, and the fitters match that: a converged model that
 merely warned - "fitted probabilities numerically 0 or 1" on a quasi-separated
 replicate, say - is kept. Errors and non-convergence still cause a redraw.
+
+## Documentation
+
+- [Overview](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.html), `vignette("hvtiRbootstrap")`, runs one small simulated screen from `boot_select()` through the reporting layer to prediction intervals, naming the macro each step ports.

@@ -42,8 +42,8 @@ steps:
 
 This vignette walks one small screen from start to finish, then shows the
 reporting layer and the interval branch that sit alongside it. Everything
-here runs on simulated data. No cohort data, and no PHI, ever enters this
-package.
+here runs on simulated data: this vignette, the package's examples and its
+tests contain no cohort data and no PHI.
 
 ```{r library}
 library(hvtiRbootstrap)
