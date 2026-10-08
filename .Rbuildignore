@@ -15,3 +15,4 @@
 ^pkgdown$
 ^vignettes/\.quarto$
 ^vignettes/.*_files$
+^news$
