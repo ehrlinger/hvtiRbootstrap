@@ -184,8 +184,10 @@ Two things worth knowing about the pkgdown gate, both learned the hard way:
   **CI gates merges as of 2026-09-03.** Until then there was no `required_status_checks`
   rule at all: all nine workflows ran on a pull request and none of them blocked it, so a
   red `R CMD check` was exactly as mergeable as a green one, and the only gate was the
-  approval count nobody could satisfy. Eight contexts are now required -- `lint`,
-  `house-style`, `pkgdown` and the five `R-CMD-check` matrix jobs -- each pinned to the
+  approval count nobody could satisfy. Five contexts are now required -- `lint`,
+  `house-style`, `pkgdown`, `news-fragment` and `ubuntu-latest (release)`, the one
+  `R-CMD-check` leg a pull request runs (since 2026-10-12; macOS, Windows, devel and
+  oldrel-1 run on a push to `main` and in the weekly sweep) -- each pinned to the
   GitHub Actions app (`integration_id` 15368) so nothing else reporting a same-named check
   can satisfy the gate. `strict_required_status_checks_policy` is `false`, so a branch need
   not be up to date with `main` before merging.
