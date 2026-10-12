@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,12 @@
       <small>Source: <a href="https://github.com/ehrlinger/hvtiRbootstrap/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.5" id="hvtirbootstrap-095">hvtiRbootstrap 0.9.5<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-095"></a></h2>
+<ul><li><p>Now requires R 4.4.0 or newer, up from 4.1.0, to match the rest of the HVTI family. <code>hvtiR::install()</code> installs the members together, and several already required 4.4.0, so on an older R the install failed whatever this package declared.</p></li>
+<li><p><code>DESCRIPTION</code> now declares the Quarto command line tool in <code>SystemRequirements</code>, which the new vignette needs to build.</p></li>
+<li><p>New overview vignette, <code><a href="../articles/hvtiRbootstrap.html">vignette("hvtiRbootstrap")</a></code>: one small simulated screen run from <code><a href="../reference/boot_select.html">boot_select()</a></code> through <code><a href="../reference/boot_summary.html">boot_summary()</a></code>, <code><a href="../reference/boot_clusters.html">boot_clusters()</a></code> and the reporting layer, with <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> alongside. On the pkgdown site, articles put the table of contents on the left and use the full window width, as the rest of the HVTI family does.</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.4" id="hvtirbootstrap-094">hvtiRbootstrap 0.9.4<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-094"></a></h2>
 <ul><li>The <code><a href="../reference/boot_select.html">boot_select()</a></code> help page now describes the shipped <code><a href="../reference/boot_bag.html">boot_bag()</a></code> builder instead of saying it has not been written. The README function reference and displayed development version now agree with the package.</li>

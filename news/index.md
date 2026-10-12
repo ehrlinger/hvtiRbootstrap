@@ -1,5 +1,28 @@
 # Changelog
 
+## hvtiRbootstrap 0.9.5
+
+- Now requires R 4.4.0 or newer, up from 4.1.0, to match the rest of the
+  HVTI family. `hvtiR::install()` installs the members together, and
+  several already required 4.4.0, so on an older R the install failed
+  whatever this package declared.
+
+- `DESCRIPTION` now declares the Quarto command line tool in
+  `SystemRequirements`, which the new vignette needs to build.
+
+- New overview vignette,
+  [`vignette("hvtiRbootstrap")`](https://ehrlinger.github.io/hvtiRbootstrap/articles/hvtiRbootstrap.md):
+  one small simulated screen run from
+  [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
+  through
+  [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md),
+  [`boot_clusters()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_clusters.md)
+  and the reporting layer, with
+  [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
+  alongside. On the pkgdown site, articles put the table of contents on
+  the left and use the full window width, as the rest of the HVTI family
+  does.
+
 ## hvtiRbootstrap 0.9.4
 
 - The
