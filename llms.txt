@@ -43,11 +43,28 @@ Destination for 31 macro-library files, assigned by the allocation map
 in `hvtiRtemplates:specs/2026-08-14-macro-allocation-design.md`. Design
 and scope: `docs/specs/2026-08-14-hvtirbootstrap-design.md`.
 
-## Install
+## Installation
+
+hvtiRbootstrap is part of the HVTI R family. Install it with the rest of
+the family through [hvtiR](https://github.com/ehrlinger/hvtiR):
 
 ``` r
 
-remotes::install_github("ehrlinger/hvtiRbootstrap")
+# install.packages("pak")
+pak::pak("ehrlinger/hvtiR")
+hvtiR::install()
+```
+
+`hvtiR::install()` installs every member in one call, so the versions
+the members require of one another resolve together. Update later with
+`hvtiR::update()`, from a fresh R session: it will not overwrite a
+package that is already loaded.
+
+To install hvtiRbootstrap on its own:
+
+``` r
+
+pak::pak("ehrlinger/hvtiRbootstrap")
 ```
 
 ## If you already run the macros
