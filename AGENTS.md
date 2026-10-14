@@ -363,3 +363,22 @@ Documentation prose follows the house voice. Every exported function’s
 roxygen names the macro it ports and the parameter it replaces — a
 reader arriving from SAS needs that mapping more than they need an
 abstract description.
+
+## Release ordering
+
+This package is **tier 1** in the hvtiR release order. It depends on no
+other hvtiR package. `hvtiRtemplates` suggests it.
+
+- **Order follows hard dependencies (`Imports`) only.** `Suggests` never
+  forces an order; it matters only when a version floor moves.
+- **A floor on another hvtiR package moves only in this package’s own
+  bump**, to the version it was tested against, and only when it relies
+  on something new there.
+- **Before a bump merges, run each dependent’s tests against this
+  package’s branch**: install it into a scratch library and run
+  `R_LIBS=<lib> Rscript -e 'devtools::test()'` in the dependent.
+- **Tag every bump** `vX.Y.Z`. `Remotes` are unpinned, so a floor is
+  checked against the dependency’s `main`, not a tag.
+
+The full policy and dependency graph are in the maintainer’s Obsidian
+vault at `Projects/hvtiR release ordering.md`.
