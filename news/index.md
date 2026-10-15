@@ -1,5 +1,16 @@
 # Changelog
 
+## hvtiRbootstrap 0.9.6
+
+- [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md),
+  [`boot_chunk_files()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_chunk_files.md)
+  and
+  [`boot_shortfall()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_shortfall.md)
+  have help-page examples. They pool two small hand-built chunks, find
+  chunk files in a throwaway folder under
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html), and report a pool
+  that is a chunk short.
+
 ## hvtiRbootstrap 0.9.5
 
 - Now requires R 4.4.0 or newer, up from 4.1.0, to match the rest of the
