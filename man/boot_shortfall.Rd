@@ -34,6 +34,26 @@ not a missing chunk and counting chunks alone would call that complete. An
 \strong{over}-count is reported too: it means either the expectation is stale or a
 stray chunk from another run is being pooled, and both are worth saying.
 }
+\examples{
+# Two chunks as the hazard runner writes them: same screen, different seeds.
+chunk <- function(seed) list(
+  seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
+  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  elapsed_mins = 1, manifest = list(sha256 = "example"),
+  th_version = "1.2.16",
+  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+    replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
+    "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
+)
+pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+
+# The run that was launched: NULL.
+boot_shortfall(pooled, expect_chunks = 2, expect_boot = 4)
+
+# A third chunk has not landed yet.
+boot_shortfall(pooled, expect_chunks = 3, expect_boot = 6)
+
+}
 \seealso{
 \code{\link[=boot_pool_chunks]{boot_pool_chunks()}}
 }

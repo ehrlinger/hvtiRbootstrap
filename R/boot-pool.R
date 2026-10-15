@@ -108,6 +108,24 @@
 #'   pool is the run that was launched, and [boot_summary()] for the
 #'   per-variable frequencies.
 #'
+#' @examples
+#' # Two chunks as the hazard runner writes them: same screen, different seeds.
+#' chunk <- function(seed) list(
+#'   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
+#'   base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+#'   elapsed_mins = 1, manifest = list(sha256 = "example"),
+#'   th_version = "1.2.16",
+#'   boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+#'     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
+#'     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
+#' )
+#' pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+#' pooled$n_boot
+#' pooled$boot$summary
+#'
+#' # The same seed twice is the same replicates twice, so it is refused.
+#' try(boot_pool_chunks(list(chunk(1), chunk(1))))
+#'
 #' @export
 boot_pool_chunks <- function(chunks) {
   if (!length(chunks)) {
@@ -261,6 +279,15 @@ boot_pool_chunks <- function(chunks) {
 #'
 #' @seealso [boot_pool_chunks()]
 #'
+#' @examples
+#' out_dir <- file.path(tempdir(), "boot-chunk-files-example")
+#' dir.create(out_dir)
+#' invisible(file.create(file.path(out_dir, c(
+#'   "bagging.chunk2.rds", "bagging.chunk1.rds", "bagging.rds", "notes.txt"
+#' ))))
+#' basename(boot_chunk_files(out_dir))
+#' unlink(out_dir, recursive = TRUE)
+#'
 #' @export
 boot_chunk_files <- function(out_dir, prefix = "bagging") {
   # `prefix` is documented as a LITERAL file-name prefix, so it is quoted with
@@ -299,6 +326,25 @@ boot_chunk_files <- function(out_dir, prefix = "bagging") {
 #'   sentence saying how it falls short, suitable for a callout.
 #'
 #' @seealso [boot_pool_chunks()]
+#'
+#' @examples
+#' # Two chunks as the hazard runner writes them: same screen, different seeds.
+#' chunk <- function(seed) list(
+#'   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
+#'   base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+#'   elapsed_mins = 1, manifest = list(sha256 = "example"),
+#'   th_version = "1.2.16",
+#'   boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+#'     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
+#'     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
+#' )
+#' pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+#'
+#' # The run that was launched: NULL.
+#' boot_shortfall(pooled, expect_chunks = 2, expect_boot = 4)
+#'
+#' # A third chunk has not landed yet.
+#' boot_shortfall(pooled, expect_chunks = 3, expect_boot = 6)
 #'
 #' @export
 boot_shortfall <- function(bag, expect_chunks, expect_boot) {

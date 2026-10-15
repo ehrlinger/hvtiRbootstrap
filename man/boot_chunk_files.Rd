@@ -18,6 +18,16 @@ A sorted character vector of full paths, possibly empty.
 Returned in a deterministic order, and named so a single full run
 (\code{bagging.rds}) and a chunked run never collide.
 }
+\examples{
+out_dir <- file.path(tempdir(), "boot-chunk-files-example")
+dir.create(out_dir)
+invisible(file.create(file.path(out_dir, c(
+  "bagging.chunk2.rds", "bagging.chunk1.rds", "bagging.rds", "notes.txt"
+))))
+basename(boot_chunk_files(out_dir))
+unlink(out_dir, recursive = TRUE)
+
+}
 \seealso{
 \code{\link[=boot_pool_chunks]{boot_pool_chunks()}}
 }

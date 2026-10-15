@@ -56,6 +56,25 @@ The pooled summary is \strong{recomputed from the pooled replicates}, never
 averaged across chunks: a percentage of a percentage is not a percentage of
 the whole, and the chunks need not be the same size.
 }
+\examples{
+# Two chunks as the hazard runner writes them: same screen, different seeds.
+chunk <- function(seed) list(
+  seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
+  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  elapsed_mins = 1, manifest = list(sha256 = "example"),
+  th_version = "1.2.16",
+  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+    replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
+    "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
+)
+pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+pooled$n_boot
+pooled$boot$summary
+
+# The same seed twice is the same replicates twice, so it is refused.
+try(boot_pool_chunks(list(chunk(1), chunk(1))))
+
+}
 \seealso{
 \code{\link[=boot_chunk_files]{boot_chunk_files()}} to find them, \code{\link[=boot_shortfall]{boot_shortfall()}} to check the
 pool is the run that was launched, and \code{\link[=boot_summary]{boot_summary()}} for the
