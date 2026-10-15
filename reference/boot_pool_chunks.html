@@ -107,6 +107,32 @@ pool is the run that was launched, and <code><a href="boot_summary.html">boot_su
 per-variable frequencies.</p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Two chunks as the hazard runner writes them: same screen, different seeds.</span></span></span>
+<span class="r-in"><span><span class="va">chunk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">seed</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  seed <span class="op">=</span> <span class="va">seed</span>, n_boot <span class="op">=</span> <span class="fl">2L</span>, slentry <span class="op">=</span> <span class="fl">0.1</span>, slstay <span class="op">=</span> <span class="fl">0.05</span>,</span></span>
+<span class="r-in"><span>  base_params <span class="op">=</span> <span class="st">"early.log_mu"</span>, usable <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>early <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span>, max_steps <span class="op">=</span> <span class="fl">50L</span>,</span></span>
+<span class="r-in"><span>  elapsed_mins <span class="op">=</span> <span class="fl">1</span>, manifest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sha256 <span class="op">=</span> <span class="st">"example"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  th_version <span class="op">=</span> <span class="st">"1.2.16"</span>,</span></span>
+<span class="r-in"><span>  boot <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_success <span class="op">=</span> <span class="fl">2L</span>, n_failed <span class="op">=</span> <span class="fl">0L</span>, replicates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    replicate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span>, parameter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"early.log_mu"</span>, <span class="st">"early.age"</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"early.log_mu"</span><span class="op">)</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.02</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu">boot_pool_chunks</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu">chunk</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, <span class="fu">chunk</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pooled</span><span class="op">$</span><span class="va">n_boot</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4</span>
+<span class="r-in"><span><span class="va">pooled</span><span class="op">$</span><span class="va">boot</span><span class="op">$</span><span class="va">summary</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      parameter n pct mean         sd  min  max sel_q025 sel_q975</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 early.log_mu 4 100 0.15 0.05773503 0.10 0.20     0.10     0.20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    early.age 2  50 0.02 0.00000000 0.02 0.02     0.02     0.02</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># The same seed twice is the same replicates twice, so it is refused.</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu">boot_pool_chunks</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu">chunk</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, <span class="fu">chunk</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Error : boot_pool_chunks(): two chunks share the seed 1. Same seed means the SAME replicates, so pooling would count them twice and understate the Monte-Carlo error.</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

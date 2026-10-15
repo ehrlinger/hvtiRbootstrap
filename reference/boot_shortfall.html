@@ -99,6 +99,30 @@ stray chunk from another run is being pooled, and both are worth saying.</p>
     <div class="dont-index"><p><code><a href="boot_pool_chunks.html">boot_pool_chunks()</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Two chunks as the hazard runner writes them: same screen, different seeds.</span></span></span>
+<span class="r-in"><span><span class="va">chunk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">seed</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  seed <span class="op">=</span> <span class="va">seed</span>, n_boot <span class="op">=</span> <span class="fl">2L</span>, slentry <span class="op">=</span> <span class="fl">0.1</span>, slstay <span class="op">=</span> <span class="fl">0.05</span>,</span></span>
+<span class="r-in"><span>  base_params <span class="op">=</span> <span class="st">"early.log_mu"</span>, usable <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>early <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span>, max_steps <span class="op">=</span> <span class="fl">50L</span>,</span></span>
+<span class="r-in"><span>  elapsed_mins <span class="op">=</span> <span class="fl">1</span>, manifest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sha256 <span class="op">=</span> <span class="st">"example"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  th_version <span class="op">=</span> <span class="st">"1.2.16"</span>,</span></span>
+<span class="r-in"><span>  boot <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_success <span class="op">=</span> <span class="fl">2L</span>, n_failed <span class="op">=</span> <span class="fl">0L</span>, replicates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    replicate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span>, parameter <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"early.log_mu"</span>, <span class="st">"early.age"</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"early.log_mu"</span><span class="op">)</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.02</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="boot_pool_chunks.html">boot_pool_chunks</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu">chunk</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, <span class="fu">chunk</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># The run that was launched: NULL.</span></span></span>
+<span class="r-in"><span><span class="fu">boot_shortfall</span><span class="op">(</span><span class="va">pooled</span>, expect_chunks <span class="op">=</span> <span class="fl">2</span>, expect_boot <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A third chunk has not landed yet.</span></span></span>
+<span class="r-in"><span><span class="fu">boot_shortfall</span><span class="op">(</span><span class="va">pooled</span>, expect_chunks <span class="op">=</span> <span class="fl">3</span>, expect_boot <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "This screen pooled 2 of 3 chunks and 4 of 6 replicates. The frequencies below are provisional: they are computed over the replicates present, not over the run that was launched. Re-render once the remaining chunks land."</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

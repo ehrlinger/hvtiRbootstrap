@@ -71,3 +71,29 @@ to find them,
 to check the pool is the run that was launched, and
 [`boot_summary()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_summary.md)
 for the per-variable frequencies.
+
+## Examples
+
+``` r
+# Two chunks as the hazard runner writes them: same screen, different seeds.
+chunk <- function(seed) list(
+  seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
+  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  elapsed_mins = 1, manifest = list(sha256 = "example"),
+  th_version = "1.2.16",
+  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+    replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
+    "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
+)
+pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+pooled$n_boot
+#> [1] 4
+pooled$boot$summary
+#>      parameter n pct mean         sd  min  max sel_q025 sel_q975
+#> 1 early.log_mu 4 100 0.15 0.05773503 0.10 0.20     0.10     0.20
+#> 2    early.age 2  50 0.02 0.00000000 0.02 0.02     0.02     0.02
+
+# The same seed twice is the same replicates twice, so it is refused.
+try(boot_pool_chunks(list(chunk(1), chunk(1))))
+#> Error : boot_pool_chunks(): two chunks share the seed 1. Same seed means the SAME replicates, so pooling would count them twice and understate the Monte-Carlo error.
+```

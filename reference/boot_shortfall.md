@@ -48,3 +48,27 @@ and both are worth saying.
 ## See also
 
 [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+
+## Examples
+
+``` r
+# Two chunks as the hazard runner writes them: same screen, different seeds.
+chunk <- function(seed) list(
+  seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
+  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  elapsed_mins = 1, manifest = list(sha256 = "example"),
+  th_version = "1.2.16",
+  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+    replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
+    "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
+)
+pooled <- boot_pool_chunks(list(chunk(1), chunk(2)))
+
+# The run that was launched: NULL.
+boot_shortfall(pooled, expect_chunks = 2, expect_boot = 4)
+#> NULL
+
+# A third chunk has not landed yet.
+boot_shortfall(pooled, expect_chunks = 3, expect_boot = 6)
+#> [1] "This screen pooled 2 of 3 chunks and 4 of 6 replicates. The frequencies below are provisional: they are computed over the replicates present, not over the run that was launched. Re-render once the remaining chunks land."
+```
