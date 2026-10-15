@@ -1,3 +1,9 @@
+# hvtiRbootstrap 0.9.6
+
+* `boot_pool_chunks()`, `boot_chunk_files()` and `boot_shortfall()` have
+  help-page examples. They pool two small hand-built chunks, find chunk files in
+  a throwaway folder under `tempdir()`, and report a pool that is a chunk short.
+
 # hvtiRbootstrap 0.9.5
 
 * Now requires R 4.4.0 or newer, up from 4.1.0, to match the rest of the
