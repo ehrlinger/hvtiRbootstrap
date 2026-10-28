@@ -63,18 +63,19 @@ report reads a pooled screen and a single-run screen the same way.</p>
 <code>n_boot</code>, <code>slentry</code>, <code>slstay</code>, <code>base_params</code>, <code>usable</code>, <code>max_steps</code>,
 <code>elapsed_mins</code>, a <code>manifest</code> with an <code>md5</code> or <code>sha256</code>, an engine
 provenance field (<code>th_sha</code> or <code>th_version</code>), and a <code>boot</code> list with
-<code>replicates</code>, <code>n_success</code> and <code>n_failed</code>.</p></dd>
+<code>replicates</code>, <code>n_success</code> and <code>n_failed</code>. An optional <code>resampled</code>
+(<code>"patients"</code> or <code>"rows"</code>) defaults to <code>"rows"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>One object shaped like a single chunk, with <code>boot$replicates</code> stacked
-and re-indexed, <code>boot$summary</code> recomputed, and <code>n_chunks</code>, <code>seeds</code> and a
-joined <code>seed</code> string added.</p>
+and re-indexed, <code>boot$summary</code> recomputed, <code>resampled</code> set to the agreed
+value, and <code>n_chunks</code>, <code>seeds</code> and a joined <code>seed</code> string added.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Six things must agree for chunks to be draws from one screen, and each is
+    <p>Nine things must agree for chunks to be draws from one screen, and each is
 checked rather than assumed. <strong>None of them fails loudly on its own:</strong></p><ul><li><p>Two chunks sharing a <strong>seed</strong> contain literally the same replicates.
 Pooling them counts each twice, halves nothing, and reports a Monte-Carlo
 error smaller than the run actually has.</p></li>
@@ -82,6 +83,11 @@ error smaller than the run actually has.</p></li>
 describe different cohorts.</p></li>
 <li><p>A different <strong>step cap</strong> changes the screen, not just its cost: under a
 tighter cap a variable that would have entered late never gets the chance.</p></li>
+<li><p>Chunks that <strong>resampled differently</strong> – <code>resampled = "patients"</code> against
+<code>"rows"</code> on start/stop data – drew from different distributions. A chunk
+that records no <code>resampled</code> predates patient resampling and is read as
+<code>"rows"</code>, which is what every earlier runner did; the pooled object
+carries the agreed value.</p></li>
 </ul><p>Neither shows up as an error in a frequency table. Both show up as a slightly
 different number.</p>
 <p><strong>Absence is checked before agreement, and that order is the whole point.</strong> A

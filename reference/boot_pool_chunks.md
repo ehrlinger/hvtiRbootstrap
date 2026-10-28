@@ -17,17 +17,18 @@ boot_pool_chunks(chunks)
   `slentry`, `slstay`, `base_params`, `usable`, `max_steps`,
   `elapsed_mins`, a `manifest` with an `md5` or `sha256`, an engine
   provenance field (`th_sha` or `th_version`), and a `boot` list with
-  `replicates`, `n_success` and `n_failed`.
+  `replicates`, `n_success` and `n_failed`. An optional `resampled`
+  (`"patients"` or `"rows"`) defaults to `"rows"`.
 
 ## Value
 
 One object shaped like a single chunk, with `boot$replicates` stacked
-and re-indexed, `boot$summary` recomputed, and `n_chunks`, `seeds` and a
-joined `seed` string added.
+and re-indexed, `boot$summary` recomputed, `resampled` set to the agreed
+value, and `n_chunks`, `seeds` and a joined `seed` string added.
 
 ## Details
 
-Six things must agree for chunks to be draws from one screen, and each
+Nine things must agree for chunks to be draws from one screen, and each
 is checked rather than assumed. **None of them fails loudly on its
 own:**
 
@@ -41,6 +42,12 @@ own:**
 - A different **step cap** changes the screen, not just its cost: under
   a tighter cap a variable that would have entered late never gets the
   chance.
+
+- Chunks that **resampled differently** – `resampled = "patients"`
+  against `"rows"` on start/stop data – drew from different
+  distributions. A chunk that records no `resampled` predates patient
+  resampling and is read as `"rows"`, which is what every earlier runner
+  did; the pooled object carries the agreed value.
 
 Neither shows up as an error in a frequency table. Both show up as a
 slightly different number.
