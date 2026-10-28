@@ -62,7 +62,7 @@
 #' report reads a pooled screen and a single-run screen the same way.
 #'
 #' @details
-#' Six things must agree for chunks to be draws from one screen, and each is
+#' Nine things must agree for chunks to be draws from one screen, and each is
 #' checked rather than assumed. **None of them fails loudly on its own:**
 #'
 #' * Two chunks sharing a **seed** contain literally the same replicates.
@@ -72,6 +72,11 @@
 #'   describe different cohorts.
 #' * A different **step cap** changes the screen, not just its cost: under a
 #'   tighter cap a variable that would have entered late never gets the chance.
+#' * Chunks that **resampled differently** -- `resampled = "patients"` against
+#'   `"rows"` on start/stop data -- drew from different distributions. A chunk
+#'   that records no `resampled` predates patient resampling and is read as
+#'   `"rows"`, which is what every earlier runner did; the pooled object
+#'   carries the agreed value.
 #'
 #' Neither shows up as an error in a frequency table. Both show up as a slightly
 #' different number.
@@ -98,11 +103,12 @@
 #'   `n_boot`, `slentry`, `slstay`, `base_params`, `usable`, `max_steps`,
 #'   `elapsed_mins`, a `manifest` with an `md5` or `sha256`, an engine
 #'   provenance field (`th_sha` or `th_version`), and a `boot` list with
-#'   `replicates`, `n_success` and `n_failed`.
+#'   `replicates`, `n_success` and `n_failed`. An optional `resampled`
+#'   (`"patients"` or `"rows"`) defaults to `"rows"`.
 #'
 #' @return One object shaped like a single chunk, with `boot$replicates` stacked
-#'   and re-indexed, `boot$summary` recomputed, and `n_chunks`, `seeds` and a
-#'   joined `seed` string added.
+#'   and re-indexed, `boot$summary` recomputed, `resampled` set to the agreed
+#'   value, and `n_chunks`, `seeds` and a joined `seed` string added.
 #'
 #' @seealso [boot_chunk_files()] to find them, [boot_shortfall()] to check the
 #'   pool is the run that was launched, and [boot_summary()] for the
@@ -174,6 +180,15 @@ boot_pool_chunks <- function(chunks) {
   agree(.chunk_engine_provenance,  "the fitting engine version")
   agree(function(k) k[["max_steps"]],   "the step cap (max_steps)")
 
+  # Normalised BEFORE agree(), not by loosening agree(): every runner before
+  # patient resampling (hvtiRtemplates#443) drew rows and recorded nothing, so
+  # absence here is evidence of "rows", not an unchecked field. The other gates
+  # keep refusing absence.
+  resampled <- agree(function(k) {
+    r <- k[["resampled"]]
+    if (is.null(r)) "rows" else r
+  }, "how they resampled (resampled)")
+
   seeds <- vapply(chunks, function(k) as.numeric(k[["seed"]]), numeric(1))
   if (anyDuplicated(seeds)) {
     stop("boot_pool_chunks(): two chunks share the seed ",
@@ -222,6 +237,9 @@ boot_pool_chunks <- function(chunks) {
   out <- chunks[[1]]
   out$boot$replicates <- reps
   out$n_boot <- n_boot
+  # Set even when chunk 1 predates the field, so a report reading the pooled
+  # bag can trust it rather than re-deriving the legacy default.
+  out$resampled <- resampled
 
   # The same constructor boot_bag() uses, so the pooled and unpooled shapes
   # cannot drift apart. It also gets the pooling property this block used to
