@@ -65,6 +65,35 @@ test_that("a field only SOME chunks record is refused", {
   expect_error(boot_pool_chunks(list(chunk(1), k)), "cannot be compared")
 })
 
+test_that("chunks that resampled differently are refused", {
+  # Patients and rows are different resampling distributions on start/stop
+  # data, so their replicates are not draws from one screen.
+  expect_error(
+    boot_pool_chunks(list(chunk(1, resampled = "patients"),
+                          chunk(2, resampled = "rows"))),
+    "resampled"
+  )
+})
+
+test_that("an absent `resampled` reads as rows, so legacy chunks pool", {
+  # Every runner before hvtiRtemplates#443 resampled rows and recorded nothing.
+  p <- boot_pool_chunks(list(chunk(1), chunk(2)))
+  expect_identical(p$resampled, "rows")
+  p <- boot_pool_chunks(list(chunk(1), chunk(2, resampled = "rows")))
+  expect_identical(p$resampled, "rows")
+  # Legacy first, so the value cannot simply be chunk 1's.
+  expect_error(
+    boot_pool_chunks(list(chunk(1), chunk(2, resampled = "patients"))),
+    "resampled"
+  )
+})
+
+test_that("the pooled bag carries an agreed `resampled = \"patients\"`", {
+  p <- boot_pool_chunks(list(chunk(1, resampled = "patients"),
+                             chunk(2, resampled = "patients")))
+  expect_identical(p$resampled, "patients")
+})
+
 test_that("the checksum algorithm travels with the digest", {
   # An md5 and a sha256 of the same file are different strings. Comparing bare
   # digests across algorithms compares things that are not comparable.

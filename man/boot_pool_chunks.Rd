@@ -11,19 +11,20 @@ boot_pool_chunks(chunks)
 \code{n_boot}, \code{slentry}, \code{slstay}, \code{base_params}, \code{usable}, \code{max_steps},
 \code{elapsed_mins}, a \code{manifest} with an \code{md5} or \code{sha256}, an engine
 provenance field (\code{th_sha} or \code{th_version}), and a \code{boot} list with
-\code{replicates}, \code{n_success} and \code{n_failed}.}
+\code{replicates}, \code{n_success} and \code{n_failed}. An optional \code{resampled}
+(\code{"patients"} or \code{"rows"}) defaults to \code{"rows"}.}
 }
 \value{
 One object shaped like a single chunk, with \code{boot$replicates} stacked
-and re-indexed, \code{boot$summary} recomputed, and \code{n_chunks}, \code{seeds} and a
-joined \code{seed} string added.
+and re-indexed, \code{boot$summary} recomputed, \code{resampled} set to the agreed
+value, and \code{n_chunks}, \code{seeds} and a joined \code{seed} string added.
 }
 \description{
 Folds a list of chunk objects into a single object of the same shape, so a
 report reads a pooled screen and a single-run screen the same way.
 }
 \details{
-Six things must agree for chunks to be draws from one screen, and each is
+Nine things must agree for chunks to be draws from one screen, and each is
 checked rather than assumed. \strong{None of them fails loudly on its own:}
 \itemize{
 \item Two chunks sharing a \strong{seed} contain literally the same replicates.
@@ -33,6 +34,11 @@ error smaller than the run actually has.
 describe different cohorts.
 \item A different \strong{step cap} changes the screen, not just its cost: under a
 tighter cap a variable that would have entered late never gets the chance.
+\item Chunks that \strong{resampled differently} -- \code{resampled = "patients"} against
+\code{"rows"} on start/stop data -- drew from different distributions. A chunk
+that records no \code{resampled} predates patient resampling and is read as
+\code{"rows"}, which is what every earlier runner did; the pooled object
+carries the agreed value.
 }
 
 Neither shows up as an error in a frequency table. Both show up as a slightly
