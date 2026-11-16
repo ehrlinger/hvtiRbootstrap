@@ -210,7 +210,11 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
     old <- .hvti_provenance(ctl$method, ctl$seed,
                             rng_kind = rep(NA_character_, 3L),
                             time = as.POSIXct(NA))
-    old$version <- as.character(ctl$package)
+    old$version <- if (length(ctl$package) == 1L) {
+      as.character(ctl$package)
+    } else {
+      NA_character_
+    }
     old$sha <- NA_character_
     old
   }
