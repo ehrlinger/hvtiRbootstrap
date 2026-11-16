@@ -70,7 +70,8 @@
 #'   that purpose: `match.call()` omits every argument left at its default.
 #'   `$provenance` is the hvtiR family's shared provenance record (`package`,
 #'   `version`, `sha`, `method`, `seed`, `rng_kind`, `time`), taken when the
-#'   draw began. The replicate count stays in `$n_rep`.
+#'   draw began, followed by this package's `fitter` and `formula`. The
+#'   replicate count stays in `$n_rep`.
 #' @seealso [boot_summary()] for the per-variable selection frequencies, and
 #'   [boot_clusters()] for the same question asked of a correlated group.
 #'   [fit_linear()], [fit_logistic()] and [fit_cox()] are the supplied fitters.
@@ -158,7 +159,13 @@ boot_select <- function(data, formula, fitter, n_boot = 1000, fraction = 1,
 
   if (!is.null(seed)) set.seed(seed)
   # Built at the draw, not later: RNGkind() and the time are facts about now.
-  prov <- .hvti_provenance(select, seed)
+  # The model follows the seven common fields, as $control and the bag carry
+  # it: a record that cannot say which model ran cannot tell two screens of
+  # the same data apart.
+  prov <- .hvti_provenance(select, seed, fitter = .fitter_id(fitter),
+                           formula = paste(deparse(formula,
+                                                   width.cutoff = 500L),
+                                           collapse = " "))
 
   n <- nrow(data)
   n_draw <- max(1L, round(n * fraction))
@@ -244,9 +251,8 @@ boot_select <- function(data, formula, fitter, n_boot = 1000, fraction = 1,
     # screen with a logistic one, or two formulas that happen to offer the
     # same number of candidates. Without these, chunks agreeing on every
     # other gate pooled log-odds with slopes.
-    fitter       = .fitter_id(fitter),
-    formula      = paste(deparse(formula, width.cutoff = 500L),
-                         collapse = " ")
+    fitter       = prov$fitter,
+    formula      = prov$formula
   )
 
   out <- new_boot_selection(m, n_rep = as.integer(n_boot),

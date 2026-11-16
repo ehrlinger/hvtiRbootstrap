@@ -207,14 +207,15 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
   bag$provenance <- if (is.list(x[["provenance"]])) {
     x$provenance
   } else {
+    scalar_chr <- function(v) {
+      if (length(v) == 1L) as.character(v) else NA_character_
+    }
     old <- .hvti_provenance(ctl$method, ctl$seed,
                             rng_kind = rep(NA_character_, 3L),
-                            time = as.POSIXct(NA))
-    old$version <- if (length(ctl$package) == 1L) {
-      as.character(ctl$package)
-    } else {
-      NA_character_
-    }
+                            time = as.POSIXct(NA),
+                            fitter = scalar_chr(ctl$fitter),
+                            formula = scalar_chr(ctl$formula))
+    old$version <- scalar_chr(ctl$package)
     old$sha <- NA_character_
     old
   }

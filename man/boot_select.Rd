@@ -90,7 +90,8 @@ the run rather than from what a caller retypes. \verb{$call} cannot serve
 that purpose: \code{match.call()} omits every argument left at its default.
 \verb{$provenance} is the hvtiR family's shared provenance record (\code{package},
 \code{version}, \code{sha}, \code{method}, \code{seed}, \code{rng_kind}, \code{time}), taken when the
-draw began. The replicate count stays in \verb{$n_rep}.
+draw began, followed by this package's \code{fitter} and \code{formula}. The
+replicate count stays in \verb{$n_rep}.
 }
 \description{
 The R port of \verb{\%bootreg} (\code{bootstrap.models.sas} in the CORR macro library).

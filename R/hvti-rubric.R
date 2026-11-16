@@ -34,21 +34,21 @@
 # plausible value. `rng_kind` and `time` are read when the draw happens, which
 # is why the record is built by the function that resamples and carried from
 # there, never rebuilt later.
+#
+# Package-specific fields may follow the seven (the rubric allows it); `...`
+# carries them, e.g. boot_select()'s fitter and formula.
 .hvti_provenance <- function(method, seed, rng_kind = RNGkind(),
-                             time = Sys.time()) {
+                             time = Sys.time(), ...) {
   pkg <- "hvtiRbootstrap"
-  # RemoteSha is written by remotes, pak and devtools; a plain install has
-  # none, and a version alone cannot tell two builds of it apart.
-  sha <- utils::packageDescription(pkg, fields = "RemoteSha")
-  if (length(sha) != 1L || is.na(sha) || !nzchar(sha)) sha <- NA_character_
   list(
     package  = pkg,
     version  = as.character(utils::packageVersion(pkg)),
-    sha      = as.character(sha),
+    sha      = .package_sha(),
     method   = as.character(method),
     seed     = if (is.null(seed) || is.na(seed)) NA_integer_ else
       as.integer(seed),
     rng_kind = as.character(rng_kind),
-    time     = as.POSIXct(time)
+    time     = as.POSIXct(time),
+    ...
   )
 }

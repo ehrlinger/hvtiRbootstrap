@@ -163,8 +163,8 @@ boot_pool_chunks <- function(chunks) {
   # the field.
   for (i in seq_along(chunks)) {
     tryCatch(boot_validate(chunks[[i]]), error = function(e) {
-      stop("boot_pool_chunks(): chunk ", i, " is not a valid bag. ",
-           conditionMessage(e), call. = FALSE)
+      .abort("boot_pool_chunks(): chunk ", i, " is not a valid bag. ",
+             conditionMessage(e), class = "pool_refused")
     })
   }
 

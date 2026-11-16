@@ -56,12 +56,15 @@
 
 .warn_failure_rate <- function(n_failed, n_attempts, caller) {
   if (n_attempts > 0L && n_failed / n_attempts > .failure_threshold) {
-    warning("`", caller, "()` redrew ", n_failed, " of ", n_attempts,
-            " replicates (", sprintf("%.1f", 100 * n_failed / n_attempts),
-            "%), above the ", 100 * .failure_threshold, "% threshold. The ",
-            "result is conditional on the replicates that could be ",
-            "estimated; check the model and the data for separation or ",
-            "sparse cells.", call. = FALSE)
+    warning(warningCondition(
+      paste0("`", caller, "()` redrew ", n_failed, " of ", n_attempts,
+             " replicates (", sprintf("%.1f", 100 * n_failed / n_attempts),
+             "%), above the ", 100 * .failure_threshold, "% threshold. The ",
+             "result is conditional on the replicates that could be ",
+             "estimated; check the model and the data for separation or ",
+             "sparse cells."),
+      class = "hvtiRbootstrap_failure_rate", call = NULL
+    ))
   }
   invisible()
 }

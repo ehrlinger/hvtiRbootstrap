@@ -7,6 +7,8 @@
 * `boot_select()`, `boot_predict_ci()` and `boot_bag()` carry the hvtiR
   family's shared provenance record in `$provenance`: `package`, `version`,
   `sha`, `method`, `seed`, `rng_kind` and `time`, taken when the draw began.
+  `boot_select()`'s record, and so the bag's, also carries the model's
+  `fitter` and `formula`.
   A bag built from a screen that predates the record gets `NA` for what the
   screen cannot tell it.
 * Errors a caller may want to catch carry a condition class:
@@ -15,4 +17,5 @@
   `hvtiRbootstrap_bag_refused` (`boot_bag()`),
   `hvtiRbootstrap_attempts_exhausted` (the replicate budget ran out) and
   `hvtiRbootstrap_bad_argument`. The deprecation warning is
-  `hvtiRbootstrap_deprecated`. Messages are unchanged.
+  `hvtiRbootstrap_deprecated`, and the warning for a failure rate above 5%
+  is `hvtiRbootstrap_failure_rate`. Messages are unchanged.

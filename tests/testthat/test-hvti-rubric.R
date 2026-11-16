@@ -30,6 +30,10 @@ test_that("boot_select(), boot_predict_ci() and boot_bag() emit the record", {
   expect_identical(fit$provenance$method, "stepwise")
   expect_identical(fit$provenance$seed, 3L)
   expect_identical(fit$provenance$rng_kind, RNGkind())
+  # Package-specific fields follow the seven: the model, as the pool gates it.
+  expect_identical(fit$provenance$fitter, "fit_linear")
+  expect_identical(fit$provenance$fitter, fit$control$fitter)
+  expect_identical(fit$provenance$formula, "y ~ x1 + x2")
 
   bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
                   manifest = list(sha256 = "x"))
@@ -53,6 +57,7 @@ test_that("a screen from before the record gets NA, not today's facts", {
   expect_true(all(is.na(bag$provenance$rng_kind)))
   expect_true(is.na(bag$provenance$time))
   expect_identical(bag$provenance$seed, 1L)
+  expect_identical(bag$provenance$fitter, "fit_linear")
 })
 
 test_that("`n_rep` still works, warning once per session", {
@@ -86,6 +91,9 @@ test_that("boot_select() refuses both `n_boot` and `n_rep`", {
 
 test_that("errors a caller may catch carry hvtiRbootstrap_ classes", {
   expect_error(boot_validate(list()), class = "hvtiRbootstrap_invalid_bag")
+  bad <- list(n_boot = 1L)
+  expect_error(boot_pool_chunks(list(bad)),
+               class = "hvtiRbootstrap_pool_refused")
   expect_error(boot_pool_chunks(list()), class = "hvtiRbootstrap_pool_refused")
   expect_error(boot_bag(list()), class = "hvtiRbootstrap_bag_refused")
   never <- function(data, formula, select) NULL

@@ -23,7 +23,11 @@ boot_predict_ci(
 of one replicate's estimates, or \code{NULL} if the replicate failed.
 \verb{\%BNMNR} equivalent: the \verb{PROC NLMIXED} block.}
 
-\item{n_boot}{Number of \strong{valid} replicates (\verb{\%BNMNR} \verb{RESAMPL=}).
+\item{n_boot}{Number of \strong{valid} replicates (\verb{\%BNMNR} \verb{RESAMPL=}). A
+replicate whose \code{statistic} fails is redrawn and not counted, so the
+bands are \strong{conditional on estimability}: they describe the replicates
+on which the estimate could be computed. When more than 5\% of draws fail
+the run warns.
 \strong{Divergence:} the macro defaults to 100; this defaults to 1000,
 matching \code{\link[=boot_select]{boot_select()}} in this package. A hundred replicates puts the
 2.5th percentile on the third order statistic, where it is visibly
