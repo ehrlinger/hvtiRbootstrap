@@ -11,9 +11,13 @@ chunk <- function(seed, n_boot = 2L, reps = NULL, ...) {
   modifyList(list(
     seed = seed, n_boot = n_boot, slentry = 0.1, slstay = 0.07,
     base_params = "early.log_mu", usable = c(early = 10L, late = 10L),
+    requested = c(early = 10L, late = 10L), n_rows = 500L,
     max_steps = 50L, elapsed_mins = 1, manifest = list(md5 = "abc"),
     th_version = "1.2.6",
-    boot = list(replicates = reps, n_success = n_boot, n_failed = 0L)
+    boot = list(replicates = reps,
+                summary = data.frame(parameter = "early.age", n = 1L,
+                                     pct = 50),
+                n_success = n_boot, n_failed = 0L)
   ), list(...))
 }
 
@@ -186,7 +190,8 @@ test_that("a replicate id outside 1..n_boot is refused", {
 test_that("a chunk without a usable replicates frame is refused", {
   bad <- chunk(1)
   bad$boot$replicates <- NULL
-  expect_error(boot_pool_chunks(list(bad, chunk(2))), "no boot\\$replicates")
+  # Absent altogether, boot_validate() refuses it before the pool looks.
+  expect_error(boot_pool_chunks(list(bad, chunk(2))), "boot\\$replicates")
   bad2 <- chunk(1)
   bad2$boot$replicates$estimate <- NULL
   expect_error(boot_pool_chunks(list(bad2, chunk(2))), "no boot\\$replicates")
@@ -229,9 +234,10 @@ test_that("boot_shortfall reads `n_chunks` by exact name, not by prefix", {
   expect_null(boot_shortfall(bag, expect_chunks = 1L, expect_boot = 4L))
 })
 
-# boot_pool_chunks() calls no validator, so every field it reads from a chunk
-# is in the reachable class: there is nothing in front of it to turn an absent
-# field into an error first. These two tests cover that whole surface.
+# boot_pool_chunks() validates every chunk first, so some absent fields are
+# now refused by boot_validate() rather than by a gate. Either refusal will
+# do: what these tests pin is that a sibling field is never read in place of
+# the real one.
 
 test_that("every gated chunk field is read by exact name, not by prefix", {
   # The gates exist to refuse chunks that are not draws from the same screen.
@@ -248,8 +254,8 @@ test_that("every gated chunk field is read by exact name, not by prefix", {
       k[[gated[[f]]]] <- "X"
       k
     }
-    expect_error(boot_pool_chunks(list(sib(1), sib(2))), "no chunk records",
-                 info = f)
+    expect_error(boot_pool_chunks(list(sib(1), sib(2))),
+                 "no chunk records|not a valid bag", info = f)
   }
 })
 
@@ -281,4 +287,75 @@ test_that("an ungated chunk field is not silently taken from a sibling", {
     }
     expect_error(boot_pool_chunks(list(sib(1), sib(2))), info = f)
   }
+})
+
+# The real path, end to end: boot_select() -> boot_bag() -> boot_pool_chunks().
+# Every pool test above hand-builds its chunks in the hazard runner's shape,
+# which is how boot_pool_chunks() came to refuse this package's own bags:
+# boot_bag() wrote `engine` and no `max_steps`, and the pool gates on both.
+real_bag <- function(seed, ...) {
+  set.seed(5)
+  n  <- 120
+  x1 <- stats::rnorm(n)
+  df <- data.frame(y = 2 * x1 + stats::rnorm(n), x1 = x1,
+                   x2 = stats::rnorm(n))
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 8, seed = seed,
+                     ...)
+  boot_bag(fit, base_params = "(Intercept)", requested = 2L,
+           manifest = list(sha256 = "same-data"))
+}
+
+test_that("two boot_bag() runs pool through boot_pool_chunks()", {
+  a <- real_bag(1)
+  b <- real_bag(2)
+  p <- boot_pool_chunks(list(a, b))
+
+  expect_identical(p$n_boot, 16L)
+  expect_identical(p$n_chunks, 2L)
+  expect_identical(p$seeds, c(1, 2))
+  expect_identical(p$resampled, "rows")
+  expect_silent(boot_validate(p))
+  # Recomputed from the pooled replicates, not averaged.
+  x1 <- p$boot$summary[p$boot$summary$parameter == "x1", ]
+  n_x1 <- sum(a$boot$replicates$parameter == "x1") +
+    sum(b$boot$replicates$parameter == "x1")
+  expect_identical(as.integer(x1$n), as.integer(n_x1))
+})
+
+test_that("bags from different screens refuse to pool", {
+  expect_error(boot_pool_chunks(list(real_bag(1), real_bag(2, max_steps = 3))),
+               "step cap")
+  expect_error(boot_pool_chunks(list(real_bag(1),
+                                     real_bag(2, select = "none"))),
+               "selection method|slentry")
+  expect_error(boot_pool_chunks(list(real_bag(1), real_bag(2, fraction = 0.5))),
+               "draw fraction")
+})
+
+test_that("a recorded engine commit gates; an NA one falls back to version", {
+  a <- real_bag(1)
+  b <- real_bag(2)
+  a$engine_sha <- "aaa"
+  b$engine_sha <- "bbb"
+  expect_error(boot_pool_chunks(list(a, b)), "fitting engine")
+  # A sha against no sha is two kinds of evidence, and is refused too.
+  b$engine_sha <- NA_character_
+  expect_error(boot_pool_chunks(list(a, b)), "fitting engine")
+  a$engine_sha <- NA_character_
+  expect_identical(boot_pool_chunks(list(a, b))$n_chunks, 2L)
+})
+
+test_that("a chunk missing a field is named, not a raw vapply() error", {
+  bad <- chunk(1)
+  bad$boot$n_success <- NULL
+  expect_error(boot_pool_chunks(list(chunk(2), bad)),
+               "chunk 2 is not a valid bag.*boot\\$n_success")
+})
+
+test_that("a runner chunk without method or fraction still pools", {
+  # The hazard runner records neither. Read as "stepwise" and 1, as
+  # `resampled` is read as "rows".
+  expect_identical(boot_pool_chunks(list(chunk(1), chunk(2)))$n_chunks, 2L)
+  expect_error(boot_pool_chunks(list(chunk(1), chunk(2, method = "none"))),
+               "selection method")
 })

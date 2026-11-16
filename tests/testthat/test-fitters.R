@@ -203,3 +203,27 @@ test_that("select = 'none' still fits the full model", {
   expect_true(all(c("x1", "x2") %in% colnames(fit$coefficients)))
   expect_false(anyNA(fit$coefficients))
 })
+
+test_that("fit_cox() discards a fit that ran out of iterations", {
+  skip_if_not_installed("survival")
+  # coxph() signals non-convergence only by a warning, which fitters ignore,
+  # and by leaving iter = iter.max + 1. Reproduced here by capping iter.max at
+  # 2 through a mocked coxph(), since no small fixture reliably needs > 20.
+  set.seed(4)
+  n <- 150
+  d <- data.frame(time = stats::rexp(n), status = stats::rbinom(n, 1, 0.7),
+                  x1 = stats::rnorm(n), x2 = stats::rnorm(n))
+  sel <- list(method = "none", sle = 0.1, sls = 0.05, max_steps = 0)
+  expect_type(fit_cox(d, survival::Surv(time, status) ~ x1 + x2, sel),
+              "double")
+  real <- survival::coxph
+  testthat::local_mocked_bindings(
+    coxph = function(...) {
+      f <- real(...)
+      f$iter <- survival::coxph.control()$iter.max + 1L
+      f
+    },
+    .package = "survival"
+  )
+  expect_null(fit_cox(d, survival::Surv(time, status) ~ x1 + x2, sel))
+})

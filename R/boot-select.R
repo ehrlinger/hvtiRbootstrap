@@ -18,7 +18,10 @@
 #'   [fit_cox()]. `%bootreg` equivalent: `PROC=`.
 #' @param n_rep Number of **valid** models to generate (`%bootreg` `RESAMPL=`).
 #'   Replicates whose fit fails are redrawn and do not count, matching the
-#'   macro's `&regrc` check.
+#'   macro's `&regrc` check. That makes the result **conditional on
+#'   estimability**: the replicates kept are those on which the model could
+#'   be fitted. When more than 5% of draws fail the run warns, and
+#'   [boot_health()] flags the rate.
 #' @param fraction Fraction of `nrow(data)` to draw per replicate
 #'   (`%bootreg` `FRACTION=`). **Divergence:** the macro documents this
 #'   parameter but never applies it - it computes `ds_size * fraction`, prints
@@ -55,7 +58,8 @@
 #'   one row per valid replicate and one column per candidate term, `NA` where
 #'   the term was not selected. `$control` records the run's own settings --
 #'   `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`, `n_rows`,
-#'   `n_terms`, `elapsed_mins` and the `package` version -- so that a bag
+#'   `n_terms`, `elapsed_mins`, the `package` version, its commit `sha`
+#'   (`NA` when the installer recorded none) and `rng_kind` -- so that a bag
 #'   builder [boot_bag()] can take a provenance record from
 #'   the run rather than from what a caller retypes. `$call` cannot serve
 #'   that purpose: `match.call()` omits every argument left at its default.
@@ -116,6 +120,24 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     stop("`max_attempts` must be a whole number at least as large as `n_rep`, ",
          "or `Inf`.", call. = FALSE)
 
+  if (!is.function(fitter))
+    stop("`fitter` must be a function such as fit_linear, fit_logistic or ",
+         "fit_cox, found ", class(fitter)[1L], ".", call. = FALSE)
+  # NA here is not a looser threshold, it is no threshold: every p-value
+  # comparison against it is NA, the step accepts nothing, and the screen
+  # returns an empty selection that reads as a finding.
+  for (nm in c("sle", "sls")) {
+    v <- get(nm)
+    if (!is.numeric(v) || length(v) != 1L || is.na(v) || v < 0 || v > 1)
+      stop("`", nm, "` must be a single p-value threshold between 0 and 1.",
+           call. = FALSE)
+  }
+  if (!is.numeric(max_steps) || length(max_steps) != 1L ||
+        is.na(max_steps) || max_steps < 0 || max_steps != trunc(max_steps) ||
+        is.infinite(max_steps))
+    stop("`max_steps` must be a whole number of steps, 0 for no ",
+         "restriction.", call. = FALSE)
+
   if (!is.null(seed)) set.seed(seed)
 
   n <- nrow(data)
@@ -128,13 +150,22 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # phantom-term failure the "(Intercept)" handling below avoids for Cox.
   # Built on a zero-row frame so no model matrix is materialised, and with the
   # response deleted so a Surv() left-hand side is never evaluated.
-  terms_all <- tryCatch({
-    tt <- stats::delete.response(stats::terms(formula, data = data))
-    setdiff(colnames(stats::model.matrix(tt, data[0, , drop = FALSE])),
-            "(Intercept)")
-  }, error = function(e) {
-    attr(stats::terms(formula, data = data), "term.labels")
-  })
+  #
+  # Some terms cannot be built on zero rows (poly(), splines::ns()), so the
+  # fallback is the full frame, built once. It is NOT the formula's term
+  # labels: those are the undummied names, and a factor `sex` seeded as a
+  # column is the phantom described above. If even the full frame fails, the
+  # columns are whatever the fitters return.
+  tt <- stats::delete.response(stats::terms(formula, data = data))
+  .mm_cols <- function(d) {
+    setdiff(colnames(stats::model.matrix(tt, d)), "(Intercept)")
+  }
+  terms_all <- tryCatch(
+    .mm_cols(data[0, , drop = FALSE]),
+    error = function(e) {
+      tryCatch(.mm_cols(data), error = function(e) character(0))
+    }
+  )
 
   .t0 <- proc.time()[["elapsed"]]
   # The loop moved to .boot_resample(), which %BNMNR shares. The comments that
@@ -144,7 +175,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     draw = function() {
       data[sample.int(n, size = n_draw, replace = TRUE), , drop = FALSE]
     },
-    fit  = function(d) fitter(d, formula, ctrl),
+    fit  = function(d) .check_fitter_result(fitter(d, formula, ctrl)),
     n_rep = n_rep, max_attempts = max_attempts,
     caller = "boot_select", noun = "models",
     hint = paste0("The model could not be fitted on most replicates; check ",
@@ -174,6 +205,8 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # elapsed is this call's own elapsed seconds, in the minutes boot_validate()
   # expects. A chunked run sums them in boot_pool_chunks(), which is why the
   # unit matters here rather than being whatever was convenient.
+  # rng_kind: the same seed under a different RNGkind() is a different
+  # stream, so the seed alone does not reproduce a run.
   control <- list(
     method       = ctrl$method,
     sle          = ctrl$sle,
@@ -184,10 +217,40 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     n_rows       = as.integer(n),
     n_terms      = length(terms_all),
     elapsed_mins = (proc.time()[["elapsed"]] - .t0) / 60,
-    package      = as.character(utils::packageVersion("hvtiRbootstrap"))
+    package      = as.character(utils::packageVersion("hvtiRbootstrap")),
+    sha          = .package_sha(),
+    rng_kind     = RNGkind()
   )
 
   new_boot_selection(m, n_rep = as.integer(n_rep),
                      n_attempts = attempts, call = match.call(),
                      control = control)
+}
+
+# A fitter's result is checked once, here, rather than trusted. NULL is the
+# failed-replicate signal and passes through. Anything else must be a named
+# numeric vector: an unnamed one would be assigned into the coefficient
+# matrix by POSITION through `m[i, names(.)]` -- or fail there with an error
+# about subscripts that names neither the fitter nor the contract.
+.check_fitter_result <- function(r) {
+  if (is.null(r)) return(NULL)
+  if (!is.numeric(r) || (length(r) && (is.null(names(r)) ||
+                                         anyNA(names(r)) ||
+                                         any(names(r) == "")))) {
+    stop("`fitter` returned ",
+         if (is.numeric(r)) "an unnamed numeric vector" else
+           paste0("an object of class ", class(r)[1L]),
+         ". A fitter must return a NAMED numeric vector of the coefficients ",
+         "the model kept, or NULL when the fit failed. See the fitter ",
+         "contract in ?fit_linear.", call. = FALSE)
+  }
+  r
+}
+
+# The commit this package was installed from, when the installer recorded
+# one (remotes, pak and devtools write RemoteSha), else NA. A version string
+# alone cannot tell two builds of the same version apart.
+.package_sha <- function() {
+  sha <- utils::packageDescription("hvtiRbootstrap", fields = "RemoteSha")
+  if (length(sha) != 1L || is.na(sha) || !nzchar(sha)) NA_character_ else sha
 }

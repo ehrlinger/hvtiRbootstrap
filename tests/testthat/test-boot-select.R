@@ -34,8 +34,11 @@ test_that("a failing replicate is retried, not counted -- the regrc check", {
     if (calls <= 5) return(NULL)
     fit_linear(data, formula, select)
   }
-  out <- boot_select(sim_df(), yc ~ x1, flaky, n_rep = 10,
-                     select = "none", seed = 3)
+  expect_warning(
+    out <- boot_select(sim_df(), yc ~ x1, flaky, n_rep = 10,
+                       select = "none", seed = 3),
+    "threshold"
+  )
   expect_equal(nrow(out$coefficients), 10L)
   expect_gt(out$n_attempts, out$n_rep)
 })
@@ -209,4 +212,52 @@ test_that("an unseeded run records NA rather than inventing a seed", {
   out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
                      select = "none")
   expect_true(is.na(out$control$seed))
+})
+
+test_that("sle, sls, max_steps and fitter are validated", {
+  # sle = NA was the dangerous one: every comparison is NA, the step accepts
+  # nothing, and an empty screen reads as a finding.
+  d <- sim_df()
+  expect_error(boot_select(d, yc ~ x1, fit_linear, n_rep = 2, sle = NA),
+               "`sle`")
+  expect_error(boot_select(d, yc ~ x1, fit_linear, n_rep = 2, sls = 1.5),
+               "`sls`")
+  expect_error(boot_select(d, yc ~ x1, fit_linear, n_rep = 2,
+                           sle = c(0.1, 0.2)), "`sle`")
+  expect_error(boot_select(d, yc ~ x1, fit_linear, n_rep = 2, max_steps = -1),
+               "`max_steps`")
+  expect_error(boot_select(d, yc ~ x1, fit_linear, n_rep = 2,
+                           max_steps = 2.5), "`max_steps`")
+  expect_error(boot_select(d, yc ~ x1, "fit_linear", n_rep = 2), "`fitter`")
+})
+
+test_that("a fitter breaking the contract is named, not assigned by position", {
+  d <- sim_df()
+  unnamed <- function(data, formula, select) c(1, 2)
+  expect_error(boot_select(d, yc ~ x1, unnamed, n_rep = 2, seed = 1),
+               "unnamed numeric vector.*NAMED numeric")
+  a_model <- function(data, formula, select) stats::lm(formula, data)
+  expect_error(boot_select(d, yc ~ x1, a_model, n_rep = 2, seed = 1),
+               "class lm")
+})
+
+test_that("a term model.matrix cannot build on zero rows makes no phantom", {
+  # poly() fails on an empty frame. The old fallback seeded the formula's term
+  # LABELS, so a factor `grp` became a column no fitter ever returns, reported
+  # as a candidate selected 0% of the time.
+  set.seed(9)
+  n <- 120
+  d <- data.frame(x1 = stats::rnorm(n),
+                  grp = factor(sample(c("a", "b"), n, TRUE)))
+  d$y <- d$x1 + stats::rnorm(n)
+  fit <- boot_select(d, y ~ poly(x1, 2) + grp, fit_linear, n_rep = 3,
+                     select = "none", seed = 1)
+  expect_false("grp" %in% colnames(fit$coefficients))
+  expect_true("grpb" %in% colnames(fit$coefficients))
+})
+
+test_that("the run records its RNG kind and engine commit", {
+  fit <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 2, seed = 1)
+  expect_identical(fit$control$rng_kind, RNGkind())
+  expect_type(fit$control$sha, "character")
 })

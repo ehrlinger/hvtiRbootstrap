@@ -214,3 +214,34 @@ test_that("the bag's summary is keyed parameter and carries the quantiles", {
   expect_false("variable" %in% names(bag$boot$summary))
   expect_true(all(bag$boot$summary$parameter %in% colnames(fit$coefficients)))
 })
+
+test_that("boot_bag() records the screen's definition for the pool", {
+  bag <- boot_bag(fx_selection(), base_params = "(Intercept)", requested = 5L,
+                  manifest = list(sha256 = "abc123"))
+  expect_identical(bag$method, "stepwise")
+  expect_identical(bag$max_steps, 0L)
+  expect_identical(bag$fraction, 1)
+  expect_identical(bag$resampled, "rows")
+  expect_identical(bag$engine,
+                   as.character(utils::packageVersion("hvtiRbootstrap")))
+  expect_length(bag$engine_sha, 1L)
+  expect_identical(bag$rng_kind, RNGkind())
+})
+
+test_that("a fixed-model bag records no entry or stay level", {
+  set.seed(3)
+  df <- data.frame(y = stats::rnorm(60), x1 = stats::rnorm(60))
+  fit <- boot_select(df, y ~ x1, fit_linear, n_rep = 4, select = "none",
+                     seed = 1)
+  bag <- boot_bag(fit, base_params = "(Intercept)", requested = 1L,
+                  manifest = list(sha256 = "abc"))
+  expect_identical(bag$slentry, NA_real_)
+  expect_identical(bag$slstay, NA_real_)
+  expect_identical(bag$max_steps, NA_integer_)
+  expect_silent(boot_validate(bag))
+  prov <- boot_provenance(bag)
+  expect_identical(prov$value[prov$item == "Entry level (slentry)"], "NA")
+  # NA is allowed only where no selection ran.
+  bag$method <- "stepwise"
+  expect_error(boot_validate(bag), "slentry: expected a single value, found NA")
+})

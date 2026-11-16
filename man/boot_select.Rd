@@ -28,7 +28,10 @@ boot_select(
 
 \item{n_rep}{Number of \strong{valid} models to generate (\verb{\%bootreg} \verb{RESAMPL=}).
 Replicates whose fit fails are redrawn and do not count, matching the
-macro's \verb{&regrc} check.}
+macro's \verb{&regrc} check. That makes the result \strong{conditional on
+estimability}: the replicates kept are those on which the model could
+be fitted. When more than 5\% of draws fail the run warns, and
+\code{\link[=boot_health]{boot_health()}} flags the rate.}
 
 \item{fraction}{Fraction of \code{nrow(data)} to draw per replicate
 (\verb{\%bootreg} \verb{FRACTION=}). \strong{Divergence:} the macro documents this
@@ -73,7 +76,8 @@ An object of class \code{boot_selection}. \verb{$coefficients} is a matrix with
 one row per valid replicate and one column per candidate term, \code{NA} where
 the term was not selected. \verb{$control} records the run's own settings --
 \code{method}, \code{sle}, \code{sls}, \code{max_steps}, \code{fraction}, \code{seed}, \code{n_rows},
-\code{n_terms}, \code{elapsed_mins} and the \code{package} version -- so that a bag
+\code{n_terms}, \code{elapsed_mins}, the \code{package} version, its commit \code{sha}
+(\code{NA} when the installer recorded none) and \code{rng_kind} -- so that a bag
 builder \code{\link[=boot_bag]{boot_bag()}} can take a provenance record from
 the run rather than from what a caller retypes. \verb{$call} cannot serve
 that purpose: \code{match.call()} omits every argument left at its default.

@@ -182,11 +182,20 @@ fit_logistic <- function(data, formula, select) {
 #' a screen will usually select the same set and may occasionally differ on a
 #' borderline candidate. Removal is Wald, matching the macro.
 #'
+#' Non-convergence discards the replicate, as it does in [fit_logistic()].
+#' `coxph()` signals it only by a warning, "Ran out of iterations and did not
+#' converge", and warnings do not discard a replicate here, so the check reads
+#' the iteration count instead: a fit that used more than
+#' `survival::coxph.control()$iter.max` iterations ran out. A monotone
+#' likelihood ("coefficient may be infinite") that did converge is kept, as
+#' `glm`'s "fitted probabilities numerically 0 or 1" is.
+#'
 #' @inheritParams fit_linear
 #' @return Named numeric vector of kept coefficients, or `NULL` if the fit
-#'   errored. Cox models carry no intercept, so none appears in the result -
-#'   which means a replicate where selection kept nothing returns a
-#'   **zero-length** vector, not `NULL`, and counts as a valid replicate.
+#'   errored or did not converge. Cox models carry no intercept, so none
+#'   appears in the result - which means a replicate where selection kept
+#'   nothing returns a **zero-length** vector, not `NULL`, and counts as a
+#'   valid replicate.
 #' @seealso [fit_linear()] and [fit_logistic()]; [boot_select()].
 #' @examples
 #' if (requireNamespace("survival", quietly = TRUE)) {
@@ -206,8 +215,15 @@ fit_cox <- function(data, formula, select) {
     suppressWarnings({
       fit <- .fit_in_env(quote(survival::coxph(formula, data = data)),
                          formula, data)
-      stepped <- .maybe_step(fit, select, data, enter = "lr", remove = "wald")
-      if (is.null(stepped)) NULL else .coefs(stepped)
+      # coxph() has no $converged. On running out it warns and leaves
+      # iter = iter.max + 1, so the count is the signal the warning carries.
+      if (isTRUE(fit$iter > survival::coxph.control()$iter.max)) {
+        NULL
+      } else {
+        stepped <- .maybe_step(fit, select, data, enter = "lr",
+                               remove = "wald")
+        if (is.null(stepped)) NULL else .coefs(stepped)
+      }
     }),
     error = function(e) NULL
   )

@@ -101,3 +101,19 @@ test_that("boot_health reads `free_sd` by exact name, not by prefix", {
   expect_identical(row$value, format(stats::sd(c(1.0, 1.1, 0.9, 1.2))))
   expect_true(row$ok)
 })
+
+test_that("a failure rate above 5% fails the row; at or below it passes", {
+  bag <- fx_bag()
+  rate_row <- function(ok, bad) {
+    bag$boot$n_success <- ok
+    bag$boot$n_failed <- bad
+    h <- boot_health(bag)
+    h[h$check == "Replicates that failed", ]
+  }
+  r <- rate_row(95L, 5L)
+  expect_true(r$ok)
+  expect_true(is.na(r$note))
+  r <- rate_row(94L, 6L)
+  expect_false(r$ok)
+  expect_match(r$note, "conditional on estimability")
+})

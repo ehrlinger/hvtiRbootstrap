@@ -116,7 +116,11 @@
 #' @param statistic Function of `(data, ...)` returning a named numeric vector
 #'   of one replicate's estimates, or `NULL` if the replicate failed.
 #'   `%BNMNR` equivalent: the `PROC NLMIXED` block.
-#' @param n_rep Number of **valid** replicates (`%BNMNR` `RESAMPL=`).
+#' @param n_rep Number of **valid** replicates (`%BNMNR` `RESAMPL=`). A
+#'   replicate whose `statistic` fails is redrawn and not counted, so the
+#'   bands are **conditional on estimability**: they describe the replicates
+#'   on which the estimate could be computed. When more than 5% of draws fail
+#'   the run warns.
 #'   **Divergence:** the macro defaults to 100; this defaults to 1000,
 #'   matching [boot_select()] in this package. A hundred replicates puts the
 #'   2.5th percentile on the third order statistic, where it is visibly
@@ -289,7 +293,9 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
     n_rows = as.integer(n), n_units = as.integer(n_units),
     n_names = ncol(m),
     elapsed_mins = (proc.time()[["elapsed"]] - .t0) / 60,
-    package = as.character(utils::packageVersion("hvtiRbootstrap"))
+    package = as.character(utils::packageVersion("hvtiRbootstrap")),
+    sha = .package_sha(),
+    rng_kind = RNGkind()
   )
 
   new_boot_intervals(m, .interval_table(m), n_rep = as.integer(n_rep),
