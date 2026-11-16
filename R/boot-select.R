@@ -126,8 +126,9 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # NA here is not a looser threshold, it is no threshold: every p-value
   # comparison against it is NA, the step accepts nothing, and the screen
   # returns an empty selection that reads as a finding.
-  for (nm in c("sle", "sls")) {
-    v <- get(nm)
+  levels <- list(sle = sle, sls = sls)
+  for (nm in names(levels)) {
+    v <- levels[[nm]]
     if (!is.numeric(v) || length(v) != 1L || is.na(v) || v < 0 || v > 1)
       stop("`", nm, "` must be a single p-value threshold between 0 and 1.",
            call. = FALSE)
@@ -228,21 +229,25 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
 }
 
 # A fitter's result is checked once, here, rather than trusted. NULL is the
-# failed-replicate signal and passes through. Anything else must be a named
-# numeric vector: an unnamed one would be assigned into the coefficient
-# matrix by POSITION through `m[i, names(.)]` -- or fail there with an error
-# about subscripts that names neither the fitter nor the contract.
+# failed-replicate signal and passes through. Anything else must be a numeric
+# vector with unique names: an unnamed one fails inside `m[i, names(.)]` with
+# an error about subscripts that names neither the fitter nor the contract,
+# and a duplicated name keeps only the last value, silently.
 .check_fitter_result <- function(r) {
   if (is.null(r)) return(NULL)
-  if (!is.numeric(r) || (length(r) && (is.null(names(r)) ||
-                                         anyNA(names(r)) ||
-                                         any(names(r) == "")))) {
-    stop("`fitter` returned ",
-         if (is.numeric(r)) "an unnamed numeric vector" else
-           paste0("an object of class ", class(r)[1L]),
-         ". A fitter must return a NAMED numeric vector of the coefficients ",
-         "the model kept, or NULL when the fit failed. See the fitter ",
-         "contract in ?fit_linear.", call. = FALSE)
+  nm <- names(r)
+  bad_names <- length(r) > 0L &&
+    (is.null(nm) || anyNA(nm) || any(nm == "") || anyDuplicated(nm) > 0L)
+  if (!is.numeric(r) || bad_names) {
+    what <- if (is.numeric(r)) {
+      "a numeric vector with missing or duplicated names"
+    } else {
+      paste0("an object of class ", class(r)[1L])
+    }
+    stop("`fitter` returned ", what, ". A fitter must return a NAMED ",
+         "numeric vector of the coefficients the model kept, or NULL when ",
+         "the fit failed. See the fitter contract in ?fit_linear.",
+         call. = FALSE)
   }
   r
 }

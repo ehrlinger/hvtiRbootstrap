@@ -235,7 +235,10 @@ test_that("a fitter breaking the contract is named, not assigned by position", {
   d <- sim_df()
   unnamed <- function(data, formula, select) c(1, 2)
   expect_error(boot_select(d, yc ~ x1, unnamed, n_rep = 2, seed = 1),
-               "unnamed numeric vector.*NAMED numeric")
+               "missing or duplicated names.*NAMED numeric")
+  twice <- function(data, formula, select) c(x1 = 1, x1 = 2)
+  expect_error(boot_select(d, yc ~ x1, twice, n_rep = 2, seed = 1),
+               "duplicated names")
   a_model <- function(data, formula, select) stats::lm(formula, data)
   expect_error(boot_select(d, yc ~ x1, a_model, n_rep = 2, seed = 1),
                "class lm")

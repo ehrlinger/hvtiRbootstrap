@@ -241,6 +241,10 @@ test_that("a fixed-model bag records no entry or stay level", {
   expect_silent(boot_validate(bag))
   prov <- boot_provenance(bag)
   expect_identical(prov$value[prov$item == "Entry level (slentry)"], "NA")
+  # Only the NA is excused: absent is still absent.
+  gone <- bag
+  gone$slentry <- NULL
+  expect_error(boot_validate(gone), "slentry: expected a single value")
   # NA is allowed only where no selection ran.
   bag$method <- "stepwise"
   expect_error(boot_validate(bag), "slentry: expected a single value, found NA")
