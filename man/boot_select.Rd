@@ -8,14 +8,15 @@ boot_select(
   data,
   formula,
   fitter,
-  n_rep = 1000,
+  n_boot = 1000,
   fraction = 1,
   select = c("stepwise", "none"),
   sle = 0.1,
   sls = 0.05,
   max_steps = 0,
-  max_attempts = 10 * n_rep,
-  seed = NULL
+  max_attempts = 10 * n_boot,
+  seed = NULL,
+  n_rep
 )
 }
 \arguments{
@@ -26,7 +27,8 @@ boot_select(
 \item{fitter}{A fitter such as \code{\link[=fit_logistic]{fit_logistic()}}, \code{\link[=fit_linear]{fit_linear()}} or
 \code{\link[=fit_cox]{fit_cox()}}. \verb{\%bootreg} equivalent: \verb{PROC=}.}
 
-\item{n_rep}{Number of \strong{valid} models to generate (\verb{\%bootreg} \verb{RESAMPL=}).
+\item{n_boot}{Number of \strong{valid} models to generate (\verb{\%bootreg}
+\verb{RESAMPL=}).
 Replicates whose fit fails are redrawn and do not count, matching the
 macro's \verb{&regrc} check. That makes the result \strong{conditional on
 estimability}: the replicates kept are those on which the model could
@@ -70,6 +72,9 @@ budget raises an error reporting how many valid models were obtained. Pass
 \code{Inf} to restore the macro's uncapped behaviour.}
 
 \item{seed}{Optional integer for reproducibility.}
+
+\item{n_rep}{Deprecated name for \code{n_boot}, renamed under the hvtiR API
+rubric. It still works for one release and warns once per session.}
 }
 \value{
 An object of class \code{boot_selection}. \verb{$coefficients} is a matrix with
@@ -83,10 +88,14 @@ fitter's source) and the deparsed \code{formula} -- so that a bag
 builder \code{\link[=boot_bag]{boot_bag()}} can take a provenance record from
 the run rather than from what a caller retypes. \verb{$call} cannot serve
 that purpose: \code{match.call()} omits every argument left at its default.
+\verb{$provenance} is the hvtiR family's shared provenance record (\code{package},
+\code{version}, \code{sha}, \code{method}, \code{seed}, \code{rng_kind}, \code{time}), taken when the
+draw began, followed by this package's \code{fitter} and \code{formula}. The
+replicate count stays in \verb{$n_rep}.
 }
 \description{
 The R port of \verb{\%bootreg} (\code{bootstrap.models.sas} in the CORR macro library).
-Fits \code{fitter} on each of \code{n_rep} bootstrap replicates and records the
+Fits \code{fitter} on each of \code{n_boot} bootstrap replicates and records the
 coefficients each model kept.
 }
 \details{
@@ -105,10 +114,10 @@ x1 <- rnorm(n)
 df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
                  x2 = rnorm(n), noise = rnorm(n))
 
-# n_rep is RESAMPL=. It counts VALID models, so a replicate whose fit fails
+# n_boot is RESAMPL=. It counts VALID models, so a replicate whose fit fails
 # is redrawn and does not consume one -- the macro's &regrc check.
 fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
-                   n_rep = 50, seed = 42)
+                   n_boot = 50, seed = 42)
 fit
 
 # The replicate table itself, one row per model, NA where a term was not

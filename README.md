@@ -72,7 +72,7 @@ The `%bootreg` arguments you know carry the same meaning:
 
 | SAS | R |
 |---|---|
-| `RESAMPL=` | `n_rep` - still counts *valid* models |
+| `RESAMPL=` | `n_boot` - still counts *valid* models |
 | `FRACTION=` | `fraction` - but see D1 below |
 | `PROC=LOGISTIC \| REG \| PHREG` | `fit_logistic` \| `fit_linear` \| `fit_cox` |
 | `SELECT=` / `FIXED=1` | `select = "stepwise"` / `select = "none"` |
@@ -118,7 +118,7 @@ df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
                  x2 = rnorm(n), noise = rnorm(n))
 
 fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
-                   n_rep = 200, seed = 42)
+                   n_boot = 200, seed = 42)
 fit
 #> <boot_selection>
 #>   replicates: 200 valid of 200 attempts
@@ -225,7 +225,7 @@ Wald, matching `PROC LOGISTIC`. `fit_cox()`'s own criteria are D4, below.
 
 **D3 - the retry loop is capped.** `%bootreg` resamples until it has `RESAMPL`
 valid models and never gives up, so a model that fails on every replicate spins
-forever. `boot_select()` budgets `max_attempts = 10 * n_rep` and errors with a
+forever. `boot_select()` budgets `max_attempts = 10 * n_boot` and errors with a
 diagnostic when it runs out. Pass `max_attempts = Inf` for the macro's
 behaviour.
 

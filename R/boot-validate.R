@@ -161,9 +161,9 @@
 #' @export
 boot_validate <- function(bag) {
   if (!is.list(bag)) {
-    stop("`bag` must be a list: the bootstrap screen itself, not a path to ",
-         "it. Read it with `readRDS()` first, or pool the chunks with ",
-         "`boot_pool_chunks()`.", call. = FALSE)
+    .abort("`bag` must be a list: the bootstrap screen itself, not a path to ",
+           "it. Read it with `readRDS()` first, or pool the chunks with ",
+           "`boot_pool_chunks()`.", class = "invalid_bag")
   }
 
   # A fixed-model screen (method "none") selected nothing, so it used no entry
@@ -251,12 +251,12 @@ boot_validate <- function(bag) {
   }
 
   if (length(problems)) {
-    stop("This bootstrap screen does not have the shape a report reads. ",
-         length(problems), " problem(s):\n",
-         paste0("  - ", problems, collapse = "\n"),
-         "\nEither the runner that wrote it predates these fields, or it is ",
-         "not the runner this report expects. Reporting over it would print ",
-         "blanks where the screen's criteria belong.", call. = FALSE)
+    .abort("This bootstrap screen does not have the shape a report reads. ",
+           length(problems), " problem(s):\n",
+           paste0("  - ", problems, collapse = "\n"),
+           "\nEither the runner that wrote it predates these fields, or it is ",
+           "not the runner this report expects. Reporting over it would print ",
+           "blanks where the screen's criteria belong.", class = "invalid_bag")
   }
 
   invisible(TRUE)

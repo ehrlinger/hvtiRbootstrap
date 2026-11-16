@@ -7,12 +7,13 @@
 boot_predict_ci(
   data,
   statistic,
-  n_rep = 1000,
+  n_boot = 1000,
   fraction = 1,
   id = NULL,
-  max_attempts = 10 * n_rep,
+  max_attempts = 10 * n_boot,
   seed = NULL,
-  ...
+  ...,
+  n_rep
 )
 }
 \arguments{
@@ -22,7 +23,7 @@ boot_predict_ci(
 of one replicate's estimates, or \code{NULL} if the replicate failed.
 \verb{\%BNMNR} equivalent: the \verb{PROC NLMIXED} block.}
 
-\item{n_rep}{Number of \strong{valid} replicates (\verb{\%BNMNR} \verb{RESAMPL=}). A
+\item{n_boot}{Number of \strong{valid} replicates (\verb{\%BNMNR} \verb{RESAMPL=}). A
 replicate whose \code{statistic} fails is redrawn and not counted, so the
 bands are \strong{conditional on estimability}: they describe the replicates
 on which the estimate could be computed. When more than 5\% of draws fail
@@ -30,7 +31,7 @@ the run warns.
 \strong{Divergence:} the macro defaults to 100; this defaults to 1000,
 matching \code{\link[=boot_select]{boot_select()}} in this package. A hundred replicates puts the
 2.5th percentile on the third order statistic, where it is visibly
-unstable. Pass \code{n_rep = 100} to reproduce the macro.}
+unstable. Pass \code{n_boot = 100} to reproduce the macro.}
 
 \item{fraction}{Fraction of units drawn per replicate (\verb{\%BNMNR}
 \verb{FRACTION=}). Applied, as the macro applies it -- unlike \verb{\%bootreg},
@@ -49,12 +50,23 @@ Pass \code{Inf} to restore that.}
 \item{seed}{Optional integer for reproducibility (\verb{\%BNMNR} \verb{SEED=}).}
 
 \item{...}{Passed to \code{statistic}.}
+
+\item{n_rep}{Deprecated name for \code{n_boot}, renamed under the hvtiR API
+rubric. It still works for one release and warns once per session.
+Before the rename, an \verb{n_boot =} argument was passed through \code{...} to
+\code{statistic}; a call that still uses \code{n_rep} keeps that meaning, so
+\verb{n_rep = 100, n_boot = 2} draws 100 replicates and hands \code{n_boot = 2} to
+\code{statistic}. Under the new name \code{n_boot} is the replicate count and is
+never forwarded: a \code{statistic} with its own \code{n_boot} argument should
+rename it or bind it in a closure.}
 }
 \value{
 An object of class \code{boot_intervals}. \verb{$estimates} is a matrix with
 one row per valid replicate and one column per quantity; \verb{$intervals} is
 the per-quantity table with columns \code{parameter}, \code{cll_p95}, \code{cll_p68},
-\code{median}, \code{clu_p68}, \code{clu_p95}. \verb{$control} records the run's settings.
+\code{median}, \code{clu_p68}, \code{clu_p95}. \verb{$control} records the run's settings,
+and \verb{$provenance} the hvtiR family's shared provenance record, with
+\code{method = "percentile"}.
 }
 \description{
 The R port of \verb{\%BNMNR} and \verb{\%BNPREV} (\verb{bn.*} in the CORR macro library).
@@ -93,7 +105,7 @@ SAS's \code{PCTLDEF=1}. A coverage-shaped name passed through \code{...} (\code{
 df <- data.frame(x = rnorm(200))
 est <- function(d, ...) c(mean = mean(d$x), sd = sd(d$x))
 
-r <- boot_predict_ci(df, est, n_rep = 100, seed = 42)
+r <- boot_predict_ci(df, est, n_boot = 100, seed = 42)
 r
 summary(r)
 }

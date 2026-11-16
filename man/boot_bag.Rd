@@ -52,6 +52,8 @@ alongside the \verb{\%SUMBOOT} statistics. Those two are the spread of the
 coefficient across the replicates that \strong{selected} it, not a confidence
 interval: a term chosen half the time has an interval over half the
 replicates.
+\code{provenance} is the hvtiR family's shared provenance record, copied
+from the screen.
 Validated before it is returned, so this function cannot emit a bag that a
 report will refuse three chunks into a render.
 }
@@ -83,7 +85,7 @@ set.seed(1)
 n  <- 200
 x1 <- rnorm(n)
 df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, x2 = rnorm(n))
-fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 10, seed = 42)
+fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_boot = 10, seed = 42)
 bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2,
                 manifest = list(sha256 = "example"))
 boot_frequencies(bag)

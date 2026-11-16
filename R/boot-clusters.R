@@ -29,7 +29,7 @@
 #'                  x2 = rnorm(n), noise = rnorm(n))
 #'
 #' fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
-#'                    n_rep = 50, seed = 42)
+#'                    n_boot = 50, seed = 42)
 #'
 #' # x1 and x2 stand in for a correlated pair -- weight and body surface area,
 #' # say. n_any is not the sum of their individual counts: a replicate that
