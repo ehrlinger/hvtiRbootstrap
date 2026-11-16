@@ -89,7 +89,9 @@
 #' Three shapes are checked, because three things can be true of a field:
 #'
 #' * **Scalar** - `n_boot`, `seed`, `slentry`, `slstay`, `n_rows` and
-#'   `elapsed_mins` are each one value. A length-2 `n_boot` means the pool was
+#'   `elapsed_mins` are each one value. `slentry` and `slstay` may be `NA`
+#'   only on a bag whose `method` is `"none"`, where no selection ran. A
+#'   length-2 `n_boot` means the pool was
 #'   written per phase into a field that is not per phase, and every count
 #'   downstream is then ambiguous.
 #' * **Per phase** - `requested` and `usable` may be a vector, and on a
@@ -164,10 +166,18 @@ boot_validate <- function(bag) {
          "`boot_pool_chunks()`.", call. = FALSE)
   }
 
+  # A fixed-model screen (method "none") selected nothing, so it used no entry
+  # or stay level and boot_bag() records NA for both. Anywhere else NA is a
+  # level that was never recorded.
+  na_ok <- if (identical(bag[["method"]], "none")) c("slentry", "slstay")
   scalars <- c("n_boot", "seed", "slentry", "slstay", "n_rows", "elapsed_mins")
   problems <- c(
-    unlist(lapply(scalars, function(f) .chk_scalar(bag[[f]], f)),
-           use.names = FALSE),
+    unlist(lapply(scalars, function(f) {
+      v <- bag[[f]]
+      # Present and single is still required; only the NA is excused.
+      if (f %in% na_ok && length(v) == 1L && is.na(v)) character(0) else
+        .chk_scalar(v, f)
+    }), use.names = FALSE),
     unlist(lapply(c("requested", "usable"),
                   function(f) .chk_per_phase(bag[[f]], f)),
            use.names = FALSE),

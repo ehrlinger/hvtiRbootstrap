@@ -103,15 +103,11 @@ boot_provenance <- function(bag) {
   # package ran itself. Without the third branch that row printed NA on every
   # boot_select() screen, which is the blank-where-provenance-belongs failure
   # this table exists to prevent, in the table itself.
-  engine <- if (!is.null(bag[["th_sha"]])) {
-    paste0("sha:", bag[["th_sha"]])
-  } else if (!is.null(bag[["th_version"]])) {
-    paste0("version:", bag[["th_version"]])
-  } else if (!is.null(bag[["engine"]])) {
-    paste0("version:", bag[["engine"]])
-  } else {
-    NA_character_
-  }
+  #
+  # Read by the pool's own reader, so the table names the engine the pool
+  # compared rather than a second opinion of it.
+  engine <- .chunk_engine_provenance(bag)
+  if (is.null(engine)) engine <- NA_character_
 
   n_chunks <- if (is.null(bag[["n_chunks"]])) {
     1L

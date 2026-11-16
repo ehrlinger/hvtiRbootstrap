@@ -16,9 +16,10 @@ fit_cox(data, formula, select)
 }
 \value{
 Named numeric vector of kept coefficients, or \code{NULL} if the fit
-errored. Cox models carry no intercept, so none appears in the result -
-which means a replicate where selection kept nothing returns a
-\strong{zero-length} vector, not \code{NULL}, and counts as a valid replicate.
+errored or did not converge. Cox models carry no intercept, so none
+appears in the result - which means a replicate where selection kept
+nothing returns a \strong{zero-length} vector, not \code{NULL}, and counts as a
+valid replicate.
 }
 \description{
 Fit a Cox proportional-hazards model for one bootstrap replicate
@@ -31,6 +32,14 @@ likelihood-ratio test - so entry here is by likelihood ratio. The two agree
 asymptotically and differ only for a term sitting on the entry threshold, so
 a screen will usually select the same set and may occasionally differ on a
 borderline candidate. Removal is Wald, matching the macro.
+
+Non-convergence discards the replicate, as it does in \code{\link[=fit_logistic]{fit_logistic()}}.
+\code{coxph()} signals it only by a warning, "Ran out of iterations and did not
+converge", and warnings do not discard a replicate here, so the check reads
+the iteration count instead: a fit that used more than
+\code{survival::coxph.control()$iter.max} iterations ran out. A monotone
+likelihood ("coefficient may be infinite") that did converge is kept, as
+\code{glm}'s "fitted probabilities numerically 0 or 1" is.
 }
 \examples{
 if (requireNamespace("survival", quietly = TRUE)) {

@@ -10,8 +10,11 @@ test_that(".boot_resample keeps n_rep results and counts every attempt", {
   # Every third draw fails.
   fit <- function(d) if (d %% 3L == 0L) NULL else d
 
-  r <- .boot_resample(draw, fit, n_rep = 4L, max_attempts = 100L,
-                      caller = "x", noun = "results", hint = "")
+  expect_warning(
+    r <- .boot_resample(draw, fit, n_rep = 4L, max_attempts = 100L,
+                        caller = "x", noun = "results", hint = ""),
+    "threshold"
+  )
 
   expect_length(r$results, 4L)
   expect_equal(unlist(r$results), c(1, 2, 4, 5))
@@ -61,8 +64,11 @@ test_that(".boot_resample forces draw() even when fit() never touches it", {
     if (i %% 2L == 0L) NULL else d
   }
 
-  r <- .boot_resample(draw, fit, n_rep = 4L, max_attempts = 100L,
-                      caller = "x", noun = "results", hint = "")
+  expect_warning(
+    r <- .boot_resample(draw, fit, n_rep = 4L, max_attempts = 100L,
+                        caller = "x", noun = "results", hint = ""),
+    "threshold"
+  )
 
   expect_equal(n_calls, r$n_attempts)
 })
@@ -74,8 +80,12 @@ test_that(".boot_resample with max_attempts = Inf does not cap", {
     i <<- i + 1L
     if (i < 50L) NULL else i
   }
-  r <- .boot_resample(function() 1, fit, n_rep = 1L, max_attempts = Inf,
-                      caller = "x", noun = "results", hint = "")
+  expect_warning(
+    r <- .boot_resample(function() 1, fit, n_rep = 1L,
+                        max_attempts = Inf, caller = "x", noun = "results",
+                        hint = ""),
+    "threshold"
+  )
 
   expect_length(r$results, 1L)
   expect_equal(r$n_attempts, 50L)

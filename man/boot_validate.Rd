@@ -28,7 +28,9 @@ render, and the resulting defect shipped in three releases.
 Three shapes are checked, because three things can be true of a field:
 \itemize{
 \item \strong{Scalar} - \code{n_boot}, \code{seed}, \code{slentry}, \code{slstay}, \code{n_rows} and
-\code{elapsed_mins} are each one value. A length-2 \code{n_boot} means the pool was
+\code{elapsed_mins} are each one value. \code{slentry} and \code{slstay} may be \code{NA}
+only on a bag whose \code{method} is \code{"none"}, where no selection ran. A
+length-2 \code{n_boot} means the pool was
 written per phase into a field that is not per phase, and every count
 downstream is then ambiguous.
 \item \strong{Per phase} - \code{requested} and \code{usable} may be a vector, and on a

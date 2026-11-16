@@ -91,7 +91,10 @@ test_that("boot_predict_ci counts VALID replicates, redrawing failures", {
     if (i %% 2L == 0L) NULL else c(mean = mean(d$x))
   }
 
-  r <- boot_predict_ci(df, flaky, n_rep = 10, seed = 1)
+  expect_warning(
+    r <- boot_predict_ci(df, flaky, n_rep = 10, seed = 1),
+    "threshold"
+  )
 
   expect_equal(r$n_rep, 10L)
   expect_equal(nrow(r$estimates), 10L)
@@ -109,7 +112,10 @@ test_that("a statistic returning NA is a failed replicate, not a gap", {
     c(mean = if (i %% 2L == 0L) NA_real_ else mean(d$x))
   }
 
-  r <- boot_predict_ci(df, sometimes_na, n_rep = 5, seed = 1)
+  expect_warning(
+    r <- boot_predict_ci(df, sometimes_na, n_rep = 5, seed = 1),
+    "threshold"
+  )
 
   expect_equal(r$n_rep, 5L)
   expect_false(anyNA(r$estimates))
@@ -130,7 +136,10 @@ test_that("NaN, Inf and -Inf are each a failed replicate too", {
       c(mean = if (i %% 2L == 0L) bad else mean(d$x))
     }
 
-    r <- boot_predict_ci(df, sometimes_bad, n_rep = 5, seed = 1)
+    expect_warning(
+      r <- boot_predict_ci(df, sometimes_bad, n_rep = 5, seed = 1),
+      "threshold"
+    )
 
     expect_equal(r$n_rep, 5L)
     expect_true(all(is.finite(r$estimates)))
@@ -150,7 +159,10 @@ test_that("a statistic whose names change is a failed replicate", {
     if (i %% 3L == 0L) c(other = 1) else c(mean = mean(d$x))
   }
 
-  r <- boot_predict_ci(df, drifting, n_rep = 6, seed = 1)
+  expect_warning(
+    r <- boot_predict_ci(df, drifting, n_rep = 6, seed = 1),
+    "threshold"
+  )
 
   expect_equal(colnames(r$estimates), "mean")
   expect_equal(r$n_rep, 6L)
@@ -168,7 +180,10 @@ test_that("a zero-length named result is a failed replicate", {
     if (i %% 2L == 0L) c(mean = 1)[0] else c(mean = mean(d$x))
   }
 
-  r <- boot_predict_ci(df, sometimes_empty, n_rep = 5, seed = 1)
+  expect_warning(
+    r <- boot_predict_ci(df, sometimes_empty, n_rep = 5, seed = 1),
+    "threshold"
+  )
 
   expect_equal(r$n_rep, 5L)
   expect_equal(colnames(r$estimates), "mean")
@@ -190,7 +205,10 @@ test_that("a duplicate-named result is a failed replicate", {
     }
   }
 
-  r <- boot_predict_ci(df, sometimes_dup, n_rep = 5, seed = 1)
+  expect_warning(
+    r <- boot_predict_ci(df, sometimes_dup, n_rep = 5, seed = 1),
+    "threshold"
+  )
 
   expect_equal(r$n_rep, 5L)
   expect_equal(colnames(r$estimates), "a")

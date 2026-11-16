@@ -47,11 +47,17 @@
 # sha and a version are different KINDS of evidence, and a chunk that can name
 # its commit must not be pooled with one that cannot, even when both report the
 # same version.
+#
+# Two spellings of each. `th_sha`/`th_version` are TemporalHazard's, written by
+# the hazard runner. `engine_sha`/`engine` are this package's, written by
+# boot_bag(); `engine_sha` is NA when the installer recorded no commit, and an
+# NA sha is no sha, so the version is used.
 .chunk_engine_provenance <- function(k) {
-  if (!is.null(k[["th_sha"]]))     return(paste0("sha:", k[["th_sha"]]))
-  if (!is.null(k[["th_version"]])) {
-    return(paste0("version:", k[["th_version"]]))
-  }
+  known <- function(v) length(v) == 1L && !is.na(v)
+  if (known(k[["th_sha"]]))     return(paste0("sha:", k[["th_sha"]]))
+  if (known(k[["engine_sha"]])) return(paste0("sha:", k[["engine_sha"]]))
+  if (known(k[["th_version"]])) return(paste0("version:", k[["th_version"]]))
+  if (known(k[["engine"]]))     return(paste0("version:", k[["engine"]]))
   NULL
 }
 
@@ -78,6 +84,16 @@
 #'   `"rows"`, which is what every earlier runner did; the pooled object
 #'   carries the agreed value.
 #'
+#' * A different **fitter** or **formula** is a different model: pooling a
+#'   linear screen with a logistic one averages slopes with log-odds, and two
+#'   formulas offering the same number of candidates are not the same pool.
+#'   [boot_bag()] records both; a hazard-runner chunk records neither and
+#'   pools only with other runner chunks. Any other chunk without them is
+#'   refused.
+#' * A different **method** or **fraction** is a different screen. Absent,
+#'   as in every runner chunk written before [boot_bag()] recorded them, they
+#'   are read as `"stepwise"` and `1`.
+#'
 #' Neither shows up as an error in a frequency table. Both show up as a slightly
 #' different number.
 #'
@@ -99,12 +115,12 @@
 #' averaged across chunks: a percentage of a percentage is not a percentage of
 #' the whole, and the chunks need not be the same size.
 #'
-#' @param chunks A list of chunk objects, each carrying at least `seed`,
-#'   `n_boot`, `slentry`, `slstay`, `base_params`, `usable`, `max_steps`,
-#'   `elapsed_mins`, a `manifest` with an `md5` or `sha256`, an engine
-#'   provenance field (`th_sha` or `th_version`), and a `boot` list with
-#'   `replicates`, `n_success` and `n_failed`. An optional `resampled`
-#'   (`"patients"` or `"rows"`) defaults to `"rows"`.
+#' @param chunks A list of chunk objects: bags from [boot_bag()], or chunks
+#'   a runner wrote in the same shape. Each is checked with [boot_validate()]
+#'   first, and must also carry `max_steps` and an engine provenance field
+#'   (`engine_sha` or `engine` from [boot_bag()], `th_sha` or `th_version` from
+#'   the hazard runner). The optional `resampled` (`"patients"` or `"rows"`),
+#'   `method` and `fraction` default to `"rows"`, `"stepwise"` and `1`.
 #'
 #' @return One object shaped like a single chunk, with `boot$replicates` stacked
 #'   and re-indexed, `boot$summary` recomputed, `resampled` set to the agreed
@@ -118,10 +134,13 @@
 #' # Two chunks as the hazard runner writes them: same screen, different seeds.
 #' chunk <- function(seed) list(
 #'   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
-#'   base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+#'   base_params = "early.log_mu", usable = c(early = 10L),
+#'   requested = c(early = 10L), n_rows = 300L, max_steps = 50L,
 #'   elapsed_mins = 1, manifest = list(sha256 = "example"),
 #'   th_version = "1.2.16",
-#'   boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+#'   boot = list(n_success = 2L, n_failed = 0L,
+#'     summary = data.frame(parameter = "early.age", n = 1L, pct = 50),
+#'     replicates = data.frame(
 #'     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
 #'     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
 #' )
@@ -136,6 +155,17 @@
 boot_pool_chunks <- function(chunks) {
   if (!length(chunks)) {
     stop("boot_pool_chunks(): no chunks to pool.", call. = FALSE)
+  }
+
+  # Every chunk is a bag, and is checked as one before anything is compared.
+  # Without this a chunk missing `n_success` reached the vapply() calls below
+  # and failed with "values must be length 1", naming neither the chunk nor
+  # the field.
+  for (i in seq_along(chunks)) {
+    tryCatch(boot_validate(chunks[[i]]), error = function(e) {
+      stop("boot_pool_chunks(): chunk ", i, " is not a valid bag. ",
+           conditionMessage(e), call. = FALSE)
+    })
   }
 
   # format() then collapse, so the comparison works for scalars and vectors
@@ -188,6 +218,35 @@ boot_pool_chunks <- function(chunks) {
     r <- k[["resampled"]]
     if (is.null(r)) "rows" else r
   }, "how they resampled (resampled)")
+
+  # The same normalisation, for the same reason: a chunk that predates these
+  # fields ran a stepwise screen over full-size draws, because no runner before
+  # boot_bag() recorded them and none offered anything else. boot_bag() writes
+  # both, so a fixed-model bag and a stepwise one now refuse to pool.
+  # The model. A bag records its fitter and formula; a hazard-runner chunk
+  # records neither, and is read as the runner's own model so runner chunks
+  # still pool with each other -- and never with a bag, whose engine differs.
+  # Anything else that records no model is refused as unverifiable.
+  model_field <- function(f) {
+    function(k) {
+      v <- k[[f]]
+      if (!is.null(v)) return(v)
+      th <- k[["th_sha"]]
+      if (is.null(th)) th <- k[["th_version"]]
+      if (!is.null(th)) "hazard runner (unrecorded)" else NULL
+    }
+  }
+  agree(model_field("fitter"),  "the fitter (fitter)")
+  agree(model_field("formula"), "the model formula (formula)")
+
+  agree(function(k) {
+    m <- k[["method"]]
+    if (is.null(m)) "stepwise" else m
+  }, "the selection method (method)")
+  agree(function(k) {
+    f <- k[["fraction"]]
+    if (is.null(f)) 1 else f
+  }, "the draw fraction (fraction)")
 
   seeds <- vapply(chunks, function(k) as.numeric(k[["seed"]]), numeric(1))
   if (anyDuplicated(seeds)) {
@@ -349,10 +408,13 @@ boot_chunk_files <- function(out_dir, prefix = "bagging") {
 #' # Two chunks as the hazard runner writes them: same screen, different seeds.
 #' chunk <- function(seed) list(
 #'   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
-#'   base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+#'   base_params = "early.log_mu", usable = c(early = 10L),
+#'   requested = c(early = 10L), n_rows = 300L, max_steps = 50L,
 #'   elapsed_mins = 1, manifest = list(sha256 = "example"),
 #'   th_version = "1.2.16",
-#'   boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+#'   boot = list(n_success = 2L, n_failed = 0L,
+#'     summary = data.frame(parameter = "early.age", n = 1L, pct = 50),
+#'     replicates = data.frame(
 #'     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
 #'     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
 #' )

@@ -16,7 +16,7 @@ one, and \code{NA} for a row that is a fact rather than a check. \code{note} say
 what a failure means and is \code{NA} otherwise.
 }
 \description{
-Four facts about a screen, two of which are checks that catch a run which
+Four facts about a screen, three of which are checks that catch a run which
 produced a perfectly ordinary-looking table of numbers that mean nothing.
 }
 \details{
@@ -41,6 +41,12 @@ not vary, and one replicate cannot support it.
 none -- and an unchunked run is the shape most likely to have been built the
 way this check exists to catch. Skipping it there would turn the check off
 in exactly the case that needs it.
+
+\strong{More than 5\% of draws failing is flagged.} A failed replicate is redrawn
+and not counted, as \verb{\%bootreg} does, so a nonzero \code{n_failed} is not a fault.
+A high rate is: the replicates kept are then the ones on which the model
+could be estimated, and every frequency is conditional on that. The rate is
+\code{n_failed / (n_success + n_failed)}.
 
 This function \strong{returns} its findings rather than stopping. A report
 decides how to present them: a callout, a red cell, or a \code{stop()} of its

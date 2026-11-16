@@ -45,8 +45,16 @@
 #'
 #' @return A list carrying the fields [boot_validate()] requires: `n_boot`,
 #'   `seed`, `slentry`, `slstay`, `base_params`, `requested`, `usable`,
-#'   `n_rows`, `elapsed_mins`, `manifest`, `engine`, `dropped` when supplied,
-#'   and `boot` holding `replicates`, `summary`, `n_success` and `n_failed`.
+#'   `n_rows`, `elapsed_mins`, `manifest`, `dropped` when supplied, and `boot`
+#'   holding `replicates`, `summary`, `n_success` and `n_failed`. It also
+#'   carries what [boot_pool_chunks()] checks before pooling two bags: the
+#'   engine (`engine`, the package version, and `engine_sha`, its commit or
+#'   `NA`), the model (`fitter` and `formula`), `method`, `max_steps`,
+#'   `fraction` and `resampled` (always `"rows"`), plus `rng_kind`. A screen
+#'   built before this field existed records no model, so its bag carries
+#'   none and [boot_pool_chunks()] refuses it. Under `select = "none"`,
+#'   `slentry`, `slstay` and `max_steps` are `NA`: no selection ran, so no
+#'   level was used.
 #'   `boot$summary` is keyed `parameter` -- as `boot$replicates` and
 #'   [boot_health()] are, and as [boot_pool_chunks()] returns -- rather than
 #'   [boot_summary()]'s `variable`, and carries `sel_q025` and `sel_q975`
@@ -150,11 +158,15 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
   reps <- reps[order(reps$replicate, reps$parameter), , drop = FALSE]
   rownames(reps) <- NULL
 
+  # Under select = "none" nothing is selected, so sle, sls and max_steps were
+  # never consulted. Recording the defaults would print entry and stay levels
+  # in the provenance table for a screen that used neither; NA prints a gap.
+  selected <- !identical(ctl$method, "none")
   bag <- list(
     n_boot       = as.integer(x$n_rep),
     seed         = ctl$seed,
-    slentry      = ctl$sle,
-    slstay       = ctl$sls,
+    slentry      = if (selected) ctl$sle else NA_real_,
+    slstay       = if (selected) ctl$sls else NA_real_,
     base_params  = base_params,
     requested    = requested,
     usable       = n_usable,
@@ -165,6 +177,17 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
     # cannot say that, but its absence prints as NA in the provenance table,
     # which reads as an answer rather than as a gap.
     engine       = ctl$package,
+    engine_sha   = if (is.null(ctl$sha)) NA_character_ else ctl$sha,
+    # The rest of the screen's definition, so boot_pool_chunks() can check
+    # that two bags ran the same screen rather than assume it. boot_select()
+    # always draws rows; patient resampling is the hazard runner's.
+    method       = ctl$method,
+    max_steps    = if (selected) as.integer(ctl$max_steps) else NA_integer_,
+    fraction     = ctl$fraction,
+    resampled    = "rows",
+    fitter       = ctl$fitter,
+    formula      = ctl$formula,
+    rng_kind     = if (is.null(ctl$rng_kind)) NA_character_ else ctl$rng_kind,
     boot         = list(
       replicates = reps,
       summary    = .bag_summary(m),

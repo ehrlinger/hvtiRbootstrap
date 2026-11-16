@@ -1,7 +1,7 @@
 #' Did the bootstrap screen actually run?
 #'
 #' @description
-#' Four facts about a screen, two of which are checks that catch a run which
+#' Four facts about a screen, three of which are checks that catch a run which
 #' produced a perfectly ordinary-looking table of numbers that mean nothing.
 #'
 #' @details
@@ -26,6 +26,12 @@
 #' none -- and an unchunked run is the shape most likely to have been built the
 #' way this check exists to catch. Skipping it there would turn the check off
 #' in exactly the case that needs it.
+#'
+#' **More than 5% of draws failing is flagged.** A failed replicate is redrawn
+#' and not counted, as `%bootreg` does, so a nonzero `n_failed` is not a fault.
+#' A high rate is: the replicates kept are then the ones on which the model
+#' could be estimated, and every frequency is conditional on that. The rate is
+#' `n_failed / (n_success + n_failed)`.
 #'
 #' This function **returns** its findings rather than stopping. A report
 #' decides how to present them: a callout, a red cell, or a `stop()` of its
@@ -74,6 +80,9 @@ boot_health <- function(bag) {
   }
 
   n_success <- as.integer(bag$boot$n_success)
+  n_failed  <- as.integer(bag$boot$n_failed)
+  fail_rate <- n_failed / (n_success + n_failed)
+  fail_ok   <- if (is.na(fail_rate)) NA else fail_rate <= .failure_threshold
 
   empty_note <- paste0(
     "The screen selected NOTHING: no parameter outside the base model ",
@@ -93,20 +102,29 @@ boot_health <- function(bag) {
     "100% and mean nothing."
   )
 
+  fail_note <- paste0(
+    "More than ", 100 * .failure_threshold, "% of the replicates drawn ",
+    "failed to fit and were redrawn (", sprintf("%.1f", 100 * fail_rate),
+    "%). The replicates kept are those on which the model could be ",
+    "estimated, so every frequency is conditional on estimability. Look for ",
+    "separation or sparse cells before reading the table."
+  )
+
   data.frame(
     check = c("Replicates that fitted", "Replicates that failed",
               "Distinct candidates ever selected",
               "SD of the first free base parameter"),
     value = c(format(bag$boot$n_success), format(bag$boot$n_failed),
               format(length(candidates)), format(free_sd)),
-    # A nonzero failure count is not itself a fault -- %bootreg redraws a
-    # failed replicate without counting it -- so that row is a fact, not a
-    # check, and says NA rather than passing something it did not test.
+    # A failure is not itself a fault -- %bootreg redraws a failed replicate
+    # without counting it -- but a high RATE is: the replicates kept are then
+    # conditional on estimability. Above 5% (ruled 2026-11-16) the row fails.
     ok = c(!is.na(n_success) & n_success > 0L,
-           NA,
+           fail_ok,
            length(candidates) > 0L,
            if (is.na(free_sd)) NA else free_sd != 0),
-    note = c(NA_character_, NA_character_,
+    note = c(NA_character_,
+             if (isFALSE(fail_ok)) fail_note else NA_character_,
              if (length(candidates)) NA_character_ else empty_note,
              if (!is.na(free_sd) && free_sd == 0) flat_note else NA_character_),
     stringsAsFactors = FALSE

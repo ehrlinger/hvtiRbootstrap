@@ -7,12 +7,12 @@
 boot_pool_chunks(chunks)
 }
 \arguments{
-\item{chunks}{A list of chunk objects, each carrying at least \code{seed},
-\code{n_boot}, \code{slentry}, \code{slstay}, \code{base_params}, \code{usable}, \code{max_steps},
-\code{elapsed_mins}, a \code{manifest} with an \code{md5} or \code{sha256}, an engine
-provenance field (\code{th_sha} or \code{th_version}), and a \code{boot} list with
-\code{replicates}, \code{n_success} and \code{n_failed}. An optional \code{resampled}
-(\code{"patients"} or \code{"rows"}) defaults to \code{"rows"}.}
+\item{chunks}{A list of chunk objects: bags from \code{\link[=boot_bag]{boot_bag()}}, or chunks
+a runner wrote in the same shape. Each is checked with \code{\link[=boot_validate]{boot_validate()}}
+first, and must also carry \code{max_steps} and an engine provenance field
+(\code{engine_sha} or \code{engine} from \code{\link[=boot_bag]{boot_bag()}}, \code{th_sha} or \code{th_version} from
+the hazard runner). The optional \code{resampled} (\code{"patients"} or \code{"rows"}),
+\code{method} and \code{fraction} default to \code{"rows"}, \code{"stepwise"} and \code{1}.}
 }
 \value{
 One object shaped like a single chunk, with \code{boot$replicates} stacked
@@ -39,6 +39,15 @@ tighter cap a variable that would have entered late never gets the chance.
 that records no \code{resampled} predates patient resampling and is read as
 \code{"rows"}, which is what every earlier runner did; the pooled object
 carries the agreed value.
+\item A different \strong{fitter} or \strong{formula} is a different model: pooling a
+linear screen with a logistic one averages slopes with log-odds, and two
+formulas offering the same number of candidates are not the same pool.
+\code{\link[=boot_bag]{boot_bag()}} records both; a hazard-runner chunk records neither and
+pools only with other runner chunks. Any other chunk without them is
+refused.
+\item A different \strong{method} or \strong{fraction} is a different screen. Absent,
+as in every runner chunk written before \code{\link[=boot_bag]{boot_bag()}} recorded them, they
+are read as \code{"stepwise"} and \code{1}.
 }
 
 Neither shows up as an error in a frequency table. Both show up as a slightly
@@ -66,10 +75,13 @@ the whole, and the chunks need not be the same size.
 # Two chunks as the hazard runner writes them: same screen, different seeds.
 chunk <- function(seed) list(
   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
-  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  base_params = "early.log_mu", usable = c(early = 10L),
+  requested = c(early = 10L), n_rows = 300L, max_steps = 50L,
   elapsed_mins = 1, manifest = list(sha256 = "example"),
   th_version = "1.2.16",
-  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+  boot = list(n_success = 2L, n_failed = 0L,
+    summary = data.frame(parameter = "early.age", n = 1L, pct = 50),
+    replicates = data.frame(
     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
 )

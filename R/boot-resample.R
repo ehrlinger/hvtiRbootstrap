@@ -42,5 +42,26 @@
     n_kept <- n_kept + 1L
     kept[[n_kept]] <- r
   }
+  .warn_failure_rate(attempts - n_rep, attempts, caller)
   list(results = kept, n_attempts = attempts)
+}
+
+# The failure rate above which a run warns and boot_health() flags it. Ruled
+# 2026-11-16 (family QA, D3). A redrawn replicate is not counted, so a run
+# with many failures still delivers n_rep results -- but they are n_rep draws
+# from the samples on which the model COULD be estimated, which is a
+# different population from the one the bootstrap claims to resample once
+# that conditioning stops being negligible.
+.failure_threshold <- 0.05
+
+.warn_failure_rate <- function(n_failed, n_attempts, caller) {
+  if (n_attempts > 0L && n_failed / n_attempts > .failure_threshold) {
+    warning("`", caller, "()` redrew ", n_failed, " of ", n_attempts,
+            " replicates (", sprintf("%.1f", 100 * n_failed / n_attempts),
+            "%), above the ", 100 * .failure_threshold, "% threshold. The ",
+            "result is conditional on the replicates that could be ",
+            "estimated; check the model and the data for separation or ",
+            "sparse cells.", call. = FALSE)
+  }
+  invisible()
 }

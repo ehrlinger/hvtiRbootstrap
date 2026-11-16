@@ -35,8 +35,16 @@ run.}
 \value{
 A list carrying the fields \code{\link[=boot_validate]{boot_validate()}} requires: \code{n_boot},
 \code{seed}, \code{slentry}, \code{slstay}, \code{base_params}, \code{requested}, \code{usable},
-\code{n_rows}, \code{elapsed_mins}, \code{manifest}, \code{engine}, \code{dropped} when supplied,
-and \code{boot} holding \code{replicates}, \code{summary}, \code{n_success} and \code{n_failed}.
+\code{n_rows}, \code{elapsed_mins}, \code{manifest}, \code{dropped} when supplied, and \code{boot}
+holding \code{replicates}, \code{summary}, \code{n_success} and \code{n_failed}. It also
+carries what \code{\link[=boot_pool_chunks]{boot_pool_chunks()}} checks before pooling two bags: the
+engine (\code{engine}, the package version, and \code{engine_sha}, its commit or
+\code{NA}), the model (\code{fitter} and \code{formula}), \code{method}, \code{max_steps},
+\code{fraction} and \code{resampled} (always \code{"rows"}), plus \code{rng_kind}. A screen
+built before this field existed records no model, so its bag carries
+none and \code{\link[=boot_pool_chunks]{boot_pool_chunks()}} refuses it. Under \code{select = "none"},
+\code{slentry}, \code{slstay} and \code{max_steps} are \code{NA}: no selection ran, so no
+level was used.
 \code{boot$summary} is keyed \code{parameter} -- as \code{boot$replicates} and
 \code{\link[=boot_health]{boot_health()}} are, and as \code{\link[=boot_pool_chunks]{boot_pool_chunks()}} returns -- rather than
 \code{\link[=boot_summary]{boot_summary()}}'s \code{variable}, and carries \code{sel_q025} and \code{sel_q975}
