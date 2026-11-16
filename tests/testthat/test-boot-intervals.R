@@ -69,7 +69,7 @@ test_that("boot_predict_ci returns the replicates and their bands", {
   # recomputing it means re-running the statistic.
   df <- data.frame(x = 1:50)
 
-  r <- boot_predict_ci(df, fx_statistic, n_rep = 40, seed = 42)
+  r <- boot_predict_ci(df, fx_statistic, n_boot = 40, seed = 42)
 
   expect_s3_class(r, "boot_intervals")
   expect_equal(dim(r$estimates), c(40L, 2L))
@@ -92,7 +92,7 @@ test_that("boot_predict_ci counts VALID replicates, redrawing failures", {
   }
 
   expect_warning(
-    r <- boot_predict_ci(df, flaky, n_rep = 10, seed = 1),
+    r <- boot_predict_ci(df, flaky, n_boot = 10, seed = 1),
     "threshold"
   )
 
@@ -113,7 +113,7 @@ test_that("a statistic returning NA is a failed replicate, not a gap", {
   }
 
   expect_warning(
-    r <- boot_predict_ci(df, sometimes_na, n_rep = 5, seed = 1),
+    r <- boot_predict_ci(df, sometimes_na, n_boot = 5, seed = 1),
     "threshold"
   )
 
@@ -137,7 +137,7 @@ test_that("NaN, Inf and -Inf are each a failed replicate too", {
     }
 
     expect_warning(
-      r <- boot_predict_ci(df, sometimes_bad, n_rep = 5, seed = 1),
+      r <- boot_predict_ci(df, sometimes_bad, n_boot = 5, seed = 1),
       "threshold"
     )
 
@@ -160,7 +160,7 @@ test_that("a statistic whose names change is a failed replicate", {
   }
 
   expect_warning(
-    r <- boot_predict_ci(df, drifting, n_rep = 6, seed = 1),
+    r <- boot_predict_ci(df, drifting, n_boot = 6, seed = 1),
     "threshold"
   )
 
@@ -181,7 +181,7 @@ test_that("a zero-length named result is a failed replicate", {
   }
 
   expect_warning(
-    r <- boot_predict_ci(df, sometimes_empty, n_rep = 5, seed = 1),
+    r <- boot_predict_ci(df, sometimes_empty, n_boot = 5, seed = 1),
     "threshold"
   )
 
@@ -206,7 +206,7 @@ test_that("a duplicate-named result is a failed replicate", {
   }
 
   expect_warning(
-    r <- boot_predict_ci(df, sometimes_dup, n_rep = 5, seed = 1),
+    r <- boot_predict_ci(df, sometimes_dup, n_boot = 5, seed = 1),
     "threshold"
   )
 
@@ -221,13 +221,13 @@ test_that("boot_predict_ci is reproducible and restores the caller's stream", {
   # reproducibility from the first call onward.
   df <- data.frame(x = 1:50)
 
-  a <- boot_predict_ci(df, fx_statistic, n_rep = 20, seed = 7)
-  b <- boot_predict_ci(df, fx_statistic, n_rep = 20, seed = 7)
+  a <- boot_predict_ci(df, fx_statistic, n_boot = 20, seed = 7)
+  b <- boot_predict_ci(df, fx_statistic, n_boot = 20, seed = 7)
   expect_equal(a$estimates, b$estimates)
 
   set.seed(99)
   before <- .Random.seed
-  invisible(boot_predict_ci(df, fx_statistic, n_rep = 5, seed = 3))
+  invisible(boot_predict_ci(df, fx_statistic, n_boot = 5, seed = 3))
   expect_equal(.Random.seed, before)
 })
 
@@ -235,7 +235,7 @@ test_that("boot_predict_ci passes ... through to the statistic", {
   df <- data.frame(x = 1:50)
   scaled <- function(d, k, ...) c(mean = mean(d$x) * k)
 
-  r <- boot_predict_ci(df, scaled, n_rep = 10, seed = 1, k = 10)
+  r <- boot_predict_ci(df, scaled, n_boot = 10, seed = 1, k = 10)
 
   expect_true(all(r$estimates[, "mean"] > 100))
 })
@@ -247,7 +247,7 @@ test_that("fraction draws a smaller sample, as %BNMNR actually does", {
   df <- data.frame(x = 1:100)
   n_seen <- function(d, ...) c(n = nrow(d))
 
-  r <- boot_predict_ci(df, n_seen, n_rep = 5, fraction = 0.25, seed = 1)
+  r <- boot_predict_ci(df, n_seen, n_boot = 5, fraction = 0.25, seed = 1)
 
   expect_true(all(r$estimates[, "n"] == 25))
 })
@@ -255,36 +255,36 @@ test_that("fraction draws a smaller sample, as %BNMNR actually does", {
 test_that("boot_predict_ci guards its inputs", {
   df <- data.frame(x = 1:10)
 
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 0),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 0),
                "positive whole number")
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, fraction = 0),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 5, fraction = 0),
                "greater than 0")
-  expect_error(boot_predict_ci(df, "not a function", n_rep = 5),
+  expect_error(boot_predict_ci(df, "not a function", n_boot = 5),
                "must be a function")
-  expect_error(boot_predict_ci(data.frame(), fx_statistic, n_rep = 5),
+  expect_error(boot_predict_ci(data.frame(), fx_statistic, n_boot = 5),
                "at least one row")
   # No coverage argument exists anywhere in this package, by design. `...` is
   # forwarded to `statistic`, so a `conf =` would otherwise be silently
   # absorbed by any statistic declaring `...` -- which fx_statistic itself
   # does, and it is refused by name before that can happen.
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, conf = 0.95),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 5, conf = 0.95),
                "no coverage argument")
   # coverage is the word the package's own documentation uses ("Coverage
   # lives in a column name"), so it is refused by name too -- along with the
   # other spellings a reader might reach for.
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, coverage = 0.95),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 5, coverage = 0.95),
                "no coverage argument")
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, ci = 0.95),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 5, ci = 0.95),
                "no coverage argument")
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, confidence = 0.95),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 5, confidence = 0.95),
                "no coverage argument")
-  expect_error(boot_predict_ci(df, fx_statistic, n_rep = 5, conf_level = 0.95),
+  expect_error(boot_predict_ci(df, fx_statistic, n_boot = 5, conf_level = 0.95),
                "no coverage argument")
 })
 
 test_that("boot_intervals prints its counts and summarises to the bands", {
   df <- data.frame(x = 1:50)
-  r <- boot_predict_ci(df, fx_statistic, n_rep = 20, seed = 1)
+  r <- boot_predict_ci(df, fx_statistic, n_boot = 20, seed = 1)
 
   expect_output(print(r), "boot_intervals")
   expect_output(print(r), "20")
@@ -298,7 +298,7 @@ test_that("id draws whole units, not rows", {
   d <- data.frame(pt = rep(1:5, each = 4), x = 1)
   seen <- function(dd, ...) c(rows = nrow(dd), units = length(unique(dd$pt)))
 
-  r <- boot_predict_ci(d, seen, n_rep = 10, id = "pt", seed = 1)
+  r <- boot_predict_ci(d, seen, n_boot = 10, id = "pt", seed = 1)
 
   # Five units drawn with replacement, four rows each: always 20 rows, and
   # never more than 5 distinct original units.
@@ -317,7 +317,7 @@ test_that("a unit drawn twice becomes two distinct units", {
     c(orig = length(unique(dd$pt)), drawn = length(unique(dd$.boot_unit)))
   }
 
-  r <- boot_predict_ci(d, probe, n_rep = 30, id = "pt", seed = 3)
+  r <- boot_predict_ci(d, probe, n_boot = 30, id = "pt", seed = 3)
 
   # .boot_unit is always the number of DRAWS; pt can be fewer when a unit was
   # drawn twice. If they were ever equal by construction the renumbering would
@@ -333,7 +333,7 @@ test_that("fraction applies to units, not rows", {
     c(units = length(unique(dd$.boot_unit)), rows = nrow(dd))
   }
 
-  r <- boot_predict_ci(d, seen, n_rep = 5, id = "pt", fraction = 0.5, seed = 1)
+  r <- boot_predict_ci(d, seen, n_boot = 5, id = "pt", fraction = 0.5, seed = 1)
 
   expect_true(all(r$estimates[, "units"] == 5))
   expect_true(all(r$estimates[, "rows"] == 15))
@@ -343,12 +343,12 @@ test_that("id must name a column, and .boot_unit must not already exist", {
   d <- data.frame(pt = rep(1:3, each = 2), x = 1)
   est <- function(dd, ...) c(m = mean(dd$x))
 
-  expect_error(boot_predict_ci(d, est, n_rep = 2, id = "nope"),
+  expect_error(boot_predict_ci(d, est, n_boot = 2, id = "nope"),
                "not a column")
   # Silently overwriting it would change the caller's data underneath their
   # own statistic.
   d2 <- cbind(d, .boot_unit = 1L)
-  expect_error(boot_predict_ci(d2, est, n_rep = 2, id = "pt"),
+  expect_error(boot_predict_ci(d2, est, n_boot = 2, id = "pt"),
                "\\.boot_unit")
 })
 
@@ -359,7 +359,7 @@ test_that("a single unit, numeric id >= 1, avoids sample()'s footgun", {
   d <- data.frame(pt = rep(7, 4), x = 1:4)
   est <- function(dd, ...) c(m = mean(dd$x))
 
-  r <- boot_predict_ci(d, est, n_rep = 5, id = "pt", seed = 1)
+  r <- boot_predict_ci(d, est, n_boot = 5, id = "pt", seed = 1)
 
   expect_equal(r$n_rep, 5L)
   expect_false(anyNA(r$estimates))
@@ -373,14 +373,14 @@ test_that("an id column containing NA is refused", {
   d <- data.frame(pt = c(1, 2, NA, 2), x = 1:4)
   est <- function(dd, ...) c(m = mean(dd$x))
 
-  expect_error(boot_predict_ci(d, est, n_rep = 2, id = "pt"), "NA")
+  expect_error(boot_predict_ci(d, est, n_boot = 2, id = "pt"), "NA")
 })
 
 test_that("the control record names the resampling unit", {
   d <- data.frame(pt = rep(1:4, each = 2), x = 1)
   est <- function(dd, ...) c(m = mean(dd$x))
 
-  r <- boot_predict_ci(d, est, n_rep = 5, id = "pt", seed = 1)
+  r <- boot_predict_ci(d, est, n_boot = 5, id = "pt", seed = 1)
 
   expect_equal(r$control$id, "pt")
   expect_equal(r$control$n_units, 4L)
@@ -401,7 +401,7 @@ test_that("a factor id with an unused level is not a phantom unit", {
     c(rows = nrow(dd), units = length(unique(dd$.boot_unit)))
   }
 
-  r <- boot_predict_ci(d, probe, n_rep = 20, id = "pt", seed = 5)
+  r <- boot_predict_ci(d, probe, n_boot = 20, id = "pt", seed = 5)
 
   expect_equal(r$control$n_units, 3L)
   expect_true(all(r$estimates[, "units"] == 3))
@@ -417,7 +417,7 @@ test_that("a numeric id groups by value, not by character coercion", {
   d <- data.frame(pt = rep(c(0.1 + 0.2, 0.3), each = 2), x = 1:4)
   seen <- function(dd, ...) c(units = length(unique(dd$.boot_unit)))
 
-  r <- boot_predict_ci(d, seen, n_rep = 10, id = "pt", seed = 7)
+  r <- boot_predict_ci(d, seen, n_boot = 10, id = "pt", seed = 7)
 
   expected_units <- if (collide) 2L else 1L
   expect_equal(r$control$n_units, expected_units)

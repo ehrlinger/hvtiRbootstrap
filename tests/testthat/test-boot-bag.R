@@ -7,7 +7,7 @@ fx_selection <- function(n_rep = 20) {
   x2 <- stats::rnorm(n)
   df <- data.frame(y = 2 * x1 + stats::rnorm(n), x1 = x1, x2 = x2,
                    noise = stats::rnorm(n))
-  boot_select(df, y ~ x1 + x2 + noise, fit_linear, n_rep = n_rep,
+  boot_select(df, y ~ x1 + x2 + noise, fit_linear, n_boot = n_rep,
               sle = 0.10, sls = 0.05, seed = 42)
 }
 
@@ -80,7 +80,7 @@ test_that("boot_bag() carries no phase dimension", {
 test_that("an unseeded screen is refused, not given a blank seed", {
   set.seed(9)
   df <- data.frame(y = stats::rnorm(80), x1 = stats::rnorm(80))
-  fit <- boot_select(df, y ~ x1, fit_linear, n_rep = 4, select = "none")
+  fit <- boot_select(df, y ~ x1, fit_linear, n_boot = 4, select = "none")
   expect_error(
     boot_bag(fit, base_params = "(Intercept)", requested = 1L,
              manifest = list(sha256 = "a")),
@@ -138,7 +138,7 @@ test_that("a Cox screen has no intercept, and boot_bag() says so usefully", {
                   t = stats::rexp(n, exp(0.3 * x1) / 10),
                   e = stats::rbinom(n, 1, 0.7))
   fit <- boot_select(d, survival::Surv(t, e) ~ x1 + x2, fit_cox,
-                     n_rep = 6, seed = 3)
+                     n_boot = 6, seed = 3)
   expect_false("(Intercept)" %in% colnames(fit$coefficients))
   expect_error(
     boot_bag(fit, base_params = "(Intercept)", requested = 2L,
@@ -204,7 +204,7 @@ test_that("the bag's summary is keyed parameter and carries the quantiles", {
   n <- 200
   x1 <- rnorm(n)
   df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, x2 = rnorm(n))
-  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, seed = 42)
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_boot = 20, seed = 42)
   bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
                   manifest = list(sha256 = "abc123"))
 

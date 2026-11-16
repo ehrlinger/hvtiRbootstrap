@@ -25,9 +25,9 @@
   attempts <- 0L
   while (n_kept < n_rep) {
     if (attempts >= max_attempts) {
-      stop("`", caller, "()` gave up after ", attempts, " attempts with ",
-           n_kept, " valid ", noun, " of ", n_rep, " requested. ", hint,
-           call. = FALSE)
+      .abort("`", caller, "()` gave up after ", attempts, " attempts with ",
+             n_kept, " valid ", noun, " of ", n_rep, " requested. ", hint,
+             class = "attempts_exhausted")
     }
     attempts <- attempts + 1L
     # Assigned rather than inlined as fit(draw()): inlining passes draw() to

@@ -116,7 +116,7 @@
 #' @param statistic Function of `(data, ...)` returning a named numeric vector
 #'   of one replicate's estimates, or `NULL` if the replicate failed.
 #'   `%BNMNR` equivalent: the `PROC NLMIXED` block.
-#' @param n_rep Number of **valid** replicates (`%BNMNR` `RESAMPL=`). A
+#' @param n_boot Number of **valid** replicates (`%BNMNR` `RESAMPL=`). A
 #'   replicate whose `statistic` fails is redrawn and not counted, so the
 #'   bands are **conditional on estimability**: they describe the replicates
 #'   on which the estimate could be computed. When more than 5% of draws fail
@@ -124,7 +124,7 @@
 #'   **Divergence:** the macro defaults to 100; this defaults to 1000,
 #'   matching [boot_select()] in this package. A hundred replicates puts the
 #'   2.5th percentile on the third order statistic, where it is visibly
-#'   unstable. Pass `n_rep = 100` to reproduce the macro.
+#'   unstable. Pass `n_boot = 100` to reproduce the macro.
 #' @param fraction Fraction of units drawn per replicate (`%BNMNR`
 #'   `FRACTION=`). Applied, as the macro applies it -- unlike `%bootreg`,
 #'   which computes it and then draws the full size anyway.
@@ -138,10 +138,14 @@
 #'   Pass `Inf` to restore that.
 #' @param seed Optional integer for reproducibility (`%BNMNR` `SEED=`).
 #' @param ... Passed to `statistic`.
+#' @param n_rep Deprecated name for `n_boot`, renamed under the hvtiR API
+#'   rubric. It still works for one release and warns once per session.
 #' @return An object of class `boot_intervals`. `$estimates` is a matrix with
 #'   one row per valid replicate and one column per quantity; `$intervals` is
 #'   the per-quantity table with columns `parameter`, `cll_p95`, `cll_p68`,
-#'   `median`, `clu_p68`, `clu_p95`. `$control` records the run's settings.
+#'   `median`, `clu_p68`, `clu_p95`. `$control` records the run's settings,
+#'   and `$provenance` the hvtiR family's shared provenance record, with
+#'   `method = "percentile"`.
 #' @seealso [boot_select()] for the selection branch.
 #' @examples
 #' # The names of the returned vector are the quantities banded. Here, two
@@ -150,17 +154,24 @@
 #' df <- data.frame(x = rnorm(200))
 #' est <- function(d, ...) c(mean = mean(d$x), sd = sd(d$x))
 #'
-#' r <- boot_predict_ci(df, est, n_rep = 100, seed = 42)
+#' r <- boot_predict_ci(df, est, n_boot = 100, seed = 42)
 #' r
 #' summary(r)
 #' @export
-boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
-                            id = NULL, max_attempts = 10 * n_rep,
-                            seed = NULL, ...) {
+boot_predict_ci <- function(data, statistic, n_boot = 1000, fraction = 1,
+                            id = NULL, max_attempts = 10 * n_boot,
+                            seed = NULL, ..., n_rep) {
   # Restore the caller's stream FIRST, before any argument promise is forced,
   # for the reason boot_select() documents at length: `data` is often an
   # expression that itself draws.
   if (!is.null(seed)) withr::local_preserve_seed()
+  if (!missing(n_rep)) {
+    if (!missing(n_boot))
+      .abort("boot_predict_ci(): give `n_boot` only; `n_rep` is its ",
+             "deprecated name.", class = "bad_argument")
+    .deprecated_arg("boot_predict_ci", "n_rep", "n_boot")
+    n_boot <- n_rep
+  }
   if (!is.data.frame(data) || nrow(data) == 0L) {
     stop("`data` must be a data frame with at least one row.", call. = FALSE)
   }
@@ -172,16 +183,16 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
         fraction <= 0 || fraction > 1) {
     stop("`fraction` must be greater than 0 and at most 1.", call. = FALSE)
   }
-  if (!is.numeric(n_rep) || length(n_rep) != 1L || is.na(n_rep) ||
-        n_rep < 1 || n_rep != trunc(n_rep) || is.infinite(n_rep)) {
-    stop("`n_rep` must be a positive whole number of replicates.",
+  if (!is.numeric(n_boot) || length(n_boot) != 1L || is.na(n_boot) ||
+        n_boot < 1 || n_boot != trunc(n_boot) || is.infinite(n_boot)) {
+    stop("`n_boot` must be a positive whole number of replicates.",
          call. = FALSE)
   }
   if (!is.numeric(max_attempts) || length(max_attempts) != 1L ||
-        is.na(max_attempts) || max_attempts < n_rep ||
+        is.na(max_attempts) || max_attempts < n_boot ||
         (is.finite(max_attempts) && max_attempts != trunc(max_attempts))) {
     stop("`max_attempts` must be a whole number at least as large as ",
-         "`n_rep`, or `Inf`.", call. = FALSE)
+         "`n_boot`, or `Inf`.", call. = FALSE)
   }
   if (!is.null(id)) {
     if (!is.character(id) || length(id) != 1L || !id %in% names(data)) {
@@ -218,6 +229,7 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
          call. = FALSE)
   }
   if (!is.null(seed)) set.seed(seed)
+  prov <- .hvti_provenance("percentile", seed)
 
   n <- nrow(data)
   # match() against the observed values, NOT the column itself: split() keeps
@@ -256,7 +268,7 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
     # separate anyNA() check to make here -- do not restore one.
     # length(v) == 0 is checked explicitly: a length-0 named numeric such as
     # c(a = 1)[0] is numeric with names() == character(0), which is not NULL,
-    # so it would otherwise pass every check here, burn the whole n_rep
+    # so it would otherwise pass every check here, burn the whole n_boot
     # budget, and only fail at the very end inside .interval_table().
     if (!is.numeric(v) || is.null(names(v)) || length(v) == 0L ||
           !all(is.finite(v))) {
@@ -277,7 +289,7 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
 
   drawn <- .boot_resample(
     draw = draw_one,
-    fit = one, n_rep = n_rep, max_attempts = max_attempts,
+    fit = one, n_rep = n_boot, max_attempts = max_attempts,
     caller = "boot_predict_ci", noun = "replicates",
     hint = paste0("`statistic` returned NULL, a non-finite, zero-length or ",
                   "duplicate-named value, or a different set of names, on ",
@@ -298,7 +310,10 @@ boot_predict_ci <- function(data, statistic, n_rep = 1000, fraction = 1,
     rng_kind = RNGkind()
   )
 
-  new_boot_intervals(m, .interval_table(m), n_rep = as.integer(n_rep),
-                     n_attempts = drawn$n_attempts, call = match.call(),
-                     control = control)
+  out <- new_boot_intervals(m, .interval_table(m),
+                            n_rep = as.integer(n_boot),
+                            n_attempts = drawn$n_attempts,
+                            call = match.call(), control = control)
+  out$provenance <- prov
+  out
 }

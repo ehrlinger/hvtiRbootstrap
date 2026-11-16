@@ -154,7 +154,7 @@
 #' @export
 boot_pool_chunks <- function(chunks) {
   if (!length(chunks)) {
-    stop("boot_pool_chunks(): no chunks to pool.", call. = FALSE)
+    .abort("boot_pool_chunks(): no chunks to pool.", class = "pool_refused")
   }
 
   # Every chunk is a bag, and is checked as one before anything is compared.
@@ -175,15 +175,16 @@ boot_pool_chunks <- function(chunks) {
     absent <- vapply(vals, is.null, logical(1))
 
     if (all(absent)) {
-      stop("boot_pool_chunks(): no chunk records ", what, ", so it cannot be ",
-           "checked. These chunks predate that field or came from a ",
-           "different runner. They must not be pooled on the strength of a ",
-           "check that did not happen.", call. = FALSE)
+      .abort("boot_pool_chunks(): no chunk records ", what, ", so it ",
+             "cannot be checked. These chunks predate that field or came ",
+             "from a different runner. They must not be pooled on the ",
+             "strength of a check that did not happen.",
+             class = "pool_refused")
     }
     if (any(absent)) {
-      stop("boot_pool_chunks(): ", sum(absent), " of ", length(chunks),
-           " chunks do not record ", what, ", so they cannot be compared ",
-           "with the ones that do.", call. = FALSE)
+      .abort("boot_pool_chunks(): ", sum(absent), " of ", length(chunks),
+             " chunks do not record ", what, ", so they cannot be compared ",
+             "with the ones that do.", class = "pool_refused")
     }
 
     # A printable separator. The comparison works with any separator, but the
@@ -193,10 +194,11 @@ boot_pool_chunks <- function(chunks) {
     txt <- vapply(vals, function(v) paste(format(v), collapse = " | "),
                   character(1))
     if (length(unique(txt)) > 1L) {
-      stop("boot_pool_chunks(): the chunks disagree on ", what, " (",
-           paste(unique(txt), collapse = " / "),
-           "). They are not draws from the same screen and must not be pooled.",
-           call. = FALSE)
+      .abort("boot_pool_chunks(): the chunks disagree on ", what, " (",
+             paste(unique(txt), collapse = " / "),
+             "). They are not draws from the same screen and must not be ",
+             "pooled.",
+             class = "pool_refused")
     }
     vals[[1]]
   }
@@ -250,10 +252,11 @@ boot_pool_chunks <- function(chunks) {
 
   seeds <- vapply(chunks, function(k) as.numeric(k[["seed"]]), numeric(1))
   if (anyDuplicated(seeds)) {
-    stop("boot_pool_chunks(): two chunks share the seed ",
-         paste(unique(seeds[duplicated(seeds)]), collapse = ", "),
-         ". Same seed means the SAME replicates, so pooling would count them ",
-         "twice and understate the Monte-Carlo error.", call. = FALSE)
+    .abort("boot_pool_chunks(): two chunks share the seed ",
+           paste(unique(seeds[duplicated(seeds)]), collapse = ", "),
+           ". Same seed means the SAME replicates, so pooling would count ",
+           "them twice and understate the Monte-Carlo error.",
+           class = "pool_refused")
   }
 
   # The offset arithmetic below is only sound if `replicate` really does run
@@ -264,16 +267,18 @@ boot_pool_chunks <- function(chunks) {
     r <- chunks[[i]]$boot$replicates
     if (!is.data.frame(r) ||
           !all(c("replicate", "parameter", "estimate") %in% names(r))) {
-      stop("boot_pool_chunks(): chunk ", i, " has no boot$replicates data ",
-           "frame with replicate/parameter/estimate columns.", call. = FALSE)
+      .abort("boot_pool_chunks(): chunk ", i, " has no boot$replicates data ",
+             "frame with replicate/parameter/estimate columns.",
+             class = "pool_refused")
     }
     n_i <- as.integer(chunks[[i]]$n_boot)
     if (!nrow(r)) next
     if (min(r$replicate) < 1L || max(r$replicate) > n_i) {
-      stop("boot_pool_chunks(): chunk ", i, " reports n_boot = ", n_i,
-           " but its replicate ids run ", min(r$replicate), "..",
-           max(r$replicate), ". Stacking them would overlap the neighbouring ",
-           "chunk and understate every frequency.", call. = FALSE)
+      .abort("boot_pool_chunks(): chunk ", i, " reports n_boot = ", n_i,
+             " but its replicate ids run ", min(r$replicate), "..",
+             max(r$replicate), ". Stacking them would overlap the ",
+             "neighbouring chunk and understate every frequency.",
+             class = "pool_refused")
     }
   }
 

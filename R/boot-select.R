@@ -1,7 +1,7 @@
 #' Build a model by bootstrap resampling
 #'
 #' The R port of `%bootreg` (`bootstrap.models.sas` in the CORR macro library).
-#' Fits `fitter` on each of `n_rep` bootstrap replicates and records the
+#' Fits `fitter` on each of `n_boot` bootstrap replicates and records the
 #' coefficients each model kept.
 #'
 #' A term the model did not select is `NA` in that replicate's row. That
@@ -16,12 +16,15 @@
 #' @param formula Model formula offering the candidate terms.
 #' @param fitter A fitter such as [fit_logistic()], [fit_linear()] or
 #'   [fit_cox()]. `%bootreg` equivalent: `PROC=`.
-#' @param n_rep Number of **valid** models to generate (`%bootreg` `RESAMPL=`).
+#' @param n_boot Number of **valid** models to generate (`%bootreg`
+#'   `RESAMPL=`).
 #'   Replicates whose fit fails are redrawn and do not count, matching the
 #'   macro's `&regrc` check. That makes the result **conditional on
 #'   estimability**: the replicates kept are those on which the model could
 #'   be fitted. When more than 5% of draws fail the run warns, and
 #'   [boot_health()] flags the rate.
+#' @param n_rep Deprecated name for `n_boot`, renamed under the hvtiR API
+#'   rubric. It still works for one release and warns once per session.
 #' @param fraction Fraction of `nrow(data)` to draw per replicate
 #'   (`%bootreg` `FRACTION=`). **Divergence:** the macro documents this
 #'   parameter but never applies it - it computes `ds_size * fraction`, prints
@@ -65,6 +68,9 @@
 #'   builder [boot_bag()] can take a provenance record from
 #'   the run rather than from what a caller retypes. `$call` cannot serve
 #'   that purpose: `match.call()` omits every argument left at its default.
+#'   `$provenance` is the hvtiR family's shared provenance record (`package`,
+#'   `version`, `sha`, `method`, `seed`, `rng_kind`, `time`), taken when the
+#'   draw began. The replicate count stays in `$n_rep`.
 #' @seealso [boot_summary()] for the per-variable selection frequencies, and
 #'   [boot_clusters()] for the same question asked of a correlated group.
 #'   [fit_linear()], [fit_logistic()] and [fit_cox()] are the supplied fitters.
@@ -75,10 +81,10 @@
 #' df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
 #'                  x2 = rnorm(n), noise = rnorm(n))
 #'
-#' # n_rep is RESAMPL=. It counts VALID models, so a replicate whose fit fails
+#' # n_boot is RESAMPL=. It counts VALID models, so a replicate whose fit fails
 #' # is redrawn and does not consume one -- the macro's &regrc check.
 #' fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
-#'                    n_rep = 50, seed = 42)
+#'                    n_boot = 50, seed = 42)
 #' fit
 #'
 #' # The replicate table itself, one row per model, NA where a term was not
@@ -87,9 +93,10 @@
 #'
 #' boot_summary(fit)
 #' @export
-boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
+boot_select <- function(data, formula, fitter, n_boot = 1000, fraction = 1,
                         select = c("stepwise", "none"), sle = 0.10, sls = 0.05,
-                        max_steps = 0, max_attempts = 10 * n_rep, seed = NULL) {
+                        max_steps = 0, max_attempts = 10 * n_boot,
+                        seed = NULL, n_rep) {
   select <- match.arg(select)
   # Seeding is a global side effect, so put the caller's stream back. This runs
   # FIRST, before any argument promise is forced: `data` is often an expression
@@ -103,23 +110,31 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # environment" NOTE from R CMD check --as-cran, which the house release gate
   # does not accept. withr depends only on base packages.
   if (!is.null(seed)) withr::local_preserve_seed()
+  if (!missing(n_rep)) {
+    if (!missing(n_boot))
+      .abort("boot_select(): give `n_boot` only; `n_rep` is its ",
+             "deprecated name.", class = "bad_argument")
+    .deprecated_arg("boot_select", "n_rep", "n_boot")
+    n_boot <- n_rep
+  }
   if (!is.data.frame(data) || nrow(data) == 0L)
     stop("`data` must be a data frame with at least one row.", call. = FALSE)
   if (!is.numeric(fraction) || length(fraction) != 1L ||
         is.na(fraction) || fraction <= 0 || fraction > 1)
     stop("`fraction` must be greater than 0 and at most 1.", call. = FALSE)
   # Whole numbers, checked rather than truncated: vector("list", 2.5) quietly
-  # gives 2, so a fractional n_rep would silently deliver fewer replicates than
-  # asked for. max_attempts is a count too, with Inf as D3's documented escape
-  # hatch and therefore the one non-integer value allowed.
-  if (!is.numeric(n_rep) || length(n_rep) != 1L || is.na(n_rep) ||
-        n_rep < 1 || n_rep != trunc(n_rep) || is.infinite(n_rep))
-    stop("`n_rep` must be a positive whole number of replicates.",
+  # gives 2, so a fractional n_boot would silently deliver fewer replicates
+  # than asked for. max_attempts is a count too, with Inf as D3's documented
+  # escape hatch and therefore the one non-integer value allowed.
+  if (!is.numeric(n_boot) || length(n_boot) != 1L || is.na(n_boot) ||
+        n_boot < 1 || n_boot != trunc(n_boot) || is.infinite(n_boot))
+    stop("`n_boot` must be a positive whole number of replicates.",
          call. = FALSE)
   if (!is.numeric(max_attempts) || length(max_attempts) != 1L ||
-        is.na(max_attempts) || max_attempts < n_rep ||
+        is.na(max_attempts) || max_attempts < n_boot ||
         (is.finite(max_attempts) && max_attempts != trunc(max_attempts)))
-    stop("`max_attempts` must be a whole number at least as large as `n_rep`, ",
+    stop("`max_attempts` must be a whole number at least as large as ",
+         "`n_boot`, ",
          "or `Inf`.", call. = FALSE)
 
   if (!is.function(fitter))
@@ -142,6 +157,8 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
          "restriction.", call. = FALSE)
 
   if (!is.null(seed)) set.seed(seed)
+  # Built at the draw, not later: RNGkind() and the time are facts about now.
+  prov <- .hvti_provenance(select, seed)
 
   n <- nrow(data)
   n_draw <- max(1L, round(n * fraction))
@@ -179,7 +196,7 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
       data[sample.int(n, size = n_draw, replace = TRUE), , drop = FALSE]
     },
     fit  = function(d) .check_fitter_result(fitter(d, formula, ctrl)),
-    n_rep = n_rep, max_attempts = max_attempts,
+    n_rep = n_boot, max_attempts = max_attempts,
     caller = "boot_select", noun = "models",
     hint = paste0("The model could not be fitted on most replicates; check ",
                   "the formula and the data, or raise `max_attempts`.")
@@ -193,9 +210,9 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
   # then report as a variable with n = 0.
   seen <- unique(unlist(lapply(fits, names), use.names = FALSE))
   cols <- unique(c(intersect("(Intercept)", seen), terms_all, seen))
-  m <- matrix(NA_real_, nrow = n_rep, ncol = length(cols),
+  m <- matrix(NA_real_, nrow = n_boot, ncol = length(cols),
               dimnames = list(NULL, cols))
-  for (i in seq_len(n_rep)) m[i, names(fits[[i]])] <- fits[[i]]
+  for (i in seq_len(n_boot)) m[i, names(fits[[i]])] <- fits[[i]]
 
   # What the run knows about itself. boot_bag() reads this rather than asking
   # its caller to retype it: a bag whose slentry was typed by hand can disagree
@@ -232,9 +249,11 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
                          collapse = " ")
   )
 
-  new_boot_selection(m, n_rep = as.integer(n_rep),
-                     n_attempts = attempts, call = match.call(),
-                     control = control)
+  out <- new_boot_selection(m, n_rep = as.integer(n_boot),
+                            n_attempts = attempts, call = match.call(),
+                            control = control)
+  out$provenance <- prov
+  out
 }
 
 # A fitter's result is checked once, here, rather than trusted. NULL is the

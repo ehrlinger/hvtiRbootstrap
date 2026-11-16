@@ -6,7 +6,7 @@ sim_df <- function(n = 150, seed = 7) {
 
 test_that("boot_select returns one row per requested replicate", {
   out <- boot_select(sim_df(), yc ~ x1 + x2 + noise, fit_linear,
-                     n_rep = 25, select = "none", seed = 42)
+                     n_boot = 25, select = "none", seed = 42)
   expect_s3_class(out, "boot_selection")
   expect_equal(nrow(out$coefficients), 25L)
   expect_equal(out$n_rep, 25L)
@@ -14,14 +14,14 @@ test_that("boot_select returns one row per requested replicate", {
 
 test_that("unselected terms are NA, not zero -- what makes n a frequency", {
   out <- boot_select(sim_df(), yc ~ x1 + x2 + noise, fit_linear,
-                     n_rep = 25, select = "stepwise", seed = 42)
+                     n_boot = 25, select = "stepwise", seed = 42)
   expect_true(anyNA(out$coefficients))
   expect_false(any(out$coefficients == 0, na.rm = TRUE))
 })
 
 test_that("every candidate term gets a column even if never selected", {
   out <- boot_select(sim_df(), yc ~ x1 + x2 + noise, fit_linear,
-                     n_rep = 10, select = "stepwise", seed = 1)
+                     n_boot = 10, select = "stepwise", seed = 1)
   expect_true(all(c("x1", "x2", "noise") %in% colnames(out$coefficients)))
 })
 
@@ -35,7 +35,7 @@ test_that("a failing replicate is retried, not counted -- the regrc check", {
     fit_linear(data, formula, select)
   }
   expect_warning(
-    out <- boot_select(sim_df(), yc ~ x1, flaky, n_rep = 10,
+    out <- boot_select(sim_df(), yc ~ x1, flaky, n_boot = 10,
                        select = "none", seed = 3),
     "threshold"
   )
@@ -44,9 +44,9 @@ test_that("a failing replicate is retried, not counted -- the regrc check", {
 })
 
 test_that("seed makes a run reproducible", {
-  a <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_rep = 10,
+  a <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_boot = 10,
                    select = "none", seed = 99)
-  b <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_rep = 10,
+  b <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_boot = 10,
                    select = "none", seed = 99)
   expect_equal(a$coefficients, b$coefficients)
 })
@@ -61,7 +61,7 @@ test_that("fraction subsamples -- a DELIBERATE divergence from %bootreg", {
     n_seen <<- c(n_seen, nrow(data))
     fit_linear(data, formula, select)
   }
-  boot_select(sim_df(n = 100), yc ~ x1, spy, n_rep = 3,
+  boot_select(sim_df(n = 100), yc ~ x1, spy, n_boot = 3,
               fraction = 0.5, select = "none", seed = 5)
   expect_true(all(n_seen == 50))
 })
@@ -72,7 +72,7 @@ test_that("a Cox run gets no phantom (Intercept) column", {
   df <- data.frame(time = rexp(120), status = rbinom(120, 1, 0.7),
                    x1 = rnorm(120), x2 = rnorm(120))
   out <- boot_select(df, survival::Surv(time, status) ~ x1 + x2, fit_cox,
-                     n_rep = 5, select = "none", seed = 4)
+                     n_boot = 5, select = "none", seed = 4)
   # Cox has no intercept. Hardcoding one would give an all-NA column that
   # boot_summary() reports as a variable with n = 0 -- a phantom term.
   expect_false("(Intercept)" %in% colnames(out$coefficients))
@@ -80,7 +80,7 @@ test_that("a Cox run gets no phantom (Intercept) column", {
 
 test_that("boot_select rejects a fraction outside (0, 1]", {
   expect_error(
-    boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 2, fraction = 0),
+    boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 2, fraction = 0),
     "`fraction` must be greater than 0 and at most 1", fixed = TRUE
   )
 })
@@ -91,7 +91,7 @@ test_that("a fitter that always fails errors, not loops forever -- D3", {
   # boot_select() budgets attempts and reports what it managed.
   never <- function(data, formula, select) NULL
   expect_error(
-    boot_select(sim_df(), yc ~ x1, never, n_rep = 10, select = "none",
+    boot_select(sim_df(), yc ~ x1, never, n_boot = 10, select = "none",
                 max_attempts = 25, seed = 1),
     "gave up after 25 attempts with 0 valid models of 10 requested",
     fixed = TRUE
@@ -102,7 +102,7 @@ test_that("max_attempts = Inf restores %bootreg's uncapped loop", {
   # Not a hang: this fitter succeeds, so the loop terminates normally. The
   # assertion is that Inf is ACCEPTED, which is the documented escape hatch
   # back to exact macro behaviour.
-  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 5,
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 5,
                      select = "none", max_attempts = Inf, seed = 8)
   expect_equal(nrow(out$coefficients), 5L)
 })
@@ -118,7 +118,7 @@ test_that("a factor predictor gets no phantom all-NA column", {
   n <- 200
   d <- data.frame(sex = factor(sample(c("M", "F"), n, TRUE)), x1 = rnorm(n))
   d$y <- 2 * d$x1 + rnorm(n)
-  out <- boot_select(d, y ~ sex + x1, fit_linear, n_rep = 10,
+  out <- boot_select(d, y ~ sex + x1, fit_linear, n_boot = 10,
                      select = "none", seed = 1)
   expect_true("sexM" %in% colnames(out$coefficients))
   expect_false("sex" %in% colnames(out$coefficients))
@@ -133,7 +133,7 @@ test_that("a replicate that selected nothing counts, as an all-NA row", {
   nothing <- function(data, formula, select) {
     stats::setNames(numeric(0), character(0))
   }
-  out <- boot_select(sim_df(), yc ~ x1 + x2, nothing, n_rep = 4,
+  out <- boot_select(sim_df(), yc ~ x1 + x2, nothing, n_boot = 4,
                      select = "none", seed = 1)
   expect_equal(nrow(out$coefficients), 4L)
   expect_equal(out$n_attempts, 4L)          # nothing was redrawn
@@ -154,13 +154,13 @@ test_that("boot_select restores the caller's RNG stream", {
   set.seed(99)
   expected <- rnorm(1)
   set.seed(99)
-  invisible(boot_select(d, yc ~ x1, fit_linear, n_rep = 3,
+  invisible(boot_select(d, yc ~ x1, fit_linear, n_boot = 3,
                         select = "none", seed = 42))
   expect_equal(rnorm(1), expected)
 
   # And the stream is restored even when the data argument itself draws.
   set.seed(99)
-  invisible(boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
+  invisible(boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 3,
                         select = "none", seed = 42))
   expect_equal(rnorm(1), expected)
 })
@@ -169,25 +169,25 @@ test_that("n_rep must be a whole number, not silently truncated", {
   # n_rep = 2.5 used to reach vector("list", n_rep), which truncates: the
   # caller asked for 2.5 replicates and silently got 2.
   expect_error(
-    boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 2.5, select = "none"),
-    "`n_rep` must be a positive whole number of replicates", fixed = TRUE
+    boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 2.5, select = "none"),
+    "`n_boot` must be a positive whole number of replicates", fixed = TRUE
   )
 })
 
 test_that("a finite max_attempts must be a whole number, but Inf is allowed", {
   expect_error(
-    boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3, max_attempts = 12.5,
+    boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 3, max_attempts = 12.5,
                 select = "none"),
-    "`max_attempts` must be a whole number at least as large as `n_rep`",
+    "`max_attempts` must be a whole number at least as large as `n_boot`",
     fixed = TRUE
   )
-  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 3,
                      max_attempts = Inf, select = "none", seed = 1)
   expect_equal(nrow(out$coefficients), 3L)
 })
 
 test_that("boot_select() records the run's own control settings", {
-  out <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_rep = 5,
+  out <- boot_select(sim_df(), yc ~ x1 + x2, fit_linear, n_boot = 5,
                      sle = 0.08, sls = 0.04, seed = 77)
 
   # Every field boot_bag() reads, named individually rather than by setdiff(),
@@ -209,7 +209,7 @@ test_that("boot_select() records the run's own control settings", {
 test_that("an unseeded run records NA rather than inventing a seed", {
   # boot_bag() refuses this bag rather than writing a blank into the
   # provenance table, so the NA has to survive to it.
-  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_rep = 3,
+  out <- boot_select(sim_df(), yc ~ x1, fit_linear, n_boot = 3,
                      select = "none")
   expect_true(is.na(out$control$seed))
 })

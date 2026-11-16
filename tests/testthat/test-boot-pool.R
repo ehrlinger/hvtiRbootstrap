@@ -129,7 +129,7 @@ test_that("the pooled summary has the same shape as the bagged one", {
   n <- 200
   x1 <- rnorm(n)
   df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, x2 = rnorm(n))
-  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 20, seed = 42)
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_boot = 20, seed = 42)
   bagged <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
                      manifest = list(sha256 = "abc123"))
 

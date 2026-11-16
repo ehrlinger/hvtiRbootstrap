@@ -62,6 +62,8 @@
 #'   coefficient across the replicates that **selected** it, not a confidence
 #'   interval: a term chosen half the time has an interval over half the
 #'   replicates.
+#'   `provenance` is the hvtiR family's shared provenance record, copied
+#'   from the screen.
 #'   Validated before it is returned, so this function cannot emit a bag that a
 #'   report will refuse three chunks into a render.
 #'
@@ -73,7 +75,7 @@
 #' n  <- 200
 #' x1 <- rnorm(n)
 #' df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1, x2 = rnorm(n))
-#' fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 10, seed = 42)
+#' fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_boot = 10, seed = 42)
 #' bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2,
 #'                 manifest = list(sha256 = "example"))
 #' boot_frequencies(bag)
@@ -82,35 +84,36 @@
 boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
                      usable = NULL) {
   if (!inherits(x, "boot_selection")) {
-    stop("`x` must be a boot_selection from boot_select(), found ",
-         class(x)[1L], ".", call. = FALSE)
+    .abort("`x` must be a boot_selection from boot_select(), found ",
+           class(x)[1L], ".", class = "bag_refused")
   }
   ctl <- x[["control"]]
   if (!is.list(ctl)) {
-    stop("This boot_selection predates hvtiRbootstrap 0.9.2 and carries no ",
-         "`$control`, so the entry and stay levels, the seed and the row ",
-         "count it ran under are not recoverable from it.\nRe-run the screen ",
-         "under 0.9.2 or later.", call. = FALSE)
+    .abort("This boot_selection predates hvtiRbootstrap 0.9.2 and carries no ",
+           "`$control`, so the entry and stay levels, the seed and the row ",
+           "count it ran under are not recoverable from it.\nRe-run the ",
+           "screen under 0.9.2 or later.", class = "bag_refused")
   }
   # length-1 checked before is.na(): a hand-edited control with no `seed` gives
   # is.na(NULL) = logical(0), and `if (logical(0))` errors with "argument is of
   # length zero", replacing the diagnosis below with one that names nothing.
   if (length(ctl$seed) != 1L || is.na(ctl$seed)) {
-    stop("This screen did not record a seed, so the report it feeds could ",
-         "not be reproduced and the provenance table would print a blank ",
-         "where the seed belongs.\nRe-run boot_select() with `seed =`.",
-         call. = FALSE)
+    .abort("This screen did not record a seed, so the report it feeds could ",
+           "not be reproduced and the provenance table would print a blank ",
+           "where the seed belongs.\nRe-run boot_select() with `seed =`.",
+           class = "bag_refused")
   }
 
   m <- x$coefficients
   terms_seen <- colnames(m)
   if (!all(base_params %in% terms_seen)) {
-    stop("`base_params` names ",
-         paste(setdiff(base_params, terms_seen), collapse = ", "),
-         ", which is not among the screen's terms. Every frequency excludes ",
-         "the base model, so a name that matches nothing excludes nothing and ",
-         "reports the base model as a candidate.\nA Cox screen has no ",
-         "intercept: name the terms you forced instead.", call. = FALSE)
+    .abort("`base_params` names ",
+           paste(setdiff(base_params, terms_seen), collapse = ", "),
+           ", which is not among the screen's terms. Every frequency ",
+           "excludes the base model, so a name that matches nothing excludes ",
+           "nothing and reports the base model as a candidate.\nA Cox screen ",
+           "has no intercept: name the terms you forced instead.",
+           class = "bag_refused")
   }
   # Whole numbers, checked rather than truncated. as.integer(5.7) is 5, so a
   # fractional count would silently under-report the pool the frequencies are
@@ -119,8 +122,8 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
   .whole <- function(v, what) {
     if (!is.numeric(v) || length(v) != 1L || is.na(v) || v < 0 ||
           v != trunc(v)) {
-      stop("`", what, "` must be a single whole number of candidates, found ",
-           paste(format(v), collapse = ", "), ".", call. = FALSE)
+      .abort("`", what, "` must be a single whole number of candidates, found ",
+             paste(format(v), collapse = ", "), ".", class = "bag_refused")
     }
     as.integer(v)
   }
@@ -128,9 +131,9 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
 
   n_usable <- length(setdiff(terms_seen, base_params))
   if (!is.null(usable) && !identical(.whole(usable, "usable"), n_usable)) {
-    stop("The runner reports ", .whole(usable, "usable"), " usable ",
-         "candidates; the screen carries ", n_usable, ". One of the two is ",
-         "describing a different run.", call. = FALSE)
+    .abort("The runner reports ", .whole(usable, "usable"), " usable ",
+           "candidates; the screen carries ", n_usable, ". One of the two is ",
+           "describing a different run.", class = "bag_refused")
   }
 
   # A pool cannot be smaller than what came out of it. `requested` counts the
@@ -140,10 +143,10 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
   # frequency is conditional on the pool, so the figure a reader takes away is
   # attributed to a pool that never existed.
   if (requested < n_usable) {
-    stop("`requested` is ", requested, " but the screen carries ", n_usable,
-         " candidates. `requested` counts the pool OFFERED, before anything ",
-         "was dropped, so it cannot be smaller than what was screened.",
-         call. = FALSE)
+    .abort("`requested` is ", requested, " but the screen carries ", n_usable,
+           " candidates. `requested` counts the pool OFFERED, before anything ",
+           "was dropped, so it cannot be smaller than what was screened.",
+           class = "bag_refused")
   }
 
   # Long form, NA dropped. See @details: a row written for an unselected term
@@ -197,6 +200,19 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
   )
   if (!is.null(dropped)) {
     bag$dropped <- dropped
+  }
+  # The family's shared record, carried from the run rather than rebuilt: a
+  # bag built today from a screen run last week must not claim today's RNG
+  # kind or time. A screen from before the record existed gets NA there.
+  bag$provenance <- if (is.list(x[["provenance"]])) {
+    x$provenance
+  } else {
+    old <- .hvti_provenance(ctl$method, ctl$seed,
+                            rng_kind = rep(NA_character_, 3L),
+                            time = as.POSIXct(NA))
+    old$version <- as.character(ctl$package)
+    old$sha <- NA_character_
+    old
   }
 
   # Validated on the way out, so this function cannot emit a bag that the report

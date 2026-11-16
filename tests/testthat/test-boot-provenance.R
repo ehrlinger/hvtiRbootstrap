@@ -179,7 +179,7 @@ test_that("a boot_bag() screen reports its engine rather than NA", {
   n <- 120
   x1 <- stats::rnorm(n)
   df <- data.frame(y = 2 * x1 + stats::rnorm(n), x1 = x1, x2 = stats::rnorm(n))
-  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_rep = 5, seed = 7)
+  fit <- boot_select(df, y ~ x1 + x2, fit_linear, n_boot = 5, seed = 7)
   bag <- boot_bag(fit, base_params = "(Intercept)", requested = 2L,
                   manifest = list(sha256 = "abc"))
 

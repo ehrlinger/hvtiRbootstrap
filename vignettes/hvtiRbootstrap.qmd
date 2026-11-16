@@ -75,7 +75,7 @@ round(cor(sim$bsa, sim$wt), 2)
 ## Resample and fit
 
 `boot_select()` is `%bootreg`. Give it the data, a formula offering the
-candidate terms, and a fitter. The arguments you know carry over: `n_rep` is
+candidate terms, and a fitter. The arguments you know carry over: `n_boot` is
 `RESAMPL=`, `sle` and `sls` are `SLE=` and `SLS=` (defaults 0.1 and 0.05),
 `fraction` is `FRACTION=` and `seed` is `SEED=`. The default `fraction = 1`
 draws as many rows as the data has, which is what the macro always does.
@@ -84,13 +84,13 @@ draws as many rows as the data has, which is what the macro always does.
 fit <- boot_select(
   sim, dead ~ age + bsa + wt + ef + noise,
   fitter = fit_logistic,
-  n_rep = 50, seed = 101
+  n_boot = 50, seed = 101
 )
 fit
 ```
 
 We ask for only 50 replicates so the vignette builds quickly. A real screen
-uses the default of 1000, and `n_rep` counts *valid* models, as `RESAMPL=`
+uses the default of 1000, and `n_boot` counts *valid* models, as `RESAMPL=`
 does: a replicate whose fit fails is drawn again and not counted.
 
 The result keeps one row per replicate and one column per candidate term.
@@ -121,7 +121,7 @@ pct <- function(v) s$pct[s$variable == v]
 ```
 
 `n` is the count of replicates that selected the term and `pct` is that
-count over `n_rep`. The two real effects hold up. Age survives in
+count over `n_boot`. The two real effects hold up. Age survives in
 `r pct("age")`% of replicates and `bsa` in `r pct("bsa")`%. `ef` and `noise` carry
 nothing by construction, yet they still turn up in `r pct("ef")`% and
 `r pct("noise")`%. That is stepwise keeping a useless term by chance, and a
@@ -172,7 +172,7 @@ sim$event <- rbinom(n, 1, 0.7)
 cox_fit <- boot_select(
   sim, survival::Surv(time, event) ~ age + ef + noise,
   fitter = fit_cox,
-  n_rep = 20, seed = 202
+  n_boot = 20, seed = 202
 )
 boot_summary(cox_fit)
 ```
@@ -237,7 +237,7 @@ risk_at_age <- function(d, ...) {
   stats::setNames(p, c("age55", "age65", "age75"))
 }
 
-ci <- boot_predict_ci(sim, risk_at_age, n_rep = 50, seed = 7)
+ci <- boot_predict_ci(sim, risk_at_age, n_boot = 50, seed = 7)
 summary(ci)
 ```
 
@@ -262,7 +262,7 @@ Where the port departs from a macro on purpose, the README's divergence
 register lists the departure and the function's help page marks it as a
 **Divergence**. Most are set up so the default still behaves as SAS does.
 Two are not: `boot_predict_ci()` defaults to 1000 replicates where `%BNMNR`
-defaults to 100 (pass `n_rep = 100` to match), and `fit_cox()` enters on the
+defaults to 100 (pass `n_boot = 100` to match), and `fit_cox()` enters on the
 likelihood ratio because there is no score test to call.
 
 ## Where to go next
