@@ -77,7 +77,9 @@ one row per valid replicate and one column per candidate term, \code{NA} where
 the term was not selected. \verb{$control} records the run's own settings --
 \code{method}, \code{sle}, \code{sls}, \code{max_steps}, \code{fraction}, \code{seed}, \code{n_rows},
 \code{n_terms}, \code{elapsed_mins}, the \code{package} version, its commit \code{sha}
-(\code{NA} when the installer recorded none) and \code{rng_kind} -- so that a bag
+(\code{NA} when the installer recorded none), \code{rng_kind}, the \code{fitter}
+(\code{"fit_linear"}, \code{"fit_logistic"}, \code{"fit_cox"}, or an md5 of a custom
+fitter's source) and the deparsed \code{formula} -- so that a bag
 builder \code{\link[=boot_bag]{boot_bag()}} can take a provenance record from
 the run rather than from what a caller retypes. \verb{$call} cannot serve
 that purpose: \code{match.call()} omits every argument left at its default.

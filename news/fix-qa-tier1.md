@@ -8,7 +8,10 @@
   `NA` only on such a bag.
 * `boot_pool_chunks()` runs `boot_validate()` on every chunk first, naming the
   chunk and field rather than failing inside `vapply()`, and refuses chunks
-  that disagree on `method` or `fraction`. A runner chunk that records neither
+  that disagree on the model -- the `fitter` (named, or an md5 of a custom
+  fitter's source) or the `formula`, both now recorded by `boot_select()` and
+  `boot_bag()` -- or on `method` or `fraction`. A linear and a logistic screen
+  of the same data used to pool, averaging slopes with log-odds. A runner chunk that records neither
   is read as `"stepwise"` and `1`, so hazard-runner chunks still pool.
 * A run where more than 5% of draws fail now warns, in `boot_select()` and
   `boot_predict_ci()`, and `boot_health()` fails its "Replicates that failed"

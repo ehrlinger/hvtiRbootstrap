@@ -359,3 +359,49 @@ test_that("a runner chunk without method or fraction still pools", {
   expect_error(boot_pool_chunks(list(chunk(1), chunk(2, method = "none"))),
                "selection method")
 })
+
+test_that("bags from different models refuse to pool (#71 review)", {
+  # Same data, same candidate COUNT, same seed-free gates: before the model
+  # was recorded, a linear and a logistic screen pooled, averaging slopes
+  # with log-odds, and two formulas offering one candidate each pooled too.
+  set.seed(1)
+  d <- data.frame(x = stats::rnorm(100), z = stats::rnorm(100))
+  d$y <- as.integer(d$x + stats::rnorm(100) > 0)
+  bag <- function(formula, fitter, seed) {
+    boot_bag(boot_select(d, formula, fitter, n_rep = 5, seed = seed),
+             base_params = "(Intercept)", requested = 1L,
+             manifest = list(sha256 = "same"))
+  }
+  expect_error(
+    boot_pool_chunks(list(bag(y ~ x, fit_linear, 1),
+                          bag(y ~ x, fit_logistic, 2))),
+    "the fitter"
+  )
+  expect_error(
+    boot_pool_chunks(list(bag(y ~ x, fit_linear, 1),
+                          bag(y ~ z, fit_linear, 2))),
+    "model formula"
+  )
+  # A custom fitter is fingerprinted, so two different ones disagree...
+  f1 <- function(data, formula, select) fit_linear(data, formula, select)
+  f2 <- function(data, formula, select) {
+    fit_linear(data, formula, list(method = "none"))
+  }
+  expect_error(
+    boot_pool_chunks(list(bag(y ~ x, f1, 1), bag(y ~ x, f2, 2))),
+    "the fitter"
+  )
+  # ...and the same one agrees with itself.
+  expect_identical(
+    boot_pool_chunks(list(bag(y ~ x, f1, 1), bag(y ~ x, f1, 2)))$n_chunks,
+    2L
+  )
+})
+
+test_that("a non-runner chunk that records no model is refused", {
+  a <- real_bag(1)
+  b <- real_bag(2)
+  a$fitter <- NULL
+  b$fitter <- NULL
+  expect_error(boot_pool_chunks(list(a, b)), "no chunk records the fitter")
+})

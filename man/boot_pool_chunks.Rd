@@ -39,6 +39,12 @@ tighter cap a variable that would have entered late never gets the chance.
 that records no \code{resampled} predates patient resampling and is read as
 \code{"rows"}, which is what every earlier runner did; the pooled object
 carries the agreed value.
+\item A different \strong{fitter} or \strong{formula} is a different model: pooling a
+linear screen with a logistic one averages slopes with log-odds, and two
+formulas offering the same number of candidates are not the same pool.
+\code{\link[=boot_bag]{boot_bag()}} records both; a hazard-runner chunk records neither and
+pools only with other runner chunks. Any other chunk without them is
+refused.
 \item A different \strong{method} or \strong{fraction} is a different screen. Absent,
 as in every runner chunk written before \code{\link[=boot_bag]{boot_bag()}} recorded them, they
 are read as \code{"stepwise"} and \code{1}.

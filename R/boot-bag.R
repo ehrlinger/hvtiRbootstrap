@@ -49,9 +49,12 @@
 #'   holding `replicates`, `summary`, `n_success` and `n_failed`. It also
 #'   carries what [boot_pool_chunks()] checks before pooling two bags: the
 #'   engine (`engine`, the package version, and `engine_sha`, its commit or
-#'   `NA`), `method`, `max_steps`, `fraction` and `resampled` (always
-#'   `"rows"`), plus `rng_kind`. Under `select = "none"`, `slentry`, `slstay`
-#'   and `max_steps` are `NA`: no selection ran, so no level was used.
+#'   `NA`), the model (`fitter` and `formula`), `method`, `max_steps`,
+#'   `fraction` and `resampled` (always `"rows"`), plus `rng_kind`. A screen
+#'   built before this field existed records no model, so its bag carries
+#'   none and [boot_pool_chunks()] refuses it. Under `select = "none"`,
+#'   `slentry`, `slstay` and `max_steps` are `NA`: no selection ran, so no
+#'   level was used.
 #'   `boot$summary` is keyed `parameter` -- as `boot$replicates` and
 #'   [boot_health()] are, and as [boot_pool_chunks()] returns -- rather than
 #'   [boot_summary()]'s `variable`, and carries `sel_q025` and `sel_q975`
@@ -182,6 +185,8 @@ boot_bag <- function(x, base_params, requested, manifest, dropped = NULL,
     max_steps    = if (selected) as.integer(ctl$max_steps) else NA_integer_,
     fraction     = ctl$fraction,
     resampled    = "rows",
+    fitter       = ctl$fitter,
+    formula      = ctl$formula,
     rng_kind     = if (is.null(ctl$rng_kind)) NA_character_ else ctl$rng_kind,
     boot         = list(
       replicates = reps,

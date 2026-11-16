@@ -59,7 +59,9 @@
 #'   the term was not selected. `$control` records the run's own settings --
 #'   `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`, `n_rows`,
 #'   `n_terms`, `elapsed_mins`, the `package` version, its commit `sha`
-#'   (`NA` when the installer recorded none) and `rng_kind` -- so that a bag
+#'   (`NA` when the installer recorded none), `rng_kind`, the `fitter`
+#'   (`"fit_linear"`, `"fit_logistic"`, `"fit_cox"`, or an md5 of a custom
+#'   fitter's source) and the deparsed `formula` -- so that a bag
 #'   builder [boot_bag()] can take a provenance record from
 #'   the run rather than from what a caller retypes. `$call` cannot serve
 #'   that purpose: `match.call()` omits every argument left at its default.
@@ -220,7 +222,14 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
     elapsed_mins = (proc.time()[["elapsed"]] - .t0) / 60,
     package      = as.character(utils::packageVersion("hvtiRbootstrap")),
     sha          = .package_sha(),
-    rng_kind     = RNGkind()
+    rng_kind     = RNGkind(),
+    # The model itself, so boot_pool_chunks() can refuse to pool a linear
+    # screen with a logistic one, or two formulas that happen to offer the
+    # same number of candidates. Without these, chunks agreeing on every
+    # other gate pooled log-odds with slopes.
+    fitter       = .fitter_id(fitter),
+    formula      = paste(deparse(formula, width.cutoff = 500L),
+                         collapse = " ")
   )
 
   new_boot_selection(m, n_rep = as.integer(n_rep),
@@ -258,4 +267,23 @@ boot_select <- function(data, formula, fitter, n_rep = 1000, fraction = 1,
 .package_sha <- function() {
   sha <- utils::packageDescription("hvtiRbootstrap", fields = "RemoteSha")
   if (length(sha) != 1L || is.na(sha) || !nzchar(sha)) NA_character_ else sha
+}
+
+# A fitter's identity for the pool gate. The shipped fitters are named; any
+# other function is fingerprinted by an md5 of its deparsed source, so two
+# different custom fitters disagree. A closure's captured settings are not in
+# its source, so two closures differing only there look the same -- a custom
+# fitter that is configured that way should differ in its body as well.
+.fitter_id <- function(fitter) {
+  shipped <- list(fit_linear = fit_linear, fit_logistic = fit_logistic,
+                  fit_cox = fit_cox)
+  for (nm in names(shipped)) {
+    if (identical(fitter, shipped[[nm]], ignore.environment = TRUE)) {
+      return(nm)
+    }
+  }
+  f <- tempfile()
+  on.exit(unlink(f))
+  writeLines(deparse(fitter), f)
+  paste0("custom:md5:", unname(tools::md5sum(f)))
 }

@@ -84,6 +84,12 @@
 #'   `"rows"`, which is what every earlier runner did; the pooled object
 #'   carries the agreed value.
 #'
+#' * A different **fitter** or **formula** is a different model: pooling a
+#'   linear screen with a logistic one averages slopes with log-odds, and two
+#'   formulas offering the same number of candidates are not the same pool.
+#'   [boot_bag()] records both; a hazard-runner chunk records neither and
+#'   pools only with other runner chunks. Any other chunk without them is
+#'   refused.
 #' * A different **method** or **fraction** is a different screen. Absent,
 #'   as in every runner chunk written before [boot_bag()] recorded them, they
 #'   are read as `"stepwise"` and `1`.
@@ -217,6 +223,22 @@ boot_pool_chunks <- function(chunks) {
   # fields ran a stepwise screen over full-size draws, because no runner before
   # boot_bag() recorded them and none offered anything else. boot_bag() writes
   # both, so a fixed-model bag and a stepwise one now refuse to pool.
+  # The model. A bag records its fitter and formula; a hazard-runner chunk
+  # records neither, and is read as the runner's own model so runner chunks
+  # still pool with each other -- and never with a bag, whose engine differs.
+  # Anything else that records no model is refused as unverifiable.
+  model_field <- function(f) {
+    function(k) {
+      v <- k[[f]]
+      if (!is.null(v)) return(v)
+      th <- k[["th_sha"]]
+      if (is.null(th)) th <- k[["th_version"]]
+      if (!is.null(th)) "hazard runner (unrecorded)" else NULL
+    }
+  }
+  agree(model_field("fitter"),  "the fitter (fitter)")
+  agree(model_field("formula"), "the model formula (formula)")
+
   agree(function(k) {
     m <- k[["method"]]
     if (is.null(m)) "stepwise" else m
