@@ -61,10 +61,19 @@ boot_bag(x, base_params, requested, manifest, dropped = NULL, usable = NULL)
 A list carrying the fields
 [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
 requires: `n_boot`, `seed`, `slentry`, `slstay`, `base_params`,
-`requested`, `usable`, `n_rows`, `elapsed_mins`, `manifest`, `engine`,
-`dropped` when supplied, and `boot` holding `replicates`, `summary`,
-`n_success` and `n_failed`. `boot$summary` is keyed `parameter` – as
-`boot$replicates` and
+`requested`, `usable`, `n_rows`, `elapsed_mins`, `manifest`, `dropped`
+when supplied, and `boot` holding `replicates`, `summary`, `n_success`
+and `n_failed`. It also carries what
+[`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+checks before pooling two bags: the engine (`engine`, the package
+version, and `engine_sha`, its commit or `NA`), the model (`fitter` and
+`formula`), `method`, `max_steps`, `fraction` and `resampled` (always
+`"rows"`), plus `rng_kind`. A screen built before this field existed
+records no model, so its bag carries none and
+[`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)
+refuses it. Under `select = "none"`, `slentry`, `slstay` and `max_steps`
+are `NA`: no selection ran, so no level was used. `boot$summary` is
+keyed `parameter` – as `boot$replicates` and
 [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
 are, and as
 [`boot_pool_chunks()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_pool_chunks.md)

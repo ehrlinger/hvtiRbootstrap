@@ -80,7 +80,7 @@ pkgdown gates arrived in 0.1.1.
 | `R-CMD-check.yaml` | `R CMD check` across platforms |
 | `check-manual.yaml` | `R CMD check --as-cran` **with the manual built** |
 | `pkgdown.yaml` | the site build, including any exported topic missing from `_pkgdown.yml`’s reference index |
-| `lint.yaml` | [`lintr::lint_package()`](https://lintr.r-lib.org/reference/lint.html) |
+| `lint.yaml` | `lintr::lint_package()` |
 | `house-style.yaml` | the composed house style |
 | `test-coverage.yaml` | coverage upload |
 

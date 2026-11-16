@@ -1,6 +1,6 @@
 # Did the bootstrap screen actually run?
 
-Four facts about a screen, two of which are checks that catch a run
+Four facts about a screen, three of which are checks that catch a run
 which produced a perfectly ordinary-looking table of numbers that mean
 nothing.
 
@@ -49,6 +49,12 @@ run is the shape most likely to have been built the way this check
 exists to catch. Skipping it there would turn the check off in exactly
 the case that needs it.
 
+**More than 5% of draws failing is flagged.** A failed replicate is
+redrawn and not counted, as `%bootreg` does, so a nonzero `n_failed` is
+not a fault. A high rate is: the replicates kept are then the ones on
+which the model could be estimated, and every frequency is conditional
+on that. The rate is `n_failed / (n_success + n_failed)`.
+
 This function **returns** its findings rather than stopping. A report
 decides how to present them: a callout, a red cell, or a
 [`stop()`](https://rdrr.io/r/base/stop.html) of its own.
@@ -78,7 +84,7 @@ bag <- list(
 boot_health(bag)
 #>                                 check     value   ok note
 #> 1              Replicates that fitted         4 TRUE <NA>
-#> 2              Replicates that failed         0   NA <NA>
+#> 2              Replicates that failed         0 TRUE <NA>
 #> 3   Distinct candidates ever selected         1 TRUE <NA>
 #> 4 SD of the first free base parameter 0.1290994 TRUE <NA>
 
@@ -87,7 +93,7 @@ bag$boot$replicates <- bag$boot$replicates[-2, ]
 boot_health(bag)
 #>                                 check     value    ok
 #> 1              Replicates that fitted         4  TRUE
-#> 2              Replicates that failed         0    NA
+#> 2              Replicates that failed         0  TRUE
 #> 3   Distinct candidates ever selected         0 FALSE
 #> 4 SD of the first free base parameter 0.1290994  TRUE
 #>                                                                                                                                                                                                                                                                                                                                                                                             note

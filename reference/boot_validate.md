@@ -34,9 +34,10 @@ releases.
 Three shapes are checked, because three things can be true of a field:
 
 - **Scalar** - `n_boot`, `seed`, `slentry`, `slstay`, `n_rows` and
-  `elapsed_mins` are each one value. A length-2 `n_boot` means the pool
-  was written per phase into a field that is not per phase, and every
-  count downstream is then ambiguous.
+  `elapsed_mins` are each one value. `slentry` and `slstay` may be `NA`
+  only on a bag whose `method` is `"none"`, where no selection ran. A
+  length-2 `n_boot` means the pool was written per phase into a field
+  that is not per phase, and every count downstream is then ambiguous.
 
 - **Per phase** - `requested` and `usable` may be a vector, and on a
   multiphase screen they are: the candidate pool is *offered* to each

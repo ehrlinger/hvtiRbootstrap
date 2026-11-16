@@ -45,7 +45,11 @@ boot_select(
 
   Number of **valid** models to generate (`%bootreg` `RESAMPL=`).
   Replicates whose fit fails are redrawn and do not count, matching the
-  macro's `&regrc` check.
+  macro's `&regrc` check. That makes the result **conditional on
+  estimability**: the replicates kept are those on which the model could
+  be fitted. When more than 5% of draws fail the run warns, and
+  [`boot_health()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_health.md)
+  flags the rate.
 
 - fraction:
 
@@ -112,8 +116,10 @@ An object of class `boot_selection`. `$coefficients` is a matrix with
 one row per valid replicate and one column per candidate term, `NA`
 where the term was not selected. `$control` records the run's own
 settings – `method`, `sle`, `sls`, `max_steps`, `fraction`, `seed`,
-`n_rows`, `n_terms`, `elapsed_mins` and the `package` version – so that
-a bag builder
+`n_rows`, `n_terms`, `elapsed_mins`, the `package` version, its commit
+`sha` (`NA` when the installer recorded none), `rng_kind`, the `fitter`
+(`"fit_linear"`, `"fit_logistic"`, `"fit_cox"`, or an md5 of a custom
+fitter's source) and the deparsed `formula` – so that a bag builder
 [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
 can take a provenance record from the run rather than from what a caller
 retypes. `$call` cannot serve that purpose:

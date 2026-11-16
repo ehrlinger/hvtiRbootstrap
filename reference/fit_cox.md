@@ -26,10 +26,11 @@ fit_cox(data, formula, select)
 
 ## Value
 
-Named numeric vector of kept coefficients, or `NULL` if the fit errored.
-Cox models carry no intercept, so none appears in the result - which
-means a replicate where selection kept nothing returns a **zero-length**
-vector, not `NULL`, and counts as a valid replicate.
+Named numeric vector of kept coefficients, or `NULL` if the fit errored
+or did not converge. Cox models carry no intercept, so none appears in
+the result - which means a replicate where selection kept nothing
+returns a **zero-length** vector, not `NULL`, and counts as a valid
+replicate.
 
 ## Details
 
@@ -41,6 +42,15 @@ agree asymptotically and differ only for a term sitting on the entry
 threshold, so a screen will usually select the same set and may
 occasionally differ on a borderline candidate. Removal is Wald, matching
 the macro.
+
+Non-convergence discards the replicate, as it does in
+[`fit_logistic()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_logistic.md).
+`coxph()` signals it only by a warning, "Ran out of iterations and did
+not converge", and warnings do not discard a replicate here, so the
+check reads the iteration count instead: a fit that used more than
+`survival::coxph.control()$iter.max` iterations ran out. A monotone
+likelihood ("coefficient may be infinite") that did converge is kept, as
+`glm`'s "fitted probabilities numerically 0 or 1" is.
 
 ## See also
 

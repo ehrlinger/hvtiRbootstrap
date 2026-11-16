@@ -256,7 +256,7 @@ This check catches both.
 boot_health(bag)
 #>                                 check    value   ok note
 #> 1              Replicates that fitted       50 TRUE <NA>
-#> 2              Replicates that failed        0   NA <NA>
+#> 2              Replicates that failed        0 TRUE <NA>
 #> 3   Distinct candidates ever selected        5 TRUE <NA>
 #> 4 SD of the first free base parameter 3.980787 TRUE <NA>
 ```

@@ -13,12 +13,16 @@ boot_pool_chunks(chunks)
 
 - chunks:
 
-  A list of chunk objects, each carrying at least `seed`, `n_boot`,
-  `slentry`, `slstay`, `base_params`, `usable`, `max_steps`,
-  `elapsed_mins`, a `manifest` with an `md5` or `sha256`, an engine
-  provenance field (`th_sha` or `th_version`), and a `boot` list with
-  `replicates`, `n_success` and `n_failed`. An optional `resampled`
-  (`"patients"` or `"rows"`) defaults to `"rows"`.
+  A list of chunk objects: bags from
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md),
+  or chunks a runner wrote in the same shape. Each is checked with
+  [`boot_validate()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_validate.md)
+  first, and must also carry `max_steps` and an engine provenance field
+  (`engine_sha` or `engine` from
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md),
+  `th_sha` or `th_version` from the hazard runner). The optional
+  `resampled` (`"patients"` or `"rows"`), `method` and `fraction`
+  default to `"rows"`, `"stepwise"` and `1`.
 
 ## Value
 
@@ -48,6 +52,19 @@ own:**
   distributions. A chunk that records no `resampled` predates patient
   resampling and is read as `"rows"`, which is what every earlier runner
   did; the pooled object carries the agreed value.
+
+- A different **fitter** or **formula** is a different model: pooling a
+  linear screen with a logistic one averages slopes with log-odds, and
+  two formulas offering the same number of candidates are not the same
+  pool.
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  records both; a hazard-runner chunk records neither and pools only
+  with other runner chunks. Any other chunk without them is refused.
+
+- A different **method** or **fraction** is a different screen. Absent,
+  as in every runner chunk written before
+  [`boot_bag()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_bag.md)
+  recorded them, they are read as `"stepwise"` and `1`.
 
 Neither shows up as an error in a frequency table. Both show up as a
 slightly different number.
@@ -85,10 +102,13 @@ for the per-variable frequencies.
 # Two chunks as the hazard runner writes them: same screen, different seeds.
 chunk <- function(seed) list(
   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
-  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  base_params = "early.log_mu", usable = c(early = 10L),
+  requested = c(early = 10L), n_rows = 300L, max_steps = 50L,
   elapsed_mins = 1, manifest = list(sha256 = "example"),
   th_version = "1.2.16",
-  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+  boot = list(n_success = 2L, n_failed = 0L,
+    summary = data.frame(parameter = "early.age", n = 1L, pct = 50),
+    replicates = data.frame(
     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
 )

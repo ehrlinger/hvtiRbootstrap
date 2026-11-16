@@ -33,8 +33,12 @@ boot_predict_ci(
 
 - n_rep:
 
-  Number of **valid** replicates (`%BNMNR` `RESAMPL=`). **Divergence:**
-  the macro defaults to 100; this defaults to 1000, matching
+  Number of **valid** replicates (`%BNMNR` `RESAMPL=`). A replicate
+  whose `statistic` fails is redrawn and not counted, so the bands are
+  **conditional on estimability**: they describe the replicates on which
+  the estimate could be computed. When more than 5% of draws fail the
+  run warns. **Divergence:** the macro defaults to 100; this defaults to
+  1000, matching
   [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
   in this package. A hundred replicates puts the 2.5th percentile on the
   third order statistic, where it is visibly unstable. Pass

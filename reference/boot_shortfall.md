@@ -55,10 +55,13 @@ and both are worth saying.
 # Two chunks as the hazard runner writes them: same screen, different seeds.
 chunk <- function(seed) list(
   seed = seed, n_boot = 2L, slentry = 0.1, slstay = 0.05,
-  base_params = "early.log_mu", usable = c(early = 10L), max_steps = 50L,
+  base_params = "early.log_mu", usable = c(early = 10L),
+  requested = c(early = 10L), n_rows = 300L, max_steps = 50L,
   elapsed_mins = 1, manifest = list(sha256 = "example"),
   th_version = "1.2.16",
-  boot = list(n_success = 2L, n_failed = 0L, replicates = data.frame(
+  boot = list(n_success = 2L, n_failed = 0L,
+    summary = data.frame(parameter = "early.age", n = 1L, pct = 50),
+    replicates = data.frame(
     replicate = c(1L, 1L, 2L), parameter = c("early.log_mu", "early.age",
     "early.log_mu"), estimate = c(0.1, 0.02, 0.2)))
 )
