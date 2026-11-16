@@ -136,13 +136,13 @@
 </div>
 </section><section class="level2"><h2 id="resample-and-fit">Resample and fit<a class="anchor" aria-label="anchor" href="#resample-and-fit"></a>
 </h2>
-<p><code><a href="../reference/boot_select.html">boot_select()</a></code> is <code>%bootreg</code>. Give it the data, a formula offering the candidate terms, and a fitter. The arguments you know carry over: <code>n_rep</code> is <code>RESAMPL=</code>, <code>sle</code> and <code>sls</code> are <code>SLE=</code> and <code>SLS=</code> (defaults 0.1 and 0.05), <code>fraction</code> is <code>FRACTION=</code> and <code>seed</code> is <code>SEED=</code>. The default <code>fraction = 1</code> draws as many rows as the data has, which is what the macro always does.</p>
+<p><code><a href="../reference/boot_select.html">boot_select()</a></code> is <code>%bootreg</code>. Give it the data, a formula offering the candidate terms, and a fitter. The arguments you know carry over: <code>n_boot</code> is <code>RESAMPL=</code>, <code>sle</code> and <code>sls</code> are <code>SLE=</code> and <code>SLS=</code> (defaults 0.1 and 0.05), <code>fraction</code> is <code>FRACTION=</code> and <code>seed</code> is <code>SEED=</code>. The default <code>fraction = 1</code> draws as many rows as the data has, which is what the macro always does.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/boot_select.html">boot_select</a></span><span class="op">(</span></span>
 <span>  <span class="va">sim</span>, <span class="va">dead</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">bsa</span> <span class="op">+</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">ef</span> <span class="op">+</span> <span class="va">noise</span>,</span>
 <span>  fitter <span class="op">=</span> <span class="va">fit_logistic</span>,</span>
-<span>  n_rep <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">101</span></span>
+<span>  n_boot <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">101</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
 <span><span class="co">#&gt; &lt;boot_selection&gt;</span></span>
@@ -150,7 +150,7 @@
 <span><span class="co">#&gt;   terms:      6</span></span>
 <span><span class="co">#&gt; Use boot_summary() for per-variable selection frequencies.</span></span></code></pre></div>
 </div>
-<p>We ask for only 50 replicates so the vignette builds quickly. A real screen uses the default of 1000, and <code>n_rep</code> counts <em>valid</em> models, as <code>RESAMPL=</code> does: a replicate whose fit fails is drawn again and not counted.</p>
+<p>We ask for only 50 replicates so the vignette builds quickly. A real screen uses the default of 1000, and <code>n_boot</code> counts <em>valid</em> models, as <code>RESAMPL=</code> does: a replicate whose fit fails is drawn again and not counted.</p>
 <p>The result keeps one row per replicate and one column per candidate term. A term the model did not select is <code>NA</code> in that row:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
@@ -179,7 +179,7 @@
 <span><span class="co">#&gt; 5       noise  6  12   0.40319364 0.05830257   0.31074553  0.49333764</span></span>
 <span><span class="co">#&gt; 6          wt  3   6  -0.01975644 0.11950685  -0.15740392  0.05753877</span></span></code></pre></div>
 </div>
-<p><code>n</code> is the count of replicates that selected the term and <code>pct</code> is that count over <code>n_rep</code>. The two real effects hold up. Age survives in 88% of replicates and <code>bsa</code> in 88%. <code>ef</code> and <code>noise</code> carry nothing by construction, yet they still turn up in 28% and 12%. That is stepwise keeping a useless term by chance, and a fair reminder that a non-zero <code>pct</code> is not evidence of anything on its own.</p>
+<p><code>n</code> is the count of replicates that selected the term and <code>pct</code> is that count over <code>n_boot</code>. The two real effects hold up. Age survives in 88% of replicates and <code>bsa</code> in 88%. <code>ef</code> and <code>noise</code> carry nothing by construction, yet they still turn up in 28% and 12%. That is stepwise keeping a useless term by chance, and a fair reminder that a non-zero <code>pct</code> is not evidence of anything on its own.</p>
 <p>The coefficient columns describe the replicates that <em>selected</em> the term, not all of them. A term chosen a handful of times has a mean and spread computed over that handful.</p>
 </section><section class="level2"><h2 id="what-about-correlated-terms">What about correlated terms?<a class="anchor" aria-label="anchor" href="#what-about-correlated-terms"></a>
 </h2>
@@ -206,7 +206,7 @@
 <span><span class="va">cox_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/boot_select.html">boot_select</a></span><span class="op">(</span></span>
 <span>  <span class="va">sim</span>, <span class="fu">survival</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">ef</span> <span class="op">+</span> <span class="va">noise</span>,</span>
 <span>  fitter <span class="op">=</span> <span class="va">fit_cox</span>,</span>
-<span>  n_rep <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">202</span></span>
+<span>  n_boot <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">202</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/boot_summary.html">boot_summary</a></span><span class="op">(</span><span class="va">cox_fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   variable  n pct       mean          sd        min        max</span></span>
@@ -262,7 +262,7 @@
 <span>  <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">p</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age55"</span>, <span class="st">"age65"</span>, <span class="st">"age75"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="va">ci</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/boot_predict_ci.html">boot_predict_ci</a></span><span class="op">(</span><span class="va">sim</span>, <span class="va">risk_at_age</span>, n_rep <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
+<span><span class="va">ci</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/boot_predict_ci.html">boot_predict_ci</a></span><span class="op">(</span><span class="va">sim</span>, <span class="va">risk_at_age</span>, n_boot <span class="op">=</span> <span class="fl">50</span>, seed <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ci</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   parameter   cll_p95   cll_p68    median   clu_p68   clu_p95</span></span>
 <span><span class="co">#&gt; 1     age55 0.1135267 0.1339898 0.1699794 0.2138586 0.2590603</span></span>
@@ -273,7 +273,7 @@
 </section><section class="level2"><h2 id="what-matches-sas-and-what-does-not">What matches SAS, and what does not<a class="anchor" aria-label="anchor" href="#what-matches-sas-and-what-does-not"></a>
 </h2>
 <p><code><a href="../reference/boot_summary.html">boot_summary()</a></code> and <code><a href="../reference/boot_clusters.html">boot_clusters()</a></code> are held to exact parity with <code>%SUMBOOT</code> and <code>%cluster</code>, and the interval arithmetic in <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> matches <code>PROC STDIZE PCTLDEF=1</code>. Resampling and model fitting are not parity-tested and cannot be, because R and SAS draw different samples. So compare an R screen with a SAS screen of the same data on its conclusions, not to the decimal.</p>
-<p>Where the port departs from a macro on purpose, the README’s divergence register lists the departure and the function’s help page marks it as a <strong>Divergence</strong>. Most are set up so the default still behaves as SAS does. Two are not: <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> defaults to 1000 replicates where <code>%BNMNR</code> defaults to 100 (pass <code>n_rep = 100</code> to match), and <code><a href="../reference/fit_cox.html">fit_cox()</a></code> enters on the likelihood ratio because there is no score test to call.</p>
+<p>Where the port departs from a macro on purpose, the README’s divergence register lists the departure and the function’s help page marks it as a <strong>Divergence</strong>. Most are set up so the default still behaves as SAS does. Two are not: <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> defaults to 1000 replicates where <code>%BNMNR</code> defaults to 100 (pass <code>n_boot = 100</code> to match), and <code><a href="../reference/fit_cox.html">fit_cox()</a></code> enters on the likelihood ratio because there is no score test to call.</p>
 </section><section class="level2"><h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
 </h2>
 <ul>

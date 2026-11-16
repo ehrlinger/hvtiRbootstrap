@@ -54,7 +54,7 @@ df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
                  x2 = rnorm(n), noise = rnorm(n))
 
 fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
-                   n_rep = 50, seed = 42)
+                   n_boot = 50, seed = 42)
 boot_summary(fit)
 #>      variable  n pct        mean          sd        min       max
 #> 1 (Intercept) 50 100 -0.01935105 0.061297809 -0.1529768 0.1033970

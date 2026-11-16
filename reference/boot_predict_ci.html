@@ -57,12 +57,13 @@ percentile intervals of each estimated quantity.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">boot_predict_ci</span><span class="op">(</span></span>
 <span>  <span class="va">data</span>,</span>
 <span>  <span class="va">statistic</span>,</span>
-<span>  n_rep <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  n_boot <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  fraction <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  id <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  max_attempts <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="va">n_rep</span>,</span>
+<span>  max_attempts <span class="op">=</span> <span class="fl">10</span> <span class="op">*</span> <span class="va">n_boot</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  <span class="va">n_rep</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -80,7 +81,7 @@ of one replicate's estimates, or <code>NULL</code> if the replicate failed.
 <code>%BNMNR</code> equivalent: the <code>PROC NLMIXED</code> block.</p></dd>
 
 
-<dt id="arg-n-rep">n_rep<a class="anchor" aria-label="anchor" href="#arg-n-rep"></a></dt>
+<dt id="arg-n-boot">n_boot<a class="anchor" aria-label="anchor" href="#arg-n-boot"></a></dt>
 <dd><p>Number of <strong>valid</strong> replicates (<code>%BNMNR</code> <code>RESAMPL=</code>). A
 replicate whose <code>statistic</code> fails is redrawn and not counted, so the
 bands are <strong>conditional on estimability</strong>: they describe the replicates
@@ -89,7 +90,7 @@ the run warns.
 <strong>Divergence:</strong> the macro defaults to 100; this defaults to 1000,
 matching <code><a href="boot_select.html">boot_select()</a></code> in this package. A hundred replicates puts the
 2.5th percentile on the third order statistic, where it is visibly
-unstable. Pass <code>n_rep = 100</code> to reproduce the macro.</p></dd>
+unstable. Pass <code>n_boot = 100</code> to reproduce the macro.</p></dd>
 
 
 <dt id="arg-fraction">fraction<a class="anchor" aria-label="anchor" href="#arg-fraction"></a></dt>
@@ -119,13 +120,26 @@ Pass <code>Inf</code> to restore that.</p></dd>
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Passed to <code>statistic</code>.</p></dd>
 
+
+<dt id="arg-n-rep">n_rep<a class="anchor" aria-label="anchor" href="#arg-n-rep"></a></dt>
+<dd><p>Deprecated name for <code>n_boot</code>, renamed under the hvtiR API
+rubric. It still works for one release and warns once per session.
+Before the rename, an <code>n_boot =</code> argument was passed through <code>...</code> to
+<code>statistic</code>; a call that still uses <code>n_rep</code> keeps that meaning, so
+<code>n_rep = 100, n_boot = 2</code> draws 100 replicates and hands <code>n_boot = 2</code> to
+<code>statistic</code>. Under the new name <code>n_boot</code> is the replicate count and is
+never forwarded: a <code>statistic</code> with its own <code>n_boot</code> argument should
+rename it or bind it in a closure.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>boot_intervals</code>. <code>$estimates</code> is a matrix with
 one row per valid replicate and one column per quantity; <code>$intervals</code> is
 the per-quantity table with columns <code>parameter</code>, <code>cll_p95</code>, <code>cll_p68</code>,
-<code>median</code>, <code>clu_p68</code>, <code>clu_p95</code>. <code>$control</code> records the run's settings.</p>
+<code>median</code>, <code>clu_p68</code>, <code>clu_p95</code>. <code>$control</code> records the run's settings,
+and <code>$provenance</code> the hvtiR family's shared provenance record, with
+<code>method = "percentile"</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -163,7 +177,7 @@ SAS's <code>PCTLDEF=1</code>. A coverage-shaped name passed through <code>...</c
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">d</span>, <span class="va">...</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">boot_predict_ci</span><span class="op">(</span><span class="va">df</span>, <span class="va">est</span>, n_rep <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">boot_predict_ci</span><span class="op">(</span><span class="va">df</span>, <span class="va">est</span>, n_boot <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">r</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;boot_intervals&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   replicates: 100 valid of 100 attempts</span>

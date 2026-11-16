@@ -1,7 +1,7 @@
 # Build a model by bootstrap resampling
 
 The R port of `%bootreg` (`bootstrap.models.sas` in the CORR macro
-library). Fits `fitter` on each of `n_rep` bootstrap replicates and
+library). Fits `fitter` on each of `n_boot` bootstrap replicates and
 records the coefficients each model kept.
 
 ## Usage
@@ -11,14 +11,15 @@ boot_select(
   data,
   formula,
   fitter,
-  n_rep = 1000,
+  n_boot = 1000,
   fraction = 1,
   select = c("stepwise", "none"),
   sle = 0.1,
   sls = 0.05,
   max_steps = 0,
-  max_attempts = 10 * n_rep,
-  seed = NULL
+  max_attempts = 10 * n_boot,
+  seed = NULL,
+  n_rep
 )
 ```
 
@@ -41,7 +42,7 @@ boot_select(
   [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md).
   `%bootreg` equivalent: `PROC=`.
 
-- n_rep:
+- n_boot:
 
   Number of **valid** models to generate (`%bootreg` `RESAMPL=`).
   Replicates whose fit fails are redrawn and do not count, matching the
@@ -110,6 +111,11 @@ boot_select(
 
   Optional integer for reproducibility.
 
+- n_rep:
+
+  Deprecated name for `n_boot`, renamed under the hvtiR API rubric. It
+  still works for one release and warns once per session.
+
 ## Value
 
 An object of class `boot_selection`. `$coefficients` is a matrix with
@@ -124,7 +130,10 @@ fitter's source) and the deparsed `formula` – so that a bag builder
 can take a provenance record from the run rather than from what a caller
 retypes. `$call` cannot serve that purpose:
 [`match.call()`](https://rdrr.io/r/base/match.call.html) omits every
-argument left at its default.
+argument left at its default. `$provenance` is the hvtiR family's shared
+provenance record (`package`, `version`, `sha`, `method`, `seed`,
+`rng_kind`, `time`), taken when the draw began, followed by this
+package's `fitter` and `formula`. The replicate count stays in `$n_rep`.
 
 ## Details
 
@@ -158,10 +167,10 @@ x1 <- rnorm(n)
 df <- data.frame(y = 2 * x1 + rnorm(n), x1 = x1,
                  x2 = rnorm(n), noise = rnorm(n))
 
-# n_rep is RESAMPL=. It counts VALID models, so a replicate whose fit fails
+# n_boot is RESAMPL=. It counts VALID models, so a replicate whose fit fails
 # is redrawn and does not consume one -- the macro's &regrc check.
 fit <- boot_select(df, y ~ x1 + x2 + noise, fit_linear,
-                   n_rep = 50, seed = 42)
+                   n_boot = 50, seed = 42)
 fit
 #> <boot_selection>
 #>   replicates: 50 valid of 50 attempts

@@ -10,12 +10,13 @@ the percentile intervals of each estimated quantity.
 boot_predict_ci(
   data,
   statistic,
-  n_rep = 1000,
+  n_boot = 1000,
   fraction = 1,
   id = NULL,
-  max_attempts = 10 * n_rep,
+  max_attempts = 10 * n_boot,
   seed = NULL,
-  ...
+  ...,
+  n_rep
 )
 ```
 
@@ -31,7 +32,7 @@ boot_predict_ci(
   replicate's estimates, or `NULL` if the replicate failed. `%BNMNR`
   equivalent: the `PROC NLMIXED` block.
 
-- n_rep:
+- n_boot:
 
   Number of **valid** replicates (`%BNMNR` `RESAMPL=`). A replicate
   whose `statistic` fails is redrawn and not counted, so the bands are
@@ -42,7 +43,7 @@ boot_predict_ci(
   [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
   in this package. A hundred replicates puts the 2.5th percentile on the
   third order statistic, where it is visibly unstable. Pass
-  `n_rep = 100` to reproduce the macro.
+  `n_boot = 100` to reproduce the macro.
 
 - fraction:
 
@@ -72,12 +73,25 @@ boot_predict_ci(
 
   Passed to `statistic`.
 
+- n_rep:
+
+  Deprecated name for `n_boot`, renamed under the hvtiR API rubric. It
+  still works for one release and warns once per session. Before the
+  rename, an `n_boot =` argument was passed through `...` to
+  `statistic`; a call that still uses `n_rep` keeps that meaning, so
+  `n_rep = 100, n_boot = 2` draws 100 replicates and hands `n_boot = 2`
+  to `statistic`. Under the new name `n_boot` is the replicate count and
+  is never forwarded: a `statistic` with its own `n_boot` argument
+  should rename it or bind it in a closure.
+
 ## Value
 
 An object of class `boot_intervals`. `$estimates` is a matrix with one
 row per valid replicate and one column per quantity; `$intervals` is the
 per-quantity table with columns `parameter`, `cll_p95`, `cll_p68`,
-`median`, `clu_p68`, `clu_p95`. `$control` records the run's settings.
+`median`, `clu_p68`, `clu_p95`. `$control` records the run's settings,
+and `$provenance` the hvtiR family's shared provenance record, with
+`method = "percentile"`.
 
 ## Details
 
@@ -121,7 +135,7 @@ for the selection branch.
 df <- data.frame(x = rnorm(200))
 est <- function(d, ...) c(mean = mean(d$x), sd = sd(d$x))
 
-r <- boot_predict_ci(df, est, n_rep = 100, seed = 42)
+r <- boot_predict_ci(df, est, n_boot = 100, seed = 42)
 r
 #> <boot_intervals>
 #>   replicates: 100 valid of 100 attempts

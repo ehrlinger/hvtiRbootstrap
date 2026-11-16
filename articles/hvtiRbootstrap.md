@@ -65,7 +65,7 @@ round(cor(sim$bsa, sim$wt), 2)
 
 [`boot_select()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_select.md)
 is `%bootreg`. Give it the data, a formula offering the candidate terms,
-and a fitter. The arguments you know carry over: `n_rep` is `RESAMPL=`,
+and a fitter. The arguments you know carry over: `n_boot` is `RESAMPL=`,
 `sle` and `sls` are `SLE=` and `SLS=` (defaults 0.1 and 0.05),
 `fraction` is `FRACTION=` and `seed` is `SEED=`. The default
 `fraction = 1` draws as many rows as the data has, which is what the
@@ -76,7 +76,7 @@ macro always does.
 fit <- boot_select(
   sim, dead ~ age + bsa + wt + ef + noise,
   fitter = fit_logistic,
-  n_rep = 50, seed = 101
+  n_boot = 50, seed = 101
 )
 fit
 #> <boot_selection>
@@ -86,7 +86,7 @@ fit
 ```
 
 We ask for only 50 replicates so the vignette builds quickly. A real
-screen uses the default of 1000, and `n_rep` counts *valid* models, as
+screen uses the default of 1000, and `n_boot` counts *valid* models, as
 `RESAMPL=` does: a replicate whose fit fails is drawn again and not
 counted.
 
@@ -131,8 +131,8 @@ s
 ```
 
 `n` is the count of replicates that selected the term and `pct` is that
-count over `n_rep`. The two real effects hold up. Age survives in 88% of
-replicates and `bsa` in 88%. `ef` and `noise` carry nothing by
+count over `n_boot`. The two real effects hold up. Age survives in 88%
+of replicates and `bsa` in 88%. `ef` and `noise` carry nothing by
 construction, yet they still turn up in 28% and 12%. That is stepwise
 keeping a useless term by chance, and a fair reminder that a non-zero
 `pct` is not evidence of anything on its own.
@@ -192,7 +192,7 @@ sim$event <- rbinom(n, 1, 0.7)
 cox_fit <- boot_select(
   sim, survival::Surv(time, event) ~ age + ef + noise,
   fitter = fit_cox,
-  n_rep = 20, seed = 202
+  n_boot = 20, seed = 202
 )
 boot_summary(cox_fit)
 #>   variable  n pct       mean          sd        min        max
@@ -282,7 +282,7 @@ risk_at_age <- function(d, ...) {
   stats::setNames(p, c("age55", "age65", "age75"))
 }
 
-ci <- boot_predict_ci(sim, risk_at_age, n_rep = 50, seed = 7)
+ci <- boot_predict_ci(sim, risk_at_age, n_boot = 50, seed = 7)
 summary(ci)
 #>   parameter   cll_p95   cll_p68    median   clu_p68   clu_p95
 #> 1     age55 0.1135267 0.1339898 0.1699794 0.2138586 0.2590603
@@ -317,7 +317,7 @@ register lists the departure and the function’s help page marks it as a
 does. Two are not:
 [`boot_predict_ci()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/boot_predict_ci.md)
 defaults to 1000 replicates where `%BNMNR` defaults to 100 (pass
-`n_rep = 100` to match), and
+`n_boot = 100` to match), and
 [`fit_cox()`](https://ehrlinger.github.io/hvtiRbootstrap/reference/fit_cox.md)
 enters on the likelihood ratio because there is no score test to call.
 
