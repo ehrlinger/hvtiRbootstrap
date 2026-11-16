@@ -77,14 +77,9 @@ test_that("`n_rep` still works, warning once per session", {
   expect_identical(r$n_rep, 4L)
 })
 
-test_that("giving both `n_boot` and `n_rep` is an error", {
+test_that("boot_select() refuses both `n_boot` and `n_rep`", {
   expect_error(
     boot_select(rubric_df(), y ~ x1, fit_linear, n_boot = 3, n_rep = 3),
-    class = "hvtiRbootstrap_bad_argument"
-  )
-  expect_error(
-    boot_predict_ci(rubric_df(), function(x, ...) c(m = 1), n_boot = 3,
-                    n_rep = 3),
     class = "hvtiRbootstrap_bad_argument"
   )
 })
@@ -102,4 +97,22 @@ test_that("errors a caller may catch carry hvtiRbootstrap_ classes", {
   e <- tryCatch(boot_validate(list()), error = identity)
   expect_s3_class(e, "error")
   expect_null(conditionCall(e))
+})
+
+test_that("a legacy call's `n_boot` still reaches `statistic` (#72 review)", {
+  # Before the rename n_boot was forwarded through `...`. A call using the
+  # old n_rep name must keep working exactly as it did for one release.
+  rm(list = ls(.deprecation_state), envir = .deprecation_state)
+  withr::defer(rm(list = ls(.deprecation_state), envir = .deprecation_state))
+  seen <- integer(0)
+  stat <- function(d, n_boot) {
+    seen <<- c(seen, n_boot)
+    c(m = mean(d$x1) + n_boot)
+  }
+  expect_warning(
+    r <- boot_predict_ci(rubric_df(), stat, n_rep = 3, n_boot = 2, seed = 1),
+    class = "hvtiRbootstrap_deprecated"
+  )
+  expect_identical(r$n_rep, 3L)
+  expect_true(length(seen) >= 3L && all(seen == 2))
 })

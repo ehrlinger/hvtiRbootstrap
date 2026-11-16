@@ -1,7 +1,9 @@
 * `boot_select()` and `boot_predict_ci()` take `n_boot` for the number of
   valid replicates, the hvtiR family's name for it. `n_rep` still works for
-  one release and warns once per session; giving both is an error. The
-  result's `$n_rep` field is unchanged.
+  one release and warns once per session. In `boot_select()` giving both is
+  an error. In `boot_predict_ci()` a call that still uses `n_rep` keeps its
+  old meaning for `n_boot =`, which is forwarded to `statistic` as it was
+  before the rename. The result's `$n_rep` field is unchanged.
 * `boot_select()`, `boot_predict_ci()` and `boot_bag()` carry the hvtiR
   family's shared provenance record in `$provenance`: `package`, `version`,
   `sha`, `method`, `seed`, `rng_kind` and `time`, taken when the draw began.

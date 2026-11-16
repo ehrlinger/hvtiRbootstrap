@@ -48,7 +48,13 @@ Pass \code{Inf} to restore that.}
 \item{...}{Passed to \code{statistic}.}
 
 \item{n_rep}{Deprecated name for \code{n_boot}, renamed under the hvtiR API
-rubric. It still works for one release and warns once per session.}
+rubric. It still works for one release and warns once per session.
+Before the rename, an \verb{n_boot =} argument was passed through \code{...} to
+\code{statistic}; a call that still uses \code{n_rep} keeps that meaning, so
+\verb{n_rep = 100, n_boot = 2} draws 100 replicates and hands \code{n_boot = 2} to
+\code{statistic}. Under the new name \code{n_boot} is the replicate count and is
+never forwarded: a \code{statistic} with its own \code{n_boot} argument should
+rename it or bind it in a closure.}
 }
 \value{
 An object of class \code{boot_intervals}. \verb{$estimates} is a matrix with

@@ -140,6 +140,12 @@
 #' @param ... Passed to `statistic`.
 #' @param n_rep Deprecated name for `n_boot`, renamed under the hvtiR API
 #'   rubric. It still works for one release and warns once per session.
+#'   Before the rename, an `n_boot =` argument was passed through `...` to
+#'   `statistic`; a call that still uses `n_rep` keeps that meaning, so
+#'   `n_rep = 100, n_boot = 2` draws 100 replicates and hands `n_boot = 2` to
+#'   `statistic`. Under the new name `n_boot` is the replicate count and is
+#'   never forwarded: a `statistic` with its own `n_boot` argument should
+#'   rename it or bind it in a closure.
 #' @return An object of class `boot_intervals`. `$estimates` is a matrix with
 #'   one row per valid replicate and one column per quantity; `$intervals` is
 #'   the per-quantity table with columns `parameter`, `cll_p95`, `cll_p68`,
@@ -165,10 +171,13 @@ boot_predict_ci <- function(data, statistic, n_boot = 1000, fraction = 1,
   # for the reason boot_select() documents at length: `data` is often an
   # expression that itself draws.
   if (!is.null(seed)) withr::local_preserve_seed()
+  # Before the rename `n_boot` was not a formal here, so a caller passing it
+  # meant it for `statistic`, through `...`. A call still using `n_rep` is
+  # such a caller, and keeps that meaning for the deprecation release: the
+  # value is forwarded to `statistic` rather than refused as a duplicate.
+  stat_n_boot <- NULL
   if (!missing(n_rep)) {
-    if (!missing(n_boot))
-      .abort("boot_predict_ci(): give `n_boot` only; `n_rep` is its ",
-             "deprecated name.", class = "bad_argument")
+    if (!missing(n_boot)) stat_n_boot <- n_boot
     .deprecated_arg("boot_predict_ci", "n_rep", "n_boot")
     n_boot <- n_rep
   }
@@ -178,6 +187,10 @@ boot_predict_ci <- function(data, statistic, n_boot = 1000, fraction = 1,
   if (!is.function(statistic)) {
     stop("`statistic` must be a function of (data, ...) returning a named ",
          "numeric vector, or NULL.", call. = FALSE)
+  }
+  if (!is.null(stat_n_boot)) {
+    user_statistic <- statistic
+    statistic <- function(d, ...) user_statistic(d, ..., n_boot = stat_n_boot)
   }
   if (!is.numeric(fraction) || length(fraction) != 1L || is.na(fraction) ||
         fraction <= 0 || fraction > 1) {
