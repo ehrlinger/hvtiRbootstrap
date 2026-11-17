@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">hvtiRbootstrap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,25 @@
       <small>Source: <a href="https://github.com/ehrlinger/hvtiRbootstrap/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.8" id="hvtirbootstrap-098">hvtiRbootstrap 0.9.8<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-098"></a></h2>
+<ul><li>
+<code><a href="../reference/boot_pool_chunks.html">boot_pool_chunks()</a></code> pools <code><a href="../reference/boot_bag.html">boot_bag()</a></code> output. It could not before: the bag recorded its engine as <code>engine</code> and carried no <code>max_steps</code>, and the pool refused both as unrecorded. <code><a href="../reference/boot_bag.html">boot_bag()</a></code> now writes the screen’s full definition – <code>engine_sha</code> (the commit, <code>NA</code> when the installer recorded none), <code>method</code>, <code>max_steps</code>, <code>fraction</code>, <code>resampled</code> and <code>rng_kind</code> – and records <code>slentry</code>, <code>slstay</code> and <code>max_steps</code> as <code>NA</code> under <code>select = "none"</code>, where no selection ran. <code><a href="../reference/boot_validate.html">boot_validate()</a></code> accepts that <code>NA</code> only on such a bag.</li>
+<li>
+<code><a href="../reference/boot_pool_chunks.html">boot_pool_chunks()</a></code> runs <code><a href="../reference/boot_validate.html">boot_validate()</a></code> on every chunk first, naming the chunk and field rather than failing inside <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply()</a></code>, and refuses chunks that disagree on the model – the <code>fitter</code> (named, or an md5 of a custom fitter’s source) or the <code>formula</code>, both now recorded by <code><a href="../reference/boot_select.html">boot_select()</a></code> and <code><a href="../reference/boot_bag.html">boot_bag()</a></code> – or on <code>method</code> or <code>fraction</code>. A linear and a logistic screen of the same data used to pool, averaging slopes with log-odds. A runner chunk that records neither is read as <code>"stepwise"</code> and <code>1</code>, so hazard-runner chunks still pool.</li>
+<li>A run where more than 5% of draws fail now warns, in <code><a href="../reference/boot_select.html">boot_select()</a></code> and <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code>, and <code><a href="../reference/boot_health.html">boot_health()</a></code> fails its “Replicates that failed” row above that rate. Redrawn replicates make the result conditional on estimability; both help pages now say so.</li>
+<li>
+<code><a href="../reference/fit_cox.html">fit_cox()</a></code> discards a fit that ran out of iterations, as <code><a href="../reference/fit_logistic.html">fit_logistic()</a></code> discards one that did not converge.</li>
+<li>
+<code><a href="../reference/boot_select.html">boot_select()</a></code> validates <code>sle</code>, <code>sls</code>, <code>max_steps</code> and <code>fitter</code>. <code>sle = NA</code> used to give a silently empty screen. A fitter returning an unnamed or non-numeric value is now an error naming the contract.</li>
+<li>
+<code><a href="../reference/boot_select.html">boot_select()</a></code> no longer seeds a phantom column for a factor when a term (<code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code>, <code><a href="https://rdrr.io/r/splines/ns.html" class="external-link">splines::ns()</a></code>) cannot be built on zero rows, and records <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> and the package commit in <code>$control</code>. <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> records both too.</li>
+<li>
+<code><a href="../reference/boot_select.html">boot_select()</a></code> and <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> take <code>n_boot</code> for the number of valid replicates, the hvtiR family’s name for it. <code>n_rep</code> still works for one release and warns once per session. In <code><a href="../reference/boot_select.html">boot_select()</a></code> giving both is an error. In <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> a call that still uses <code>n_rep</code> keeps its old meaning for <code>n_boot =</code>, which is forwarded to <code>statistic</code> as it was before the rename. The result’s <code>$n_rep</code> field is unchanged.</li>
+<li>
+<code><a href="../reference/boot_select.html">boot_select()</a></code>, <code><a href="../reference/boot_predict_ci.html">boot_predict_ci()</a></code> and <code><a href="../reference/boot_bag.html">boot_bag()</a></code> carry the hvtiR family’s shared provenance record in <code>$provenance</code>: <code>package</code>, <code>version</code>, <code>sha</code>, <code>method</code>, <code>seed</code>, <code>rng_kind</code> and <code>time</code>, taken when the draw began. <code><a href="../reference/boot_select.html">boot_select()</a></code>’s record, and so the bag’s, also carries the model’s <code>fitter</code> and <code>formula</code>. A bag built from a screen that predates the record gets <code>NA</code> for what the screen cannot tell it.</li>
+<li>Errors a caller may want to catch carry a condition class: <code>hvtiRbootstrap_invalid_bag</code> (<code><a href="../reference/boot_validate.html">boot_validate()</a></code>), <code>hvtiRbootstrap_pool_refused</code> (<code><a href="../reference/boot_pool_chunks.html">boot_pool_chunks()</a></code>), <code>hvtiRbootstrap_bag_refused</code> (<code><a href="../reference/boot_bag.html">boot_bag()</a></code>), <code>hvtiRbootstrap_attempts_exhausted</code> (the replicate budget ran out) and <code>hvtiRbootstrap_bad_argument</code> (<code><a href="../reference/boot_select.html">boot_select()</a></code> given both <code>n_boot</code> and <code>n_rep</code>). Other argument checks still raise plain errors. The deprecation warning is <code>hvtiRbootstrap_deprecated</code>, and the warning for a failure rate above 5% is <code>hvtiRbootstrap_failure_rate</code>. Messages are unchanged.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.7" id="hvtirbootstrap-097">hvtiRbootstrap 0.9.7<a class="anchor" aria-label="anchor" href="#hvtirbootstrap-097"></a></h2>
 <ul><li>

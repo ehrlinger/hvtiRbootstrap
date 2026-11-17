@@ -1,7 +1,7 @@
 # hvtiRbootstrap: Bootstrap Model Building for the HVTI CORR Group
 
 Builds models by bootstrap resampling, in the manner of the Cleveland
-Clinic CORR group's SAS macro library: fit a model on each of many
+Clinic CORR group's 'SAS' macro library: fit a model on each of many
 bootstrap replicates, record which variables survive selection, and
 report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and
 'cluster' macros.
