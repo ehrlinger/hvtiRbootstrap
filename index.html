@@ -196,17 +196,17 @@
 <span><span class="co">#&gt; Use boot_summary() for per-variable selection frequencies.</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/boot_summary.html">boot_summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      variable   n   pct         mean         sd         min       max</span></span>
-<span><span class="co">#&gt; 1 (Intercept) 200 100.0 -0.008863727 0.06139726 -0.15297676 0.1901373</span></span>
-<span><span class="co">#&gt; 2          x1 200 100.0  2.026035162 0.06718477  1.88008851 2.2223719</span></span>
-<span><span class="co">#&gt; 3          x2  57  28.5  0.094760094 0.04738065 -0.09018219 0.1573203</span></span>
-<span><span class="co">#&gt; 4       noise  39  19.5  0.106355941 0.05397506 -0.10429045 0.1834056</span></span>
+<span><span class="co">#&gt;      variable   n   pct        mean         sd        min       max</span></span>
+<span><span class="co">#&gt; 1 (Intercept) 200 100.0 -0.01051529 0.06100998 -0.1529768 0.1905630</span></span>
+<span><span class="co">#&gt; 2          x1 200 100.0  2.02633661 0.06735422  1.8800885 2.2223719</span></span>
+<span><span class="co">#&gt; 3       noise  16   8.0  0.13889419 0.01850407  0.1108547 0.1834056</span></span>
+<span><span class="co">#&gt; 4          x2  15   7.5  0.13086393 0.01807482  0.0939612 0.1573203</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/boot_clusters.html">boot_clusters</a></span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   cluster n_any pct_any members</span></span>
 <span><span class="co">#&gt; 1    size   200     100  x1, x2</span></span></code></pre></div>
-<p><code>x1</code> really drives <code>y</code> here, and it survives every replicate. <code>x2</code> and <code>noise</code> carry no signal by construction, so the 20-30% they show is stepwise keeping a useless term by chance - a reminder that a non-zero <code>pct</code> is not on its own evidence of anything.</p>
-<p><code>n</code> counts the replicates in which a term was selected, so <code>pct</code> reads as a selection frequency. <code><a href="reference/boot_clusters.html">boot_clusters()</a></code> is not the sum of its members’ counts: a replicate selecting two members counts once, which is why <code>size</code> reads 100 and not 128.5.</p>
+<p><code>x1</code> really drives <code>y</code> here, and it survives every replicate. <code>x2</code> and <code>noise</code> carry no signal by construction, so the 7-8% they show is stepwise keeping a useless term by chance - a reminder that a non-zero <code>pct</code> is not on its own evidence of anything.</p>
+<p><code>n</code> counts the replicates in which a term was selected, so <code>pct</code> reads as a selection frequency. <code><a href="reference/boot_clusters.html">boot_clusters()</a></code> is not the sum of its members’ counts: a replicate selecting two members counts once, which is why <code>size</code> reads 100 and not 107.5.</p>
 </div>
 <div class="section level2">
 <h2 id="beyond-the-macros">Beyond the macros<a class="anchor" aria-label="anchor" href="#beyond-the-macros"></a>
@@ -318,7 +318,7 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Under development, and at 0.9.4 rather than 1.0.0 deliberately. The selection core, chunk pooling and the reporting layer are all in place, with logistic, linear and Cox fitters.</p>
+<p>Under development, and at 0.x rather than 1.0.0 deliberately. The selection core, chunk pooling and the reporting layer are all in place, with logistic, linear and Cox fitters.</p>
 <p>The hazard and quantile fitters, and penalised selection are each deferred to their own spec — and the hazard fitter is why this is not 1.0.0. Its <code>_CP_*evnt</code> and <code>_tvc</code> variants encode competing-risks and time-varying-covariate structures that deserve reading before an API is fixed, and a 1.0.0 that then grew a whole new fitter family would be making a promise it had not earned.</p>
 </div>
 <div class="section level2">
