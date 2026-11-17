@@ -126,11 +126,11 @@ fit
 #> Use boot_summary() for per-variable selection frequencies.
 
 boot_summary(fit)
-#>      variable   n   pct         mean         sd         min       max
-#> 1 (Intercept) 200 100.0 -0.008863727 0.06139726 -0.15297676 0.1901373
-#> 2          x1 200 100.0  2.026035162 0.06718477  1.88008851 2.2223719
-#> 3          x2  57  28.5  0.094760094 0.04738065 -0.09018219 0.1573203
-#> 4       noise  39  19.5  0.106355941 0.05397506 -0.10429045 0.1834056
+#>      variable   n   pct        mean         sd        min       max
+#> 1 (Intercept) 200 100.0 -0.01051529 0.06100998 -0.1529768 0.1905630
+#> 2          x1 200 100.0  2.02633661 0.06735422  1.8800885 2.2223719
+#> 3       noise  16   8.0  0.13889419 0.01850407  0.1108547 0.1834056
+#> 4          x2  15   7.5  0.13086393 0.01807482  0.0939612 0.1573203
 
 boot_clusters(fit, list(size = c("x1", "x2")))
 #>   cluster n_any pct_any members
@@ -138,14 +138,14 @@ boot_clusters(fit, list(size = c("x1", "x2")))
 ```
 
 `x1` really drives `y` here, and it survives every replicate. `x2` and `noise`
-carry no signal by construction, so the 20-30% they show is stepwise keeping a
+carry no signal by construction, so the 7-8% they show is stepwise keeping a
 useless term by chance - a reminder that a non-zero `pct` is not on its own
 evidence of anything.
 
 `n` counts the replicates in which a term was selected, so `pct` reads as a
 selection frequency. `boot_clusters()` is not the sum of its members' counts: a
 replicate selecting two members counts once, which is why `size` reads 100 and
-not 128.5.
+not 107.5.
 
 ## Beyond the macros
 
@@ -192,7 +192,7 @@ data and no PHI enters this repo.
 
 ## Status
 
-Under development, and at 0.9.4 rather than 1.0.0 deliberately. The selection
+Under development, and at 0.x rather than 1.0.0 deliberately. The selection
 core, chunk pooling and the reporting layer are all in place, with logistic,
 linear and Cox fitters.
 
