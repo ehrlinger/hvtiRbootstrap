@@ -6,7 +6,7 @@
 \alias{hvtiRbootstrap-package}
 \title{hvtiRbootstrap: Bootstrap Model Building for the HVTI CORR Group}
 \description{
-Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR group's SAS macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and 'cluster' macros.
+Builds models by bootstrap resampling, in the manner of the Cleveland Clinic CORR group's 'SAS' macro library: fit a model on each of many bootstrap replicates, record which variables survive selection, and report how often each appeared. Ports the 'bootreg', 'SUMBOOT' and 'cluster' macros.
 }
 \details{
 \strong{Three macros, three functions.} That is the core, and to run a screen it
