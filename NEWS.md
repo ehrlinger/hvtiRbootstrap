@@ -13,8 +13,9 @@
   that disagree on the model -- the `fitter` (named, or an md5 of a custom
   fitter's source) or the `formula`, both now recorded by `boot_select()` and
   `boot_bag()` -- or on `method` or `fraction`. A linear and a logistic screen
-  of the same data used to pool, averaging slopes with log-odds. A runner chunk that records neither
-  is read as `"stepwise"` and `1`, so hazard-runner chunks still pool.
+  of the same data used to pool, averaging slopes with log-odds. A runner
+  chunk that records neither is read as `"stepwise"` and `1`, so
+  hazard-runner chunks still pool.
 * A run where more than 5% of draws fail now warns, in `boot_select()` and
   `boot_predict_ci()`, and `boot_health()` fails its "Replicates that failed"
   row above that rate. Redrawn replicates make the result conditional on
@@ -28,7 +29,6 @@
   (`poly()`, `splines::ns()`) cannot be built on zero rows, and records
   `RNGkind()` and the package commit in `$control`. `boot_predict_ci()`
   records both too.
-
 * `boot_select()` and `boot_predict_ci()` take `n_boot` for the number of
   valid replicates, the hvtiR family's name for it. `n_rep` still works for
   one release and warns once per session. In `boot_select()` giving both is
@@ -47,9 +47,10 @@
   `hvtiRbootstrap_pool_refused` (`boot_pool_chunks()`),
   `hvtiRbootstrap_bag_refused` (`boot_bag()`),
   `hvtiRbootstrap_attempts_exhausted` (the replicate budget ran out) and
-  `hvtiRbootstrap_bad_argument`. The deprecation warning is
-  `hvtiRbootstrap_deprecated`, and the warning for a failure rate above 5%
-  is `hvtiRbootstrap_failure_rate`. Messages are unchanged.
+  `hvtiRbootstrap_bad_argument` (`boot_select()` given both `n_boot` and
+  `n_rep`). Other argument checks still raise plain errors. The deprecation
+  warning is `hvtiRbootstrap_deprecated`, and the warning for a failure rate
+  above 5% is `hvtiRbootstrap_failure_rate`. Messages are unchanged.
 
 # hvtiRbootstrap 0.9.7
 
